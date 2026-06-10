@@ -4,35 +4,48 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout>
 	<section class="hero">
-		<div class="eyebrow">Y Combinator-style coming soon</div>
-		<h1>KAED is coming soon.</h1>
+		<p class="eyebrow">Early-stage venture capital</p>
+		<h1>Backing the<br /><em>next thing</em> early.</h1>
 		<p class="lede">
-			A sharply minimal launch page with the orange-and-paper feel of a YC startup.
-			Sign up to get product updates before the full release.
+			KAED partners with founders at the very beginning — when conviction
+			matters more than traction. We write first checks and stay close.
 		</p>
-
-		<div class="highlights">
-			<div>Fast newsletter signup</div>
-			<div>Launch updates first</div>
-			<div>Built for a focused audience</div>
+		<div class="hero-actions">
+			<a class="cta" href="#signup">Join the list</a>
+			<a class="text-link" href="/login">Partner login →</a>
 		</div>
 	</section>
 
-	<section class="signup-card" aria-labelledby="signup-title">
-		<h2 id="signup-title">Get on the list</h2>
-		<p>
-			We’ll only send useful launch notes. No noise, no filler.
-		</p>
+	<section class="principles">
+		<div class="principle">
+			<span class="num">01</span>
+			<h3>First checks</h3>
+			<p>We lead and co-lead pre-seed and seed rounds with high conviction.</p>
+		</div>
+		<div class="principle">
+			<span class="num">02</span>
+			<h3>Hands close</h3>
+			<p>Direct access to partners — no associates between you and decisions.</p>
+		</div>
+		<div class="principle">
+			<span class="num">03</span>
+			<h3>Long horizon</h3>
+			<p>We build for the decade, not the next markup. Patience is the edge.</p>
+		</div>
+	</section>
 
+	<section id="signup" class="signup">
+		<div class="signup-copy">
+			<h2>Stay in the loop</h2>
+			<p>Occasional notes on what we're funding and thinking. No noise.</p>
+		</div>
 		<form id="signup-form" class="signup-form">
 			<label class="sr-only" for="email">Email address</label>
-			<input id="email" name="email" type="email" placeholder="Email address" required />
+			<input id="email" name="email" type="email" placeholder="you@company.com" required />
 			<button type="submit">Subscribe</button>
 		</form>
 		<div id="signup-status" class="status" aria-live="polite"></div>
 	</section>
-
-	<footer class="footer">Creator is Marton Deak</footer>
 </Layout>
 
 <script>
@@ -85,133 +98,194 @@ import Layout from '../layouts/Layout.astro';
 </script>
 
 <style>
-	:global(body) {
-		background: #f6f6ef;
-	}
-
 	.hero {
-		max-width: 760px;
-		padding: 0 0 30px;
+		max-width: 720px;
 	}
 
 	.eyebrow {
-		display: inline-block;
-		margin-bottom: 10px;
-		padding: 3px 8px;
-		background: #ff6600;
-		color: #111111;
-		font-size: 9pt;
-		font-weight: bold;
+		margin: 0 0 20px;
+		font-size: 13px;
+		letter-spacing: 0.16em;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		color: var(--muted);
 	}
 
 	h1 {
 		margin: 0;
-		font-family: Georgia, 'Times New Roman', serif;
-		font-size: clamp(2.4rem, 7vw, 5.4rem);
-		line-height: 0.95;
-		letter-spacing: -0.04em;
-		max-width: 10ch;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2.6rem, 7vw, 5rem);
+		line-height: 1.02;
+		letter-spacing: -0.03em;
+	}
+
+	h1 em {
+		font-style: italic;
 	}
 
 	.lede {
-		max-width: 58ch;
-		margin: 18px 0 0;
-		font-size: 13pt;
-		line-height: 1.55;
+		max-width: 54ch;
+		margin: 28px 0 0;
+		font-size: 18px;
+		line-height: 1.6;
+		color: var(--muted);
 	}
 
-	.highlights {
+	.hero-actions {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: 24px;
+		align-items: center;
+		gap: 24px;
+		margin-top: 36px;
 	}
 
-	.highlights div {
-		padding: 6px 10px;
-		border: 1px solid #d9d3c7;
-		background: rgba(255, 255, 255, 0.45);
-		font-size: 9pt;
+	.cta {
+		display: inline-flex;
+		align-items: center;
+		padding: 13px 26px;
+		border-radius: 999px;
+		background: var(--ink);
+		color: #fff;
+		font-size: 15px;
+		font-weight: 500;
+		text-decoration: none;
+		border: 1px solid var(--ink);
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
 	}
 
-	.signup-card {
-		max-width: 540px;
-		margin: 18px 0 0;
-		padding: 18px;
-		border: 1px solid #d9d3c7;
-		background: rgba(255, 255, 255, 0.65);
+	.cta:hover {
+		background: transparent;
+		color: var(--ink);
 	}
 
-	.signup-card h2 {
+	.text-link {
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 15px;
+		transition: color 0.15s ease;
+	}
+
+	.text-link:hover {
+		color: var(--ink);
+	}
+
+	.principles {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 32px;
+		margin-top: 96px;
+		padding-top: 48px;
+		border-top: 1px solid var(--line);
+	}
+
+	.principle .num {
+		font-family: var(--serif);
+		font-size: 14px;
+		color: var(--muted);
+	}
+
+	.principle h3 {
+		margin: 12px 0 8px;
+		font-family: var(--serif);
+		font-size: 22px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.principle p {
 		margin: 0;
-		font-size: 15pt;
+		color: var(--muted);
+		font-size: 15px;
+		line-height: 1.6;
 	}
 
-	.signup-card p {
+	.signup {
+		margin-top: 96px;
+		padding: 40px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+	}
+
+	.signup-copy h2 {
+		margin: 0;
+		font-family: var(--serif);
+		font-size: 28px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+
+	.signup-copy p {
 		margin: 8px 0 0;
-		color: #5c564b;
+		color: var(--muted);
 	}
 
 	.signup-form {
-		margin: 0;
 		display: flex;
-		gap: 8px;
+		gap: 10px;
 		flex-wrap: wrap;
-		margin-top: 16px;
+		margin-top: 24px;
 	}
 
-	input[type="email"], button {
-		font-family: Verdana, Geneva, sans-serif;
-		font-size: 10pt;
-		height: 36px;
-		border: 1px solid #111111;
-		padding: 0 12px;
-	}
-
-	input[type="email"] {
-		flex: 1 1 260px;
+	input[type='email'] {
+		flex: 1 1 280px;
 		min-width: 220px;
-		background: #ffffff;
+		height: 48px;
+		padding: 0 16px;
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		outline: none;
+		transition: border-color 0.15s ease;
 	}
 
-	button {
-		background: #ff6600;
-		color: #111111;
-		font-weight: bold;
+	input[type='email']:focus {
+		border-color: var(--ink);
+	}
+
+	.signup-form button {
+		height: 48px;
+		padding: 0 28px;
+		font-family: var(--sans);
+		font-size: 15px;
+		font-weight: 500;
+		color: #fff;
+		background: var(--ink);
+		border: 1px solid var(--ink);
+		border-radius: 999px;
 		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
 	}
 
-	button:disabled {
+	.signup-form button:hover {
+		background: transparent;
+		color: var(--ink);
+	}
+
+	.signup-form button:disabled {
 		cursor: progress;
-		opacity: 0.75;
+		opacity: 0.6;
 	}
 
 	.status {
-		margin-top: 10px;
+		margin-top: 14px;
 		min-height: 1.2em;
-		font-size: 9pt;
+		font-size: 14px;
+		color: var(--muted);
 	}
 
 	.status.error {
-		color: #b00000;
+		color: #b4231f;
 	}
 
 	.status.success {
-		color: #006600;
-	}
-
-	.status.loading {
-		color: #6a6457;
-	}
-
-	.footer {
-		margin-top: 28px;
-		padding-top: 12px;
-		border-top: 1px solid #d9d3c7;
-		font-size: 9pt;
-		color: #6b665b;
+		color: #1f7a3d;
 	}
 
 	.sr-only {
@@ -227,13 +301,19 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	@media (max-width: 720px) {
-		.signup-card {
-			padding: 16px;
+		.principles {
+			grid-template-columns: 1fr;
+			gap: 28px;
+			margin-top: 64px;
 		}
-
-		button,
-		input[type="email"] {
+		.signup {
+			margin-top: 64px;
+			padding: 28px 20px;
+		}
+		.signup-form button,
+		input[type='email'] {
 			width: 100%;
+			flex: 1 1 100%;
 		}
 	}
 </style>
