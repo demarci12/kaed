@@ -1,47 +1,50 @@
+---
 import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
-	<main class="page">
-		<section class="hero" aria-labelledby="hero-title">
-			<p class="eyebrow">KAED</p>
-			<h1 id="hero-title">Coming soon.</h1>
-			<p class="lede">
-				A white, text-first studio page with sharp black tech character energy. 
-				Newsletter signups open soon.
-			</p>
+	<section class="hero">
+		<div class="eyebrow">Y Combinator-style coming soon</div>
+		<h1>KAED is coming soon.</h1>
+		<p class="lede">
+			A sharply minimal launch page with the orange-and-paper feel of a YC startup.
+			Sign up to get product updates before the full release.
+		</p>
 
-			<form class="signup" id="signup-form">
-				<label class="sr-only" for="email">Email address</label>
-				<input id="email" name="email" type="email" placeholder="Enter your email" required />
-				<button type="submit">Sign up for newsletter</button>
-			</form>
-			<p class="status" id="signup-status" aria-live="polite"></p>
-		</section>
+		<div class="highlights">
+			<div>Fast newsletter signup</div>
+			<div>Launch updates first</div>
+			<div>Built for a focused audience</div>
+		</div>
+	</section>
 
-		<section class="glyph-field" aria-hidden="true">
-			<div class="glyph glyph-a">A</div>
-			<div class="glyph glyph-k">K</div>
-			<div class="glyph glyph-e">E</div>
-			<div class="glyph glyph-d">D</div>
-			<div class="glyph glyph-bracket">{ }</div>
-			<div class="glyph glyph-code">&lt;/&gt;</div>
-		</section>
+	<section class="signup-card" aria-labelledby="signup-title">
+		<h2 id="signup-title">Get on the list</h2>
+		<p>
+			We’ll only send useful launch notes. No noise, no filler.
+		</p>
 
-		<footer class="footer">Creator is Marton Deak</footer>
-	</main>
+		<form id="signup-form" class="signup-form">
+			<label class="sr-only" for="email">Email address</label>
+			<input id="email" name="email" type="email" placeholder="Email address" required />
+			<button type="submit">Subscribe</button>
+		</form>
+		<div id="signup-status" class="status" aria-live="polite"></div>
+	</section>
+
+	<footer class="footer">Creator is Marton Deak</footer>
 </Layout>
 
-	<script>
+<script>
 	const form = document.getElementById('signup-form');
-	const emailInput = document.getElementById('email');
+	const emailInput = document.getElementById('email') as HTMLInputElement;
 	const status = document.getElementById('signup-status');
 	const submitButton = form?.querySelector('button[type="submit"]');
 
-	const setStatus = (message, tone = 'idle') => {
+	const setStatus = (message: string, tone = 'idle') => {
 		if (!status) return;
 		status.textContent = message;
-		status.dataset.tone = tone;
+		status.className = `status ${tone}`;
 	};
 
 	form?.addEventListener('submit', async (event) => {
@@ -55,7 +58,7 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		setStatus('Submitting your email...', 'loading');
-		submitButton?.setAttribute('disabled', 'true');
+		if (submitButton) submitButton.setAttribute('disabled', 'true');
 
 		try {
 			const response = await fetch('/api/subscribe', {
@@ -71,149 +74,144 @@ import Layout from '../layouts/Layout.astro';
 				throw new Error(payload?.error || 'Unable to save your signup right now.');
 			}
 
-			form.reset();
+			if (form instanceof HTMLFormElement) form.reset();
 			setStatus('You are on the list. Thanks.', 'success');
 		} catch (error) {
 			setStatus(error instanceof Error ? error.message : 'Signup failed. Try again.', 'error');
 		} finally {
-			submitButton?.removeAttribute('disabled');
+			if (submitButton) submitButton.removeAttribute('disabled');
 		}
 	});
 </script>
 
 <style>
 	:global(body) {
-		font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-		background: #ffffff;
-		color: #111111;
-	}
-
-	.page {
-		min-height: 100vh;
-		display: grid;
-		grid-template-rows: 1fr auto;
-		padding: 32px;
-		position: relative;
-		overflow: hidden;
+		background: #f6f6ef;
 	}
 
 	.hero {
 		max-width: 760px;
-		align-self: center;
-		z-index: 1;
+		padding: 0 0 30px;
 	}
 
 	.eyebrow {
-		margin: 0 0 18px;
-		font-size: 0.82rem;
-		letter-spacing: 0.45em;
+		display: inline-block;
+		margin-bottom: 10px;
+		padding: 3px 8px;
+		background: #ff6600;
+		color: #111111;
+		font-size: 9pt;
+		font-weight: bold;
 		text-transform: uppercase;
-		font-weight: 700;
+		letter-spacing: 0.08em;
 	}
 
 	h1 {
 		margin: 0;
-		font-size: clamp(4rem, 12vw, 8.5rem);
-		line-height: 0.92;
-		letter-spacing: -0.08em;
-		font-weight: 800;
-		max-width: 8ch;
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: clamp(2.4rem, 7vw, 5.4rem);
+		line-height: 0.95;
+		letter-spacing: -0.04em;
+		max-width: 10ch;
 	}
 
 	.lede {
-		margin: 24px 0 0;
-		max-width: 40rem;
-		font-size: clamp(1.05rem, 2vw, 1.35rem);
-		line-height: 1.6;
-		color: #2a2a2a;
+		max-width: 58ch;
+		margin: 18px 0 0;
+		font-size: 13pt;
+		line-height: 1.55;
 	}
 
-	.signup {
+	.highlights {
 		display: flex;
-		gap: 12px;
 		flex-wrap: wrap;
-		margin-top: 32px;
+		gap: 8px;
+		margin-top: 24px;
 	}
 
-	.signup input,
-	.signup button {
-		height: 56px;
-		border-radius: 999px;
+	.highlights div {
+		padding: 6px 10px;
+		border: 1px solid #d9d3c7;
+		background: rgba(255, 255, 255, 0.45);
+		font-size: 9pt;
+	}
+
+	.signup-card {
+		max-width: 540px;
+		margin: 18px 0 0;
+		padding: 18px;
+		border: 1px solid #d9d3c7;
+		background: rgba(255, 255, 255, 0.65);
+	}
+
+	.signup-card h2 {
+		margin: 0;
+		font-size: 15pt;
+	}
+
+	.signup-card p {
+		margin: 8px 0 0;
+		color: #5c564b;
+	}
+
+	.signup-form {
+		margin: 0;
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-top: 16px;
+	}
+
+	input[type="email"], button {
+		font-family: Verdana, Geneva, sans-serif;
+		font-size: 10pt;
+		height: 36px;
 		border: 1px solid #111111;
-		font: inherit;
+		padding: 0 12px;
 	}
 
-	.signup input {
-		min-width: min(100%, 320px);
-		padding: 0 20px;
+	input[type="email"] {
+		flex: 1 1 260px;
+		min-width: 220px;
 		background: #ffffff;
+	}
+
+	button {
+		background: #ff6600;
 		color: #111111;
-	}
-
-	.signup input::placeholder {
-		color: #666666;
-	}
-
-	.signup button {
-		padding: 0 24px;
-		background: #111111;
-		color: #ffffff;
+		font-weight: bold;
 		cursor: pointer;
-		font-weight: 700;
-		letter-spacing: 0.01em;
 	}
 
-	.signup button:disabled {
+	button:disabled {
 		cursor: progress;
-		opacity: 0.7;
+		opacity: 0.75;
 	}
 
 	.status {
-		margin: 14px 0 0;
-		min-height: 1.4em;
-		font-size: 0.95rem;
-		color: #2a2a2a;
+		margin-top: 10px;
+		min-height: 1.2em;
+		font-size: 9pt;
 	}
 
-	.status[data-tone='error'] {
-		color: #a40000;
+	.status.error {
+		color: #b00000;
 	}
 
-	.status[data-tone='success'] {
-		color: #0b5f2a;
+	.status.success {
+		color: #006600;
 	}
 
-	.status[data-tone='loading'] {
-		color: #3d3d3d;
+	.status.loading {
+		color: #6a6457;
 	}
-
-	.glyph-field {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		opacity: 0.14;
-	}
-
-	.glyph {
-		position: absolute;
-		font-size: clamp(2rem, 6vw, 5rem);
-		font-weight: 900;
-		color: #000000;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-	}
-
-	.glyph-a { top: 8%; right: 8%; transform: rotate(-12deg); }
-	.glyph-k { top: 20%; left: 8%; transform: rotate(8deg); }
-	.glyph-e { bottom: 24%; right: 18%; transform: rotate(14deg); }
-	.glyph-d { bottom: 12%; left: 18%; transform: rotate(-10deg); }
-	.glyph-bracket { top: 52%; right: 30%; transform: translateY(-50%) rotate(6deg); }
-	.glyph-code { top: 64%; left: 12%; transform: rotate(-6deg); }
 
 	.footer {
-		z-index: 1;
-		padding-bottom: 8px;
-		font-size: 0.95rem;
-		color: #222222;
+		margin-top: 28px;
+		padding-top: 12px;
+		border-top: 1px solid #d9d3c7;
+		font-size: 9pt;
+		color: #6b665b;
 	}
 
 	.sr-only {
@@ -229,17 +227,13 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	@media (max-width: 720px) {
-		.page {
-			padding: 24px;
+		.signup-card {
+			padding: 16px;
 		}
 
-		.signup button,
-		.signup input {
+		button,
+		input[type="email"] {
 			width: 100%;
-		}
-
-		.footer {
-			padding-top: 28px;
 		}
 	}
 </style>

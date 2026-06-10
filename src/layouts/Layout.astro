@@ -1,23 +1,116 @@
+---
+---
+
 <!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>KAED - Coming Soon</title>
+		<title>KAED</title>
+		<style>
+			:root {
+				--yc-orange: #ff6600;
+				--yc-ink: #111111;
+				--yc-paper: #f6f6ef;
+				--yc-border: #d9d3c7;
+				--yc-muted: #5c564b;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: Verdana, Geneva, sans-serif;
+				font-size: 10pt;
+				line-height: 1.45;
+				color: var(--yc-ink);
+				background: var(--yc-paper);
+				margin: 0;
+				padding: 0;
+			}
+
+			#hnmain {
+				width: min(1080px, calc(100% - 32px));
+				margin: 16px auto;
+				background: var(--yc-paper);
+				border: 1px solid var(--yc-border);
+				box-shadow: 0 8px 24px rgba(17, 17, 17, 0.05);
+			}
+			.header {
+				background: var(--yc-orange);
+				padding: 8px 12px;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 16px;
+			}
+			.logo-link {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				text-decoration: none;
+				color: var(--yc-ink);
+			}
+			.logo-img {
+				border: 1px solid #ffffff;
+				width: 18px;
+				height: 18px;
+				background: #ffffff;
+			}
+			.header-title {
+				font-weight: bold;
+				letter-spacing: 0.02em;
+				text-decoration: none;
+			}
+			.header-meta {
+				font-size: 9pt;
+				color: rgba(17, 17, 17, 0.9);
+				text-decoration: none;
+				white-space: nowrap;
+			}
+			.content {
+				padding: 28px 24px 36px;
+			}
+
+			@media only screen and (min-width: 300px) and (max-width: 750px) {
+				body {
+					padding: 0;
+				}
+				#hnmain {
+					width: 100%;
+					margin: 0;
+					border-left: 0;
+					border-right: 0;
+					box-shadow: none;
+				}
+				.header {
+					padding: 8px 10px;
+					flex-wrap: wrap;
+				}
+				.header-meta {
+					width: 100%;
+				}
+				.content {
+					padding: 18px 14px 24px;
+				}
+			}
+		</style>
 	</head>
 	<body>
-		<slot />
+		<div id="hnmain">
+			<div class="header">
+				<a href="/" class="logo-link">
+					<img src="/favicon.svg" class="logo-img" alt="logo" />
+					<span class="header-title">KAED</span>
+				</a>
+				<a href="#signup-form" class="header-meta">newsletter signup</a>
+			</div>
+			<div class="content">
+				<slot />
+			</div>
+		</div>
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
