@@ -36,6 +36,16 @@ const typed = challenge as Challenge;
 const typedLogs = (logs ?? []) as ChallengeLog[];
 const typedTodos = (todos ?? []) as ChallengeTodo[];
 
+let originIdea: { id: string; title: string } | null = null;
+if (typed.business_idea_id) {
+	const { data } = await supabase
+		.from('business_ideas')
+		.select('id, title')
+		.eq('id', typed.business_idea_id)
+		.maybeSingle();
+	originIdea = data;
+}
+
 const doneCount = typedTodos.filter((t) => t.is_done).length;
 
 const statusLabel: Record<string, string> = {
@@ -61,6 +71,10 @@ const error = Astro.url.searchParams.get('error');
 			<h1>{typed.title}</h1>
 			<span class={`pill pill-${typed.status}`}>{statusLabel[typed.status]}</span>
 		</div>
+
+		{originIdea && (
+			<a class="origin" href={`/business-ideas/${originIdea.id}`}>from business idea: {originIdea.title}</a>
+		)}
 
 		{typed.description && <p class="lede">{typed.description}</p>}
 
@@ -171,6 +185,7 @@ const error = Astro.url.searchParams.get('error');
 	</section>
 
 	<dialog id="new-todo" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
 		<h2>Add sub-goal</h2>
 		<form method="post" action={`/api/challenges/${typed.id}/todos`}>
 			<label for="todo-title">Title</label>
@@ -183,6 +198,7 @@ const error = Astro.url.searchParams.get('error');
 	</dialog>
 
 	<dialog id="new-log" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
 		<h2>Log progress</h2>
 		<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data">
 			<label for="note">Note</label>
@@ -264,6 +280,20 @@ const error = Astro.url.searchParams.get('error');
 		margin: 18px 0 0;
 		color: var(--muted);
 		font-size: 16px;
+	}
+
+	.origin {
+		display: inline-block;
+		margin-top: 10px;
+		font-size: 13px;
+		color: var(--muted);
+		text-decoration: none;
+		border-bottom: 1px dotted var(--line);
+	}
+
+	.origin:hover {
+		color: var(--ink);
+		border-color: var(--ink);
 	}
 
 	.dates {

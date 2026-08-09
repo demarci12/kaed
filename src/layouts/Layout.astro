@@ -208,19 +208,21 @@ const {
 				max-height: calc(100vh - 32px);
 				margin: auto;
 				overflow-y: auto;
-				padding: 28px;
+				padding: 32px;
 				border: 1px solid var(--line, #e4e0d8);
-				border-radius: 16px;
+				border-radius: 18px;
 				background: var(--paper, #fff);
 				color: var(--ink, #14110f);
-				box-shadow: 0 24px 60px -12px rgba(20, 17, 15, 0.25);
+				box-shadow:
+					0 1px 2px rgba(20, 17, 15, 0.06),
+					0 32px 64px -16px rgba(20, 17, 15, 0.32);
 				opacity: 0;
-				transform: translateY(8px) scale(0.98);
+				transform: translateY(10px) scale(0.97);
 				transition:
-					opacity 0.16s ease,
-					transform 0.16s ease,
-					overlay 0.16s allow-discrete,
-					display 0.16s allow-discrete;
+					opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+					transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+					overlay 0.18s allow-discrete,
+					display 0.18s allow-discrete;
 			}
 
 			dialog.popup[open] {
@@ -231,17 +233,19 @@ const {
 			@starting-style {
 				dialog.popup[open] {
 					opacity: 0;
-					transform: translateY(8px) scale(0.98);
+					transform: translateY(10px) scale(0.97);
 				}
 			}
 
 			dialog.popup::backdrop {
-				background: rgba(20, 17, 15, 0.4);
+				background: rgba(20, 17, 15, 0.45);
+				backdrop-filter: blur(3px);
+				-webkit-backdrop-filter: blur(3px);
 				opacity: 0;
 				transition:
-					opacity 0.16s ease,
-					overlay 0.16s allow-discrete,
-					display 0.16s allow-discrete;
+					opacity 0.18s ease,
+					overlay 0.18s allow-discrete,
+					display 0.18s allow-discrete;
 			}
 
 			dialog.popup[open]::backdrop {
@@ -254,11 +258,51 @@ const {
 				}
 			}
 
+			.popup-close {
+				position: absolute;
+				top: 18px;
+				right: 18px;
+				width: 30px;
+				height: 30px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border: none;
+				border-radius: 50%;
+				background: transparent;
+				color: var(--muted);
+				font-size: 18px;
+				line-height: 1;
+				cursor: pointer;
+				transition:
+					background 0.12s ease,
+					color 0.12s ease;
+			}
+
+			.popup-close:hover {
+				background: var(--canvas);
+				color: var(--ink);
+			}
+
 			.popup h2 {
-				margin: 0 0 20px;
+				margin: 0 0 4px;
+				padding-right: 28px;
 				font-family: var(--serif);
-				font-size: 20px;
+				font-size: 21px;
 				font-weight: 600;
+				letter-spacing: -0.01em;
+			}
+
+			.popup .popup-sub {
+				margin: 0 0 22px;
+				font-size: 13px;
+				color: var(--muted);
+			}
+
+			.popup h2 + form,
+			.popup .popup-sub + form {
+				padding-top: 18px;
+				border-top: 1px solid var(--line);
 			}
 
 			.popup form {
@@ -293,6 +337,7 @@ const {
 			.popup select:focus,
 			.popup textarea:focus {
 				border-color: var(--ink);
+				box-shadow: 0 0 0 3px rgba(20, 17, 15, 0.08);
 			}
 
 			.popup .popup-row {
@@ -388,7 +433,8 @@ const {
 					width: 100%;
 					max-height: 85vh;
 					margin: 0;
-					border-radius: 16px 16px 0 0;
+					padding-top: 22px;
+					border-radius: 20px 20px 0 0;
 					border-bottom: none;
 					transform: translateY(100%);
 				}
@@ -399,6 +445,20 @@ const {
 					dialog.popup[open] {
 						transform: translateY(100%);
 					}
+				}
+				dialog.popup::before {
+					content: '';
+					position: absolute;
+					top: 10px;
+					left: 50%;
+					width: 36px;
+					height: 4px;
+					border-radius: 999px;
+					background: var(--line);
+					transform: translateX(-50%);
+				}
+				.popup-close {
+					top: 20px;
 				}
 			}
 		</style>

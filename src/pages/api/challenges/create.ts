@@ -13,22 +13,29 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	const description = String(form.get('description') ?? '').trim();
 	const startDate = String(form.get('start_date') ?? '').trim();
 	const targetEndDate = String(form.get('target_end_date') ?? '').trim();
+	const businessIdeaId = String(form.get('business_idea_id') ?? '').trim();
+	const returnTo = String(form.get('return_to') ?? '').trim();
 
 	if (!title) {
-		return redirect('/challenges?error=Title is required.');
+		return redirect(`${returnTo || '/challenges'}?error=Title is required.`);
 	}
 
-	const { error } = await supabase.from('challenges').insert({
-		user_id: user.id,
-		title,
-		description: description || null,
-		start_date: startDate || null,
-		target_end_date: targetEndDate || null,
-	});
+	const { data, error } = await supabase
+		.from('challenges')
+		.insert({
+			user_id: user.id,
+			title,
+			description: description || null,
+			start_date: startDate || null,
+			target_end_date: targetEndDate || null,
+			business_idea_id: businessIdeaId || null,
+		})
+		.select('id')
+		.single();
 
 	if (error) {
-		return redirect(`/challenges?error=${encodeURIComponent(error.message)}`);
+		return redirect(`${returnTo || '/challenges'}?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect('/challenges');
+	return redirect(`/challenges/${data.id}`);
 };

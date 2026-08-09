@@ -100,6 +100,7 @@ const error = Astro.url.searchParams.get('error');
 	</section>
 
 	<dialog id="new-note" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
 		<h2>Add note</h2>
 		<form method="post" action={`/api/clients/${typed.id}/notes`}>
 			<textarea name="note" rows="3" placeholder="What happened?" required></textarea>

@@ -129,3 +129,17 @@ alter table public.business_ideas enable row level security;
 
 create policy "own business ideas" on public.business_ideas
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Links a challenge back to the business idea it's executing on, so the
+-- brainstorm → idea → challenge pipeline is traceable, not just three
+-- disconnected lists.
+alter table public.challenges
+  add column if not exists business_idea_id uuid references public.business_ideas(id) on delete set null;
+
+create index if not exists challenges_business_idea_id_idx on public.challenges (business_idea_id);
+
+-- One challenge per business idea — enforces at the DB level the 1:1 invariant
+-- the UI already assumes ("Start working on this" hides once a link exists).
+create unique index if not exists challenges_business_idea_id_unique_idx
+  on public.challenges (business_idea_id)
+  where business_idea_id is not null;

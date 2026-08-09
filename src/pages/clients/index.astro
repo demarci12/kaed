@@ -124,6 +124,7 @@ const error = Astro.url.searchParams.get('error');
 	</section>
 
 	<dialog id="new-client" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
 		<h2>New client</h2>
 		<form method="post" action="/api/clients/create">
 			<label for="name">Name</label>

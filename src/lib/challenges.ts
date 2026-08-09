@@ -12,6 +12,7 @@ export interface Challenge {
 	status: ChallengeStatus;
 	start_date: string | null;
 	target_end_date: string | null;
+	business_idea_id: string | null;
 	created_at: string;
 	updated_at: string;
 }

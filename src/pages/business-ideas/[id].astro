@@ -19,6 +19,12 @@ if (!idea) {
 
 const typed = idea as BusinessIdea;
 const error = Astro.url.searchParams.get('error');
+
+const { data: linkedChallenge } = await supabase
+	.from('challenges')
+	.select('id, title')
+	.eq('business_idea_id', typed.id)
+	.maybeSingle();
 ---
 
 <Layout>
@@ -33,6 +39,20 @@ const error = Astro.url.searchParams.get('error');
 		</p>
 
 		{error && <p class="form-error">{error}</p>}
+
+		<div class="promote">
+			{linkedChallenge ? (
+				<a class="btn ghost" href={`/challenges/${linkedChallenge.id}`}>→ {linkedChallenge.title}</a>
+			) : (
+				<form method="post" action="/api/challenges/create">
+					<input type="hidden" name="title" value={typed.title} />
+					<input type="hidden" name="description" value={typed.pain_point ?? ''} />
+					<input type="hidden" name="business_idea_id" value={typed.id} />
+					<input type="hidden" name="return_to" value={`/business-ideas/${typed.id}`} />
+					<button type="submit" class="btn">Start working on this →</button>
+				</form>
+			)}
+		</div>
 
 		<form method="post" action={`/api/business-ideas/${typed.id}/update`} class="edit-form">
 			<div class="field">
@@ -94,6 +114,21 @@ const error = Astro.url.searchParams.get('error');
 		margin: 10px 0 0;
 		font-size: 13px;
 		color: var(--muted);
+	}
+
+	.promote {
+		margin-top: 24px;
+	}
+
+	.promote form {
+		margin: 0;
+	}
+
+	.promote .btn.ghost {
+		background: transparent;
+		color: var(--ink);
+		border-color: var(--line);
+		text-decoration: none;
 	}
 
 	.form-error {
