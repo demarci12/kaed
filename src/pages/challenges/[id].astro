@@ -87,7 +87,7 @@ const error = Astro.url.searchParams.get('error');
 					{typedTodos.length > 0 && (
 						<span class="progress-count">{doneCount}/{typedTodos.length}</span>
 					)}
-					<button type="button" class="btn ghost small" data-open-dialog="new-todo">+ Add sub-goal</button>
+					<label for="new-todo" class="btn ghost small">+ Add sub-goal</label>
 				</div>
 			</div>
 
@@ -135,7 +135,7 @@ const error = Astro.url.searchParams.get('error');
 		<div class="section">
 			<div class="section-head">
 				<h2>Timeline</h2>
-				<button type="button" class="btn ghost small" data-open-dialog="new-log">+ Log progress</button>
+				<label for="new-log" class="btn ghost small">+ Log progress</label>
 			</div>
 
 			<div class="timeline">
@@ -170,22 +170,26 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-todo" class="popup">
-		<div class="popup-inner">
+	<input type="checkbox" id="new-todo" class="popup-toggle" />
+	<div class="popup-overlay">
+		<label for="new-todo" class="popup-backdrop" aria-hidden="true"></label>
+		<div class="popup">
 			<h2>Add sub-goal</h2>
 			<form method="post" action={`/api/challenges/${typed.id}/todos`}>
 				<label for="todo-title">Title</label>
 				<input id="todo-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
 				<div class="popup-actions">
-					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<label for="new-todo" class="btn ghost">Cancel</label>
 					<button type="submit" class="btn">Add</button>
 				</div>
 			</form>
 		</div>
-	</dialog>
+	</div>
 
-	<dialog id="new-log" class="popup">
-		<div class="popup-inner">
+	<input type="checkbox" id="new-log" class="popup-toggle" />
+	<div class="popup-overlay">
+		<label for="new-log" class="popup-backdrop" aria-hidden="true"></label>
+		<div class="popup">
 			<h2>Log progress</h2>
 			<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data">
 				<label for="note">Note</label>
@@ -209,12 +213,12 @@ const error = Astro.url.searchParams.get('error');
 				</div>
 
 				<div class="popup-actions">
-					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<label for="new-log" class="btn ghost">Cancel</label>
 					<button type="submit" class="btn">Log progress</button>
 				</div>
 			</form>
 		</div>
-	</dialog>
+	</div>
 </Layout>
 
 <script>

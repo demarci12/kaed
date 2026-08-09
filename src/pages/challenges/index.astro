@@ -32,7 +32,7 @@ const error = Astro.url.searchParams.get('error');
 				<h1>Challenges.</h1>
 				<p class="lede">Things you've set out to accomplish, and the trail of proof behind them.</p>
 			</div>
-			<button type="button" class="btn" data-open-dialog="new-challenge">+ New challenge</button>
+			<label for="new-challenge" class="btn">+ New challenge</label>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -109,8 +109,10 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-challenge" class="popup">
-		<div class="popup-inner">
+	<input type="checkbox" id="new-challenge" class="popup-toggle" />
+	<div class="popup-overlay">
+		<label for="new-challenge" class="popup-backdrop" aria-hidden="true"></label>
+		<div class="popup">
 			<h2>New challenge</h2>
 			<form method="post" action="/api/challenges/create">
 				<label for="title">Title</label>
@@ -131,12 +133,12 @@ const error = Astro.url.searchParams.get('error');
 				</div>
 
 				<div class="popup-actions">
-					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<label for="new-challenge" class="btn ghost">Cancel</label>
 					<button type="submit" class="btn">Create challenge</button>
 				</div>
 			</form>
 		</div>
-	</dialog>
+	</div>
 </Layout>
 
 <style>

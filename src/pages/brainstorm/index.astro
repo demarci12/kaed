@@ -27,7 +27,7 @@ const error = Astro.url.searchParams.get('error');
 				<h1>Brainstorm.</h1>
 				<p class="lede">A dumping ground for ideas before they're worth anything more formal.</p>
 			</div>
-			<button type="button" class="btn" data-open-dialog="new-idea">+ New idea</button>
+			<label for="new-idea" class="btn">+ New idea</label>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -84,8 +84,10 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-idea" class="popup">
-		<div class="popup-inner">
+	<input type="checkbox" id="new-idea" class="popup-toggle" />
+	<div class="popup-overlay">
+		<label for="new-idea" class="popup-backdrop" aria-hidden="true"></label>
+		<div class="popup">
 			<h2>New idea</h2>
 			<form method="post" action="/api/ideas/create">
 				<label for="title">Title</label>
@@ -95,12 +97,12 @@ const error = Astro.url.searchParams.get('error');
 				<textarea id="body" name="body" rows="4"></textarea>
 
 				<div class="popup-actions">
-					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<label for="new-idea" class="btn ghost">Cancel</label>
 					<button type="submit" class="btn">Add idea</button>
 				</div>
 			</form>
 		</div>
-	</dialog>
+	</div>
 </Layout>
 
 <style>

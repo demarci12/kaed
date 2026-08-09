@@ -35,7 +35,7 @@ const error = Astro.url.searchParams.get('error');
 				<h1>Clients.</h1>
 				<p class="lede">A lightweight pipeline for people you're talking to.</p>
 			</div>
-			<button type="button" class="btn" data-open-dialog="new-client">+ New client</button>
+			<label for="new-client" class="btn">+ New client</label>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -123,8 +123,10 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-client" class="popup">
-		<div class="popup-inner">
+	<input type="checkbox" id="new-client" class="popup-toggle" />
+	<div class="popup-overlay">
+		<label for="new-client" class="popup-backdrop" aria-hidden="true"></label>
+		<div class="popup">
 			<h2>New client</h2>
 			<form method="post" action="/api/clients/create">
 				<label for="name">Name</label>
@@ -162,12 +164,12 @@ const error = Astro.url.searchParams.get('error');
 				</div>
 
 				<div class="popup-actions">
-					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<label for="new-client" class="btn ghost">Cancel</label>
 					<button type="submit" class="btn">Add client</button>
 				</div>
 			</form>
 		</div>
-	</dialog>
+	</div>
 </Layout>
 
 <style>

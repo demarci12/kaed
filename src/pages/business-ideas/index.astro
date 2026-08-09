@@ -30,7 +30,7 @@ const error = Astro.url.searchParams.get('error');
 					what's been done to validate it.
 				</p>
 			</div>
-			<button type="button" class="btn" data-open-dialog="new-business-idea">+ Register idea</button>
+			<label for="new-business-idea" class="btn">+ Register idea</label>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -96,8 +96,10 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-business-idea" class="popup">
-		<div class="popup-inner">
+	<input type="checkbox" id="new-business-idea" class="popup-toggle" />
+	<div class="popup-overlay">
+		<label for="new-business-idea" class="popup-backdrop" aria-hidden="true"></label>
+		<div class="popup">
 			<h2>Register idea</h2>
 			<form method="post" action="/api/business-ideas/create">
 				<label for="title">Title</label>
@@ -113,12 +115,12 @@ const error = Astro.url.searchParams.get('error');
 				<textarea id="validation" name="validation" rows="2" placeholder="What have you done to test this so far?"></textarea>
 
 				<div class="popup-actions">
-					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<label for="new-business-idea" class="btn ghost">Cancel</label>
 					<button type="submit" class="btn">Register idea</button>
 				</div>
 			</form>
 		</div>
-	</dialog>
+	</div>
 </Layout>
 
 <style>
