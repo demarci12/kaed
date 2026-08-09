@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { requireUser, type Challenge } from '../../lib/challenges';
+import { requireUser, type Project } from '../../lib/projects';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -8,12 +8,12 @@ if ('redirect' in auth) {
 }
 const { supabase } = auth;
 
-const { data: challenges } = await supabase
-	.from('challenges')
+const { data: projects } = await supabase
+	.from('projects')
 	.select('*')
 	.order('created_at', { ascending: false });
 
-const typedChallenges = (challenges ?? []) as Challenge[];
+const typedProjects = (projects ?? []) as Project[];
 
 const statusLabel: Record<string, string> = {
 	not_started: 'Not started',
@@ -25,14 +25,14 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout>
-	<section class="challenges">
+	<section class="projects">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
-				<h1>Challenges.</h1>
+				<h1>Projects.</h1>
 				<p class="lede">Things you've set out to accomplish, and the trail of proof behind them.</p>
 			</div>
-			<button type="button" class="btn" data-open-popup="new-challenge">+ New challenge</button>
+			<button type="button" class="btn" data-open-popup="new-project">+ New project</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -50,58 +50,58 @@ const error = Astro.url.searchParams.get('error');
 					</tr>
 				</thead>
 				<tbody>
-					{typedChallenges.length ? (
-						typedChallenges.map((challenge) => (
+					{typedProjects.length ? (
+						typedProjects.map((project) => (
 							<tr class="row-link">
 								<td class="cell-title">
-									<a href={`/challenges/${challenge.id}`}>{challenge.title}</a>
+									<a href={`/projects/${project.id}`}>{project.title}</a>
 								</td>
 								<td
 									class="cell-muted"
 									data-editable="textarea"
 									data-field="description"
-									data-id={challenge.id}
-									data-endpoint="/api/challenges"
-									data-value={challenge.description ?? ''}
+									data-id={project.id}
+									data-endpoint="/api/projects"
+									data-value={project.description ?? ''}
 								>
-									{challenge.description ?? '—'}
+									{project.description ?? '—'}
 								</td>
 								<td
 									data-editable="select"
 									data-field="status"
-									data-id={challenge.id}
-									data-endpoint="/api/challenges"
-									data-value={challenge.status}
+									data-id={project.id}
+									data-endpoint="/api/projects"
+									data-value={project.status}
 									data-options="not_started:Not started,active:Active,done:Done"
 								>
-									<span class={`pill pill-${challenge.status}`}>{statusLabel[challenge.status]}</span>
+									<span class={`pill pill-${project.status}`}>{statusLabel[project.status]}</span>
 								</td>
 								<td
 									class="cell-date"
 									data-editable="date"
 									data-field="start_date"
-									data-id={challenge.id}
-									data-endpoint="/api/challenges"
-									data-value={challenge.start_date ?? ''}
+									data-id={project.id}
+									data-endpoint="/api/projects"
+									data-value={project.start_date ?? ''}
 								>
-									{challenge.start_date ?? '—'}
+									{project.start_date ?? '—'}
 								</td>
 								<td
 									class="cell-date"
 									data-editable="date"
 									data-field="target_end_date"
-									data-id={challenge.id}
-									data-endpoint="/api/challenges"
-									data-value={challenge.target_end_date ?? ''}
+									data-id={project.id}
+									data-endpoint="/api/projects"
+									data-value={project.target_end_date ?? ''}
 								>
-									{challenge.target_end_date ?? '—'}
+									{project.target_end_date ?? '—'}
 								</td>
-								<td class="cell-date">{new Date(challenge.created_at).toLocaleDateString()}</td>
+								<td class="cell-date">{new Date(project.created_at).toLocaleDateString()}</td>
 							</tr>
 						))
 					) : (
 						<tr>
-							<td colspan="6" class="empty-cell">No challenges yet. Create your first one.</td>
+							<td colspan="6" class="empty-cell">No projects yet. Create your first one.</td>
 						</tr>
 					)}
 				</tbody>
@@ -109,10 +109,10 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-challenge" class="popup">
+	<dialog id="new-project" class="popup">
 		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
-		<h2>New challenge</h2>
-		<form method="post" action="/api/challenges/create">
+		<h2>New project</h2>
+		<form method="post" action="/api/projects/create">
 			<label for="title">Title</label>
 			<input id="title" name="title" type="text" required maxlength="120" />
 
@@ -132,14 +132,14 @@ const error = Astro.url.searchParams.get('error');
 
 			<div class="popup-actions">
 				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
-				<button type="submit" class="btn">Create challenge</button>
+				<button type="submit" class="btn">Create project</button>
 			</div>
 		</form>
 	</dialog>
 </Layout>
 
 <style>
-	.challenges {
+	.projects {
 		max-width: 1040px;
 	}
 

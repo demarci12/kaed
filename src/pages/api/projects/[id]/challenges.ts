@@ -8,23 +8,23 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	}
 	const { supabase, user } = auth;
 
-	const { id: challengeId } = params;
+	const { id: projectId } = params;
 	const form = await request.formData();
 	const title = String(form.get('title') ?? '').trim();
 
 	if (!title) {
-		return redirect(`/challenges/${challengeId}?error=Todo title is required.`);
+		return redirect(`/projects/${projectId}?error=Challenge title is required.`);
 	}
 
-	const { error } = await supabase.from('challenge_todos').insert({
-		challenge_id: challengeId,
+	const { error } = await supabase.from('challenges').insert({
+		project_id: projectId,
 		user_id: user.id,
 		title,
 	});
 
 	if (error) {
-		return redirect(`/challenges/${challengeId}?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/projects/${projectId}?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect(`/challenges/${challengeId}`);
+	return redirect(`/projects/${projectId}`);
 };

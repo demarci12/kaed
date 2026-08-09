@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/auth';
-import { HEADLINE_SIGNAL_TYPES } from '../../lib/challenges';
+import { HEADLINE_SIGNAL_TYPES } from '../../lib/projects';
 import type { BusinessIdea } from '../../lib/business-ideas';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -21,18 +21,18 @@ if (!idea) {
 const typed = idea as BusinessIdea;
 const error = Astro.url.searchParams.get('error');
 
-const { data: linkedChallenge } = await supabase
-	.from('challenges')
+const { data: linkedProject } = await supabase
+	.from('projects')
 	.select('id, title')
 	.eq('business_idea_id', typed.id)
 	.maybeSingle();
 
 let headlineSignalCount = 0;
-if (linkedChallenge) {
+if (linkedProject) {
 	const { data: logs } = await supabase
-		.from('challenge_logs')
+		.from('project_logs')
 		.select('signal_type')
-		.eq('challenge_id', linkedChallenge.id)
+		.eq('project_id', linkedProject.id)
 		.in('signal_type', HEADLINE_SIGNAL_TYPES);
 	headlineSignalCount = logs?.length ?? 0;
 }
@@ -52,15 +52,15 @@ if (linkedChallenge) {
 		{error && <p class="form-error">{error}</p>}
 
 		<div class="promote">
-			{linkedChallenge ? (
+			{linkedProject ? (
 				<>
-					<a class="btn ghost" href={`/challenges/${linkedChallenge.id}`}>→ {linkedChallenge.title}</a>
+					<a class="btn ghost" href={`/projects/${linkedProject.id}`}>→ {linkedProject.title}</a>
 					<span class="signals-inline">
 						{headlineSignalCount} signal{headlineSignalCount === 1 ? '' : 's'}
 					</span>
 				</>
 			) : (
-				<form method="post" action="/api/challenges/create">
+				<form method="post" action="/api/projects/create">
 					<input type="hidden" name="title" value={typed.title} />
 					<input type="hidden" name="description" value={typed.pain_point ?? ''} />
 					<input type="hidden" name="business_idea_id" value={typed.id} />

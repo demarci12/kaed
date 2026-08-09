@@ -1,13 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import {
-	requireUser,
-	HEADLINE_SIGNAL_TYPES,
-	type Challenge,
-	type ChallengeLog,
-	type ChallengeTodo,
-	type SignalType,
-} from '../../lib/challenges';
+import { HEADLINE_SIGNAL_TYPES, type Project, type ProjectLog, type SignalType } from '../../lib/projects';
+import { requireUser, type Challenge } from '../../lib/challenges';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -17,31 +11,31 @@ const { supabase } = auth;
 
 const { id } = Astro.params;
 
-const { data: challenge } = await supabase
-	.from('challenges')
+const { data: project } = await supabase
+	.from('projects')
 	.select('*')
 	.eq('id', id)
 	.maybeSingle();
 
-if (!challenge) {
-	return Astro.redirect('/challenges');
+if (!project) {
+	return Astro.redirect('/projects');
 }
 
 const { data: logs } = await supabase
-	.from('challenge_logs')
+	.from('project_logs')
 	.select('*')
-	.eq('challenge_id', id)
+	.eq('project_id', id)
 	.order('created_at', { ascending: false });
 
-const { data: todos } = await supabase
-	.from('challenge_todos')
+const { data: challenges } = await supabase
+	.from('challenges')
 	.select('*')
-	.eq('challenge_id', id)
+	.eq('project_id', id)
 	.order('created_at', { ascending: true });
 
-const typed = challenge as Challenge;
-const typedLogs = (logs ?? []) as ChallengeLog[];
-const typedTodos = (todos ?? []) as ChallengeTodo[];
+const typed = project as Project;
+const typedLogs = (logs ?? []) as ProjectLog[];
+const typedChallenges = (challenges ?? []) as Challenge[];
 
 let originIdea: { id: string; title: string } | null = null;
 if (typed.business_idea_id) {
@@ -53,7 +47,7 @@ if (typed.business_idea_id) {
 	originIdea = data;
 }
 
-const doneCount = typedTodos.filter((t) => t.is_done).length;
+const doneCount = typedChallenges.filter((c) => c.is_done).length;
 
 const signalCounts = typedLogs.reduce(
 	(acc, log) => {
@@ -89,7 +83,7 @@ const error = Astro.url.searchParams.get('error');
 
 <Layout>
 	<section class="detail">
-		<a class="back" href="/challenges">← Challenges</a>
+		<a class="back" href="/projects">← Projects</a>
 
 		<div class="head">
 			<h1>{typed.title}</h1>
@@ -108,7 +102,7 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<form method="post" action={`/api/challenges/${typed.id}/status`} class="status-form">
+		<form method="post" action={`/api/projects/${typed.id}/status`} class="status-form">
 			<label for="status">Status</label>
 			<select id="status" name="status">
 				<option value="not_started" selected={typed.status === 'not_started'}>Not started</option>
@@ -120,18 +114,18 @@ const error = Astro.url.searchParams.get('error');
 
 		<div class="section">
 			<div class="section-head">
-				<h2>To reach the goal</h2>
+				<h2>Challenges</h2>
 				<div class="section-head-actions">
-					{typedTodos.length > 0 && (
-						<span class="progress-count">{doneCount}/{typedTodos.length}</span>
+					{typedChallenges.length > 0 && (
+						<span class="progress-count">{doneCount}/{typedChallenges.length}</span>
 					)}
-					<button type="button" class="btn ghost small" data-open-popup="new-todo">+ Add sub-goal</button>
+					<button type="button" class="btn ghost small" data-open-popup="new-challenge">+ Add challenge</button>
 				</div>
 			</div>
 
-			{typedTodos.length > 0 && (
+			{typedChallenges.length > 0 && (
 				<div class="progress-bar">
-					<div class="progress-bar-fill" style={`width: ${(doneCount / typedTodos.length) * 100}%`} />
+					<div class="progress-bar-fill" style={`width: ${(doneCount / typedChallenges.length) * 100}%`} />
 				</div>
 			)}
 
@@ -140,29 +134,29 @@ const error = Astro.url.searchParams.get('error');
 					<thead>
 						<tr>
 							<th>Done</th>
-							<th>Sub-goal</th>
+							<th>Challenge</th>
 							<th>Added</th>
 						</tr>
 					</thead>
 					<tbody>
-						{typedTodos.length ? (
-							typedTodos.map((todo) => (
+						{typedChallenges.length ? (
+							typedChallenges.map((challenge) => (
 								<tr>
 									<td>
-										<form method="post" action={`/api/challenges/${typed.id}/todos/${todo.id}/toggle`} class="todo-form">
-											<input type="hidden" name="is_done" value={String(todo.is_done)} />
-											<button type="submit" class={`todo-check ${todo.is_done ? 'checked' : ''}`} aria-label="Toggle done">
-												{todo.is_done && '✓'}
+										<form method="post" action={`/api/projects/${typed.id}/challenges/${challenge.id}/toggle`} class="challenge-form">
+											<input type="hidden" name="is_done" value={String(challenge.is_done)} />
+											<button type="submit" class={`challenge-check ${challenge.is_done ? 'checked' : ''}`} aria-label="Toggle done">
+												{challenge.is_done && '✓'}
 											</button>
 										</form>
 									</td>
-									<td class={todo.is_done ? 'todo-title done' : 'todo-title'}>{todo.title}</td>
-									<td class="cell-date">{new Date(todo.created_at).toLocaleDateString()}</td>
+									<td class={challenge.is_done ? 'challenge-title done' : 'challenge-title'}>{challenge.title}</td>
+									<td class="cell-date">{new Date(challenge.created_at).toLocaleDateString()}</td>
 								</tr>
 							))
 						) : (
 							<tr>
-								<td colspan="3" class="empty-cell">No sub-goals yet.</td>
+								<td colspan="3" class="empty-cell">No challenges yet.</td>
 							</tr>
 						)}
 					</tbody>
@@ -217,12 +211,12 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-todo" class="popup">
+	<dialog id="new-challenge" class="popup">
 		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
-		<h2>Add sub-goal</h2>
-		<form method="post" action={`/api/challenges/${typed.id}/todos`}>
-			<label for="todo-title">Title</label>
-			<input id="todo-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
+		<h2>Add challenge</h2>
+		<form method="post" action={`/api/projects/${typed.id}/challenges`}>
+			<label for="challenge-title">Title</label>
+			<input id="challenge-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
 			<div class="popup-actions">
 				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
 				<button type="submit" class="btn">Add</button>
@@ -233,7 +227,7 @@ const error = Astro.url.searchParams.get('error');
 	<dialog id="new-log" class="popup">
 		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
 		<h2>Log progress</h2>
-		<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data">
+		<form method="post" action={`/api/projects/${typed.id}/logs`} enctype="multipart/form-data">
 			<label for="note">Note</label>
 			<textarea id="note" name="note" rows="3" required></textarea>
 
@@ -558,11 +552,11 @@ const error = Astro.url.searchParams.get('error');
 		color: var(--muted);
 	}
 
-	.todo-form {
+	.challenge-form {
 		margin: 0;
 	}
 
-	.todo-check {
+	.challenge-check {
 		width: 24px;
 		height: 24px;
 		flex-shrink: 0;
@@ -580,12 +574,12 @@ const error = Astro.url.searchParams.get('error');
 			border-color 0.15s ease;
 	}
 
-	.todo-check.checked {
+	.challenge-check.checked {
 		background: var(--ink);
 		border-color: var(--ink);
 	}
 
-	.todo-title.done {
+	.challenge-title.done {
 		color: var(--muted);
 		text-decoration: line-through;
 	}

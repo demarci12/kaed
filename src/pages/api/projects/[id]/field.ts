@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, cookies, params }) => {
 	const update: Record<string, string | null> = { updated_at: new Date().toISOString() };
 	update[field] = value || null;
 
-	const { error } = await supabase.from('challenges').update(update).eq('id', params.id);
+	const { error } = await supabase.from('projects').update(update).eq('id', params.id);
 
 	if (error) {
 		return new Response(JSON.stringify({ error: error.message }), { status: 500 });

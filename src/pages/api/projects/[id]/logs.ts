@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { requireUser, type ProofType, type SignalType } from '../../../../lib/challenges';
+import { requireUser, type ProofType, type SignalType } from '../../../../lib/projects';
 
 const ALLOWED: ProofType[] = ['text', 'link', 'image'];
 const ALLOWED_SIGNALS: SignalType[] = ['progress', 'customer_contact', 'interest_expressed', 'paid', 'rejected'];
@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	}
 	const { supabase, user } = auth;
 
-	const { id: challengeId } = params;
+	const { id: projectId } = params;
 	const form = await request.formData();
 
 	const note = String(form.get('note') ?? '').trim();
@@ -19,13 +19,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	const signalType = String(form.get('signal_type') ?? 'progress') as SignalType;
 
 	if (!note) {
-		return redirect(`/challenges/${challengeId}?error=A note is required.`);
+		return redirect(`/projects/${projectId}?error=A note is required.`);
 	}
 	if (!ALLOWED.includes(proofType)) {
-		return redirect(`/challenges/${challengeId}?error=Invalid proof type.`);
+		return redirect(`/projects/${projectId}?error=Invalid proof type.`);
 	}
 	if (!ALLOWED_SIGNALS.includes(signalType)) {
-		return redirect(`/challenges/${challengeId}?error=Invalid signal type.`);
+		return redirect(`/projects/${projectId}?error=Invalid signal type.`);
 	}
 
 	let proofUrl: string | null = null;
@@ -35,13 +35,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	} else if (proofType === 'image') {
 		const file = form.get('proof_file');
 		if (file instanceof File && file.size > 0) {
-			const path = `${user.id}/${challengeId}/${Date.now()}-${file.name}`;
+			const path = `${user.id}/${projectId}/${Date.now()}-${file.name}`;
 			const { error: uploadError } = await supabase.storage
 				.from('challenge-proofs')
 				.upload(path, file, { contentType: file.type });
 
 			if (uploadError) {
-				return redirect(`/challenges/${challengeId}?error=${encodeURIComponent(uploadError.message)}`);
+				return redirect(`/projects/${projectId}?error=${encodeURIComponent(uploadError.message)}`);
 			}
 
 			const { data: signed } = await supabase.storage
@@ -52,8 +52,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 		}
 	}
 
-	const { error } = await supabase.from('challenge_logs').insert({
-		challenge_id: challengeId,
+	const { error } = await supabase.from('project_logs').insert({
+		project_id: projectId,
 		user_id: user.id,
 		note,
 		proof_type: proofType,
@@ -63,8 +63,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	});
 
 	if (error) {
-		return redirect(`/challenges/${challengeId}?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/projects/${projectId}?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect(`/challenges/${challengeId}`);
+	return redirect(`/projects/${projectId}`);
 };

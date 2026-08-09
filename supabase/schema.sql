@@ -1,6 +1,12 @@
 -- Run this once in the Supabase SQL editor for the KAED project.
+--
+-- Naming: "projects" are things you've committed to executing (formerly
+-- called "challenges"). "challenges" are the actionable sub-goals inside a
+-- project (formerly "challenge_todos") — the concrete next steps that keep
+-- you from stalling once you've started. This file reflects that renamed
+-- state; see git history for the migration that got existing databases here.
 
-create table if not exists public.challenges (
+create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
@@ -12,26 +18,33 @@ create table if not exists public.challenges (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.challenge_logs (
+create table if not exists public.project_logs (
   id uuid primary key default gen_random_uuid(),
-  challenge_id uuid not null references public.challenges(id) on delete cascade,
+  project_id uuid not null references public.projects(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   note text not null,
   proof_type text not null default 'text' check (proof_type in ('text', 'link', 'image')),
   proof_url text,
   status text not null default 'pending' check (status in ('pending', 'verified', 'rejected')),
+  -- Distinguishes external market validation (talked to a prospect, got
+  -- paid, got rejected) from plain self-directed activity logging, so
+  -- projects can show "did I make progress" separately from "do I have
+  -- proof anyone wants this" — the latter is what actually keeps
+  -- motivation alive.
+  signal_type text not null default 'progress'
+    check (signal_type in ('progress', 'customer_contact', 'interest_expressed', 'paid', 'rejected')),
   created_at timestamptz not null default now()
 );
 
-create index if not exists challenge_logs_challenge_id_idx on public.challenge_logs (challenge_id);
+create index if not exists project_logs_project_id_idx on public.project_logs (project_id);
 
-alter table public.challenges enable row level security;
-alter table public.challenge_logs enable row level security;
+alter table public.projects enable row level security;
+alter table public.project_logs enable row level security;
 
-create policy "own challenges" on public.challenges
+create policy "own projects" on public.projects
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy "own challenge logs" on public.challenge_logs
+create policy "own project logs" on public.project_logs
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Storage bucket for proof images. Files are stored under `{user_id}/...`.
@@ -49,21 +62,21 @@ create policy "own proof uploads" on storage.objects
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- Sub-todos: checklist items needed to reach a challenge's goal.
-create table if not exists public.challenge_todos (
+-- Challenges: the actionable sub-goals needed to reach a project's goal.
+create table if not exists public.challenges (
   id uuid primary key default gen_random_uuid(),
-  challenge_id uuid not null references public.challenges(id) on delete cascade,
+  project_id uuid not null references public.projects(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   is_done boolean not null default false,
   created_at timestamptz not null default now()
 );
 
-create index if not exists challenge_todos_challenge_id_idx on public.challenge_todos (challenge_id);
+create index if not exists challenges_project_id_idx on public.challenges (project_id);
 
-alter table public.challenge_todos enable row level security;
+alter table public.challenges enable row level security;
 
-create policy "own challenge todos" on public.challenge_todos
+create policy "own challenges" on public.challenges
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Brainstorming space: freeform ideas.
@@ -130,24 +143,16 @@ alter table public.business_ideas enable row level security;
 create policy "own business ideas" on public.business_ideas
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Links a challenge back to the business idea it's executing on, so the
--- brainstorm → idea → challenge pipeline is traceable, not just three
+-- Links a project back to the business idea it's executing on, so the
+-- brainstorm → idea → project pipeline is traceable, not just three
 -- disconnected lists.
-alter table public.challenges
+alter table public.projects
   add column if not exists business_idea_id uuid references public.business_ideas(id) on delete set null;
 
-create index if not exists challenges_business_idea_id_idx on public.challenges (business_idea_id);
+create index if not exists projects_business_idea_id_idx on public.projects (business_idea_id);
 
--- One challenge per business idea — enforces at the DB level the 1:1 invariant
+-- One project per business idea — enforces at the DB level the 1:1 invariant
 -- the UI already assumes ("Start working on this" hides once a link exists).
-create unique index if not exists challenges_business_idea_id_unique_idx
-  on public.challenges (business_idea_id)
+create unique index if not exists projects_business_idea_id_unique_idx
+  on public.projects (business_idea_id)
   where business_idea_id is not null;
-
--- Distinguishes external market validation (talked to a prospect, got paid,
--- got rejected) from plain self-directed activity logging, so challenges
--- can show "did I make progress" separately from "do I have proof anyone
--- wants this" — the latter is what actually keeps motivation alive.
-alter table public.challenge_logs
-  add column if not exists signal_type text not null default 'progress'
-  check (signal_type in ('progress', 'customer_contact', 'interest_expressed', 'paid', 'rejected'));

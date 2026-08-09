@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { requireUser } from '../../../lib/challenges';
+import { requireUser } from '../../../lib/projects';
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	const auth = await requireUser(request, cookies);
@@ -17,11 +17,11 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	const returnTo = String(form.get('return_to') ?? '').trim();
 
 	if (!title) {
-		return redirect(`${returnTo || '/challenges'}?error=Title is required.`);
+		return redirect(`${returnTo || '/projects'}?error=Title is required.`);
 	}
 
 	const { data, error } = await supabase
-		.from('challenges')
+		.from('projects')
 		.insert({
 			user_id: user.id,
 			title,
@@ -34,8 +34,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 		.single();
 
 	if (error) {
-		return redirect(`${returnTo || '/challenges'}?error=${encodeURIComponent(error.message)}`);
+		return redirect(`${returnTo || '/projects'}?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect(`/challenges/${data.id}`);
+	return redirect(`/projects/${data.id}`);
 };

@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/auth';
-import { HEADLINE_SIGNAL_TYPES } from '../../lib/challenges';
+import { HEADLINE_SIGNAL_TYPES } from '../../lib/projects';
 import type { BusinessIdea } from '../../lib/business-ideas';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -21,24 +21,24 @@ const ideaIds = typedIdeas.map((idea) => idea.id);
 const signalCountByIdeaId = new Map<string, number>();
 
 if (ideaIds.length) {
-	const { data: linkedChallenges } = await supabase
-		.from('challenges')
+	const { data: linkedProjects } = await supabase
+		.from('projects')
 		.select('id, business_idea_id')
 		.in('business_idea_id', ideaIds);
 
-	const challengeIdToIdeaId = new Map(
-		(linkedChallenges ?? []).map((c) => [c.id, c.business_idea_id as string])
+	const projectIdToIdeaId = new Map(
+		(linkedProjects ?? []).map((p) => [p.id, p.business_idea_id as string])
 	);
 
-	if (challengeIdToIdeaId.size) {
+	if (projectIdToIdeaId.size) {
 		const { data: logs } = await supabase
-			.from('challenge_logs')
-			.select('challenge_id, signal_type')
-			.in('challenge_id', [...challengeIdToIdeaId.keys()])
+			.from('project_logs')
+			.select('project_id, signal_type')
+			.in('project_id', [...projectIdToIdeaId.keys()])
 			.in('signal_type', HEADLINE_SIGNAL_TYPES);
 
 		for (const log of logs ?? []) {
-			const ideaId = challengeIdToIdeaId.get(log.challenge_id);
+			const ideaId = projectIdToIdeaId.get(log.project_id);
 			if (!ideaId) continue;
 			signalCountByIdeaId.set(ideaId, (signalCountByIdeaId.get(ideaId) ?? 0) + 1);
 		}
