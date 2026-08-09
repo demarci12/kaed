@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/auth';
-import type { Idea } from '../../lib/ideas';
+import type { Idea, IdeaConnection } from '../../lib/ideas';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -14,7 +14,10 @@ const { data: ideas } = await supabase
 	.select('*')
 	.order('created_at', { ascending: false });
 
+const { data: connections } = await supabase.from('idea_connections').select('*');
+
 const typedIdeas = (ideas ?? []) as Idea[];
+const typedConnections = (connections ?? []) as IdeaConnection[];
 
 const error = Astro.url.searchParams.get('error');
 ---
@@ -25,69 +28,74 @@ const error = Astro.url.searchParams.get('error');
 			<div>
 				<p class="eyebrow">Personal</p>
 				<h1>Brainstorm.</h1>
-				<p class="lede">A dumping ground for ideas before they're worth anything more formal.</p>
+				<p class="lede">
+					A whiteboard for ideas before they're worth anything more formal. Drag cards to arrange
+					them, drag from the dot to connect related ideas, double-click empty space to drop a
+					new one.
+				</p>
 			</div>
-			<button type="button" class="btn" data-open-popup="new-idea">+ New idea</button>
+			<button type="button" class="btn" id="new-idea-btn" data-open-popup="new-idea">+ New idea</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="table-wrap">
-			<table class="data-table">
-				<thead>
-					<tr>
-						<th>Title</th>
-						<th>Notes</th>
-						<th>Added</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-					{typedIdeas.length ? (
-						typedIdeas.map((idea) => (
-							<tr>
-								<td
-									class="cell-title"
-									data-editable="text"
-									data-field="title"
-									data-id={idea.id}
-									data-endpoint="/api/ideas"
-									data-value={idea.title}
-								>
-									{idea.title}
-								</td>
-								<td
-									class="cell-muted"
-									data-editable="textarea"
-									data-field="body"
-									data-id={idea.id}
-									data-endpoint="/api/ideas"
-									data-value={idea.body ?? ''}
-								>
-									{idea.body ?? '—'}
-								</td>
-								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
-								<td class="cell-actions">
-									<form method="post" action={`/api/ideas/${idea.id}/delete`}>
-										<button type="submit" class="idea-delete" aria-label="Delete idea">×</button>
-									</form>
-								</td>
-							</tr>
-						))
-					) : (
-						<tr>
-							<td colspan="4" class="empty-cell">No ideas yet. Drop your first one.</td>
-						</tr>
-					)}
-				</tbody>
-			</table>
+		<div class="board-wrap">
+			<div class="board" id="board">
+				<svg class="board-lines" id="board-lines"></svg>
+				{typedIdeas.map((idea) => (
+					<div
+						class="idea-card"
+						data-id={idea.id}
+						style={`left:${idea.position_x}px; top:${idea.position_y}px;`}
+					>
+						<div class="idea-card-body">
+							<div
+								class="idea-title"
+								data-editable="text"
+								data-field="title"
+								data-id={idea.id}
+								data-endpoint="/api/ideas"
+								data-value={idea.title}
+							>
+								{idea.title}
+							</div>
+							<div
+								class="idea-notes"
+								data-editable="textarea"
+								data-field="body"
+								data-id={idea.id}
+								data-endpoint="/api/ideas"
+								data-value={idea.body ?? ''}
+							>
+								{idea.body ?? '—'}
+							</div>
+						</div>
+						<div class="idea-card-actions">
+							{idea.business_idea_id ? (
+								<a class="idea-link" href={`/business-ideas/${idea.business_idea_id}`}>→ View idea</a>
+							) : (
+								<form method="post" action={`/api/ideas/${idea.id}/promote`}>
+									<button type="submit" class="idea-link idea-link-btn">Generate business idea →</button>
+								</form>
+							)}
+							<form method="post" action={`/api/ideas/${idea.id}/delete`}>
+								<button type="submit" class="idea-delete" aria-label="Delete idea">×</button>
+							</form>
+						</div>
+						<div class="connect-handle" title="Drag to connect to another idea"></div>
+					</div>
+				))}
+			</div>
 		</div>
 	</section>
 
 	<dialog id="new-idea" class="popup">
 		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
 		<h2>New idea</h2>
-		<form method="post" action="/api/ideas/create">
+		<form method="post" action="/api/ideas/create" id="new-idea-form">
+			<input type="hidden" name="position_x" id="new-idea-x" value="80" />
+			<input type="hidden" name="position_y" id="new-idea-y" value="80" />
+
 			<label for="title">Title</label>
 			<input id="title" name="title" type="text" required maxlength="160" />
 
@@ -102,9 +110,175 @@ const error = Astro.url.searchParams.get('error');
 	</dialog>
 </Layout>
 
+<script define:vars={{ connections: typedConnections }}>
+	const board = document.getElementById('board');
+	const svg = document.getElementById('board-lines');
+	const cards = () => Array.from(board.querySelectorAll('.idea-card'));
+
+	function cardCenter(card) {
+		return {
+			x: card.offsetLeft + card.offsetWidth / 2,
+			y: card.offsetTop + card.offsetHeight / 2,
+		};
+	}
+
+	function cardById(id) {
+		return board.querySelector(`.idea-card[data-id="${id}"]`);
+	}
+
+	const lineState = new Map(); // connectionId -> { line, fromId, toId }
+
+	function drawLine(id, fromId, toId) {
+		const fromCard = cardById(fromId);
+		const toCard = cardById(toId);
+		if (!fromCard || !toCard) return;
+		const a = cardCenter(fromCard);
+		const b = cardCenter(toCard);
+
+		let line = lineState.get(id)?.line;
+		if (!line) {
+			line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+			line.setAttribute('class', 'board-line');
+			line.addEventListener('click', async () => {
+				if (!confirm('Remove this connection?')) return;
+				await fetch(`/api/idea-connections/${id}/delete`, { method: 'POST' });
+				line.remove();
+				lineState.delete(id);
+			});
+			svg.appendChild(line);
+		}
+		line.setAttribute('x1', a.x);
+		line.setAttribute('y1', a.y);
+		line.setAttribute('x2', b.x);
+		line.setAttribute('y2', b.y);
+		lineState.set(id, { line, fromId, toId });
+	}
+
+	function refreshAllLines() {
+		for (const [id, { fromId, toId }] of lineState) drawLine(id, fromId, toId);
+	}
+
+	for (const conn of connections) {
+		drawLine(conn.id, conn.from_idea_id, conn.to_idea_id);
+	}
+
+	// --- Dragging cards ---
+	let dragState = null;
+
+	board.addEventListener('pointerdown', (e) => {
+		const card = e.target.closest('.idea-card');
+		if (!card) return;
+		if (e.target.closest('[data-editable], button, a, .connect-handle')) return;
+
+		dragState = {
+			card,
+			startX: e.clientX,
+			startY: e.clientY,
+			origLeft: card.offsetLeft,
+			origTop: card.offsetTop,
+			moved: false,
+		};
+		card.setPointerCapture(e.pointerId);
+	});
+
+	board.addEventListener('pointermove', (e) => {
+		if (!dragState) return;
+		const dx = e.clientX - dragState.startX;
+		const dy = e.clientY - dragState.startY;
+		if (!dragState.moved && Math.hypot(dx, dy) > 4) dragState.moved = true;
+		if (dragState.moved) {
+			dragState.card.style.left = `${Math.max(0, dragState.origLeft + dx)}px`;
+			dragState.card.style.top = `${Math.max(0, dragState.origTop + dy)}px`;
+			refreshAllLines();
+		}
+	});
+
+	board.addEventListener('pointerup', (e) => {
+		if (!dragState) return;
+		const { card, moved } = dragState;
+		if (moved) {
+			const suppressClick = (ev) => ev.stopPropagation();
+			card.addEventListener('click', suppressClick, { capture: true, once: true });
+			fetch(`/api/ideas/${card.dataset.id}/position`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ position_x: card.offsetLeft, position_y: card.offsetTop }),
+			});
+		}
+		dragState = null;
+	});
+
+	// --- Connecting cards ---
+	let connectState = null;
+	let previewLine = null;
+
+	board.addEventListener('pointerdown', (e) => {
+		const handle = e.target.closest('.connect-handle');
+		if (!handle) return;
+		e.stopPropagation();
+		const card = handle.closest('.idea-card');
+		connectState = { fromId: card.dataset.id };
+
+		previewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+		previewLine.setAttribute('class', 'board-line board-line-preview');
+		const start = cardCenter(card);
+		previewLine.setAttribute('x1', start.x);
+		previewLine.setAttribute('y1', start.y);
+		previewLine.setAttribute('x2', start.x);
+		previewLine.setAttribute('y2', start.y);
+		svg.appendChild(previewLine);
+		handle.setPointerCapture(e.pointerId);
+	});
+
+	board.addEventListener('pointermove', (e) => {
+		if (!connectState || !previewLine) return;
+		const boardRect = board.getBoundingClientRect();
+		previewLine.setAttribute('x2', e.clientX - boardRect.left + board.scrollLeft);
+		previewLine.setAttribute('y2', e.clientY - boardRect.top + board.scrollTop);
+	});
+
+	board.addEventListener('pointerup', async (e) => {
+		if (!connectState) return;
+		previewLine?.remove();
+		previewLine = null;
+
+		const targetCard = document.elementFromPoint(e.clientX, e.clientY)?.closest('.idea-card');
+		const fromId = connectState.fromId;
+		connectState = null;
+
+		if (!targetCard || targetCard.dataset.id === fromId) return;
+		const toId = targetCard.dataset.id;
+
+		const res = await fetch('/api/idea-connections/create', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ from_idea_id: fromId, to_idea_id: toId }),
+		});
+		const result = await res.json().catch(() => null);
+		if (result?.id) drawLine(result.id, fromId, toId);
+	});
+
+	// --- New idea at click position ---
+	const newIdeaX = document.getElementById('new-idea-x');
+	const newIdeaY = document.getElementById('new-idea-y');
+
+	document.getElementById('new-idea-btn')?.addEventListener('click', () => {
+		newIdeaX.value = String(board.scrollLeft + board.clientWidth / 2 - 110 + Math.round(Math.random() * 60 - 30));
+		newIdeaY.value = String(board.scrollTop + 120 + Math.round(Math.random() * 60 - 30));
+	});
+
+	board.addEventListener('dblclick', (e) => {
+		if (e.target.closest('.idea-card')) return;
+		const boardRect = board.getBoundingClientRect();
+		newIdeaX.value = String(Math.round(e.clientX - boardRect.left + board.scrollLeft - 110));
+		newIdeaY.value = String(Math.round(e.clientY - boardRect.top + board.scrollTop - 20));
+		document.getElementById('new-idea')?.showModal();
+	});
+</script>
+
 <style>
 	.brainstorm {
-		max-width: 1040px;
+		max-width: 1400px;
 	}
 
 	.page-head {
@@ -132,6 +306,7 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.lede {
+		max-width: 54ch;
 		margin: 18px 0 0;
 		color: var(--muted);
 		font-size: 16px;
@@ -151,74 +326,119 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 14px;
 	}
 
-	.table-wrap {
-		margin-top: 40px;
-		overflow-x: auto;
+	.board-wrap {
+		margin-top: 32px;
 		border: 1px solid var(--line);
 		border-radius: 14px;
 		background: var(--paper);
+		overflow: auto;
+		height: 70vh;
 	}
 
-	.data-table {
+	.board {
+		position: relative;
+		width: 2400px;
+		height: 1600px;
+		background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+		background-size: 24px 24px;
+	}
+
+	.board-lines {
+		position: absolute;
+		inset: 0;
 		width: 100%;
-		border-collapse: collapse;
-		font-size: 14px;
+		height: 100%;
+		pointer-events: none;
+		overflow: visible;
 	}
 
-	.data-table th {
-		text-align: left;
-		padding: 12px 16px;
-		font-size: 11px;
+	:global(.board-line) {
+		stroke: var(--muted);
+		stroke-width: 2;
+		pointer-events: stroke;
+		cursor: pointer;
+	}
+
+	:global(.board-line:hover) {
+		stroke: #b4231f;
+	}
+
+	:global(.board-line-preview) {
+		stroke: var(--ink);
+		stroke-dasharray: 4 4;
+		pointer-events: none;
+	}
+
+	.idea-card {
+		position: absolute;
+		width: 220px;
+		padding: 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--paper);
+		box-shadow: 0 4px 14px -6px rgba(20, 17, 15, 0.18);
+		cursor: grab;
+		touch-action: none;
+		user-select: none;
+	}
+
+	.idea-card:active {
+		cursor: grabbing;
+	}
+
+	.idea-title {
 		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
+		font-size: 14px;
+		cursor: text;
+	}
+
+	.idea-notes {
+		margin-top: 8px;
+		font-size: 13px;
 		color: var(--muted);
-		border-bottom: 1px solid var(--line);
-		background: var(--canvas);
-		white-space: nowrap;
-	}
-
-	.data-table td {
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--line);
-		vertical-align: middle;
-	}
-
-	.data-table tr:last-child td {
-		border-bottom: none;
-	}
-
-	.cell-title {
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	.cell-muted {
-		color: var(--muted);
-		max-width: 420px;
+		cursor: text;
+		display: -webkit-box;
+		-webkit-line-clamp: 4;
+		-webkit-box-orient: vertical;
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.cell-date {
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
+	.idea-card-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		margin-top: 12px;
 	}
 
-	.cell-actions {
-		text-align: right;
-	}
-
-	.cell-actions form {
+	.idea-card-actions form {
 		margin: 0;
-		display: inline-block;
+	}
+
+	.idea-link {
+		font-size: 12px;
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.idea-link:hover {
+		border-color: var(--ink);
+	}
+
+	.idea-link-btn {
+		background: none;
+		border: none;
+		border-bottom: 1px solid var(--line);
+		padding: 0;
+		font-family: var(--sans);
+		cursor: pointer;
 	}
 
 	.idea-delete {
-		width: 24px;
-		height: 24px;
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -226,12 +446,9 @@ const error = Astro.url.searchParams.get('error');
 		border: 1px solid transparent;
 		background: transparent;
 		color: var(--muted);
-		font-size: 16px;
+		font-size: 14px;
 		line-height: 1;
 		cursor: pointer;
-		transition:
-			border-color 0.15s ease,
-			color 0.15s ease;
 	}
 
 	.idea-delete:hover {
@@ -239,19 +456,22 @@ const error = Astro.url.searchParams.get('error');
 		color: #b4231f;
 	}
 
-	.empty-cell {
-		padding: 32px 16px;
-		text-align: center;
-		color: var(--muted);
+	.connect-handle {
+		position: absolute;
+		right: -6px;
+		bottom: -6px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		background: var(--ink);
+		border: 2px solid var(--paper);
+		cursor: crosshair;
 	}
 
 	@media (max-width: 720px) {
 		.page-head {
 			flex-direction: column;
 			align-items: stretch;
-		}
-		.cell-muted {
-			max-width: 160px;
 		}
 	}
 </style>

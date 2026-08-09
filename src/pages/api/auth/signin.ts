@@ -17,5 +17,5 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 		return redirect(`/login?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect('/challenges');
+	return redirect('/projects');
 };

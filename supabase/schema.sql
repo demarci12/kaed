@@ -79,18 +79,37 @@ alter table public.challenges enable row level security;
 create policy "own challenges" on public.challenges
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Brainstorming space: freeform ideas.
+-- Brainstorming space: a freeform whiteboard of ideas. Cards are positioned
+-- freely (position_x/position_y) and can be connected to each other
+-- (idea_connections) or promoted into the structured business idea register.
 create table if not exists public.ideas (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   body text,
+  position_x integer not null default (floor(random() * 300 + 40))::int,
+  position_y integer not null default (floor(random() * 300 + 40))::int,
   created_at timestamptz not null default now()
 );
 
 alter table public.ideas enable row level security;
 
 create policy "own ideas" on public.ideas
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists public.idea_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  from_idea_id uuid not null references public.ideas(id) on delete cascade,
+  to_idea_id uuid not null references public.ideas(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  check (from_idea_id <> to_idea_id),
+  unique (from_idea_id, to_idea_id)
+);
+
+alter table public.idea_connections enable row level security;
+
+create policy "own idea connections" on public.idea_connections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Mini CRM: prospective clients and per-client notes.
@@ -155,4 +174,12 @@ create index if not exists projects_business_idea_id_idx on public.projects (bus
 -- the UI already assumes ("Start working on this" hides once a link exists).
 create unique index if not exists projects_business_idea_id_unique_idx
   on public.projects (business_idea_id)
+  where business_idea_id is not null;
+
+-- Links a brainstorm card to the business idea it was promoted into.
+alter table public.ideas
+  add column if not exists business_idea_id uuid references public.business_ideas(id) on delete set null;
+
+create unique index if not exists ideas_business_idea_id_unique_idx
+  on public.ideas (business_idea_id)
   where business_idea_id is not null;

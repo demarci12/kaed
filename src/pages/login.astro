@@ -7,7 +7,7 @@ const {
 	data: { user },
 } = await supabase.auth.getUser();
 if (user) {
-	return Astro.redirect('/challenges');
+	return Astro.redirect('/projects');
 }
 
 const error = Astro.url.searchParams.get('error');
