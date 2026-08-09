@@ -116,6 +116,60 @@ const memberOnly = user ? isMember(user) : false;
 				color: var(--ink);
 			}
 
+			.nav-group {
+				position: relative;
+			}
+
+			.nav-group summary {
+				color: var(--muted);
+				cursor: pointer;
+				list-style: none;
+				transition: color 0.15s ease;
+			}
+
+			.nav-group summary::-webkit-details-marker {
+				display: none;
+			}
+
+			.nav-group summary:hover,
+			.nav-group[open] summary {
+				color: var(--ink);
+			}
+
+			.nav-group summary::after {
+				content: '▾';
+				margin-left: 4px;
+				font-size: 10px;
+				vertical-align: middle;
+			}
+
+			.nav-dropdown {
+				position: absolute;
+				top: calc(100% + 12px);
+				left: 0;
+				z-index: 20;
+				display: flex;
+				flex-direction: column;
+				min-width: 160px;
+				padding: 8px;
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				background: var(--paper);
+				box-shadow: 0 12px 32px -12px rgba(20, 17, 15, 0.25);
+			}
+
+			.nav-dropdown a {
+				padding: 8px 10px;
+				border-radius: 8px;
+				font-size: 14px;
+				color: var(--ink);
+				text-decoration: none;
+			}
+
+			.nav-dropdown a:hover {
+				background: var(--canvas);
+			}
+
 			.content {
 				flex: 1;
 				padding: 64px 0 48px;
@@ -480,11 +534,26 @@ const memberOnly = user ? isMember(user) : false;
 									<a href="/finance" class="who-link">Finance</a>
 								) : (
 									<>
-										<a href="/brainstorm" class="who-link">Brainstorm</a>
-										<a href="/business-ideas" class="who-link">Ideas</a>
-										<a href="/projects" class="who-link">Projects</a>
-										<a href="/clients" class="who-link">Clients</a>
-										<a href="/finance" class="who-link">Finance</a>
+										<details class="nav-group">
+											<summary>Delivery</summary>
+											<div class="nav-dropdown">
+												<a href="/projects">Projects</a>
+												<a href="/business-ideas">Ideas</a>
+												<a href="/brainstorm">Brainstorming</a>
+											</div>
+										</details>
+										<details class="nav-group">
+											<summary>Sales &amp; Marketing</summary>
+											<div class="nav-dropdown">
+												<a href="/clients">CRM</a>
+											</div>
+										</details>
+										<details class="nav-group">
+											<summary>Finance</summary>
+											<div class="nav-dropdown">
+												<a href="/finance">Personal finance</a>
+											</div>
+										</details>
 									</>
 								)}
 								<span class="who">{user.email}</span>
@@ -534,6 +603,12 @@ const memberOnly = user ? isMember(user) : false;
 				if (target instanceof HTMLDialogElement && target.classList.contains('popup')) {
 					target.close();
 				}
+
+				// Close nav dropdowns when clicking outside them or on a link inside them.
+				const insideNavGroup = target.closest<HTMLDetailsElement>('.nav-group');
+				document.querySelectorAll<HTMLDetailsElement>('.nav-group[open]').forEach((group) => {
+					if (group !== insideNavGroup || target.closest('a')) group.open = false;
+				});
 			});
 
 			/**
