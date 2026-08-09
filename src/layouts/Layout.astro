@@ -198,52 +198,60 @@ const {
 			}
 
 			/* Shared popup, used by every "add new" trigger across the app.
-			   Pure CSS: a hidden checkbox + a <label for="..."> trigger toggle
-			   visibility of a sibling overlay via :checked ~ .popup-overlay. No
-			   JavaScript is involved in opening/closing, so there's nothing for
-			   Astro's per-component script/style scoping to break. Global because
-			   the markup lives in each page component, outside Layout's own
-			   scoped style boundary. */
-			.popup-toggle {
-				position: absolute;
-				width: 1px;
-				height: 1px;
-				opacity: 0;
-				pointer-events: none;
-			}
-
-			.popup-overlay {
-				display: none;
-				position: fixed;
-				inset: 0;
-				z-index: 1000;
-				align-items: center;
-				justify-content: center;
-				padding: 16px;
-			}
-
-			.popup-toggle:checked ~ .popup-overlay {
-				display: flex;
-			}
-
-			.popup-backdrop {
-				position: absolute;
-				inset: 0;
-				background: rgba(20, 17, 15, 0.4);
-				cursor: pointer;
-			}
-
-			.popup {
-				position: relative;
-				z-index: 1;
+			   Native <dialog> + showModal(): the browser owns focus trapping,
+			   Escape-to-close, scroll lock, and the backdrop — the only JS
+			   needed is opening/closing by id (see the script below). Global
+			   because the markup lives in each page component, outside
+			   Layout's own scoped style boundary. */
+			dialog.popup {
 				width: min(480px, 100%);
 				max-height: calc(100vh - 32px);
+				margin: auto;
 				overflow-y: auto;
 				padding: 28px;
 				border: 1px solid var(--line, #e4e0d8);
 				border-radius: 16px;
 				background: var(--paper, #fff);
 				color: var(--ink, #14110f);
+				box-shadow: 0 24px 60px -12px rgba(20, 17, 15, 0.25);
+				opacity: 0;
+				transform: translateY(8px) scale(0.98);
+				transition:
+					opacity 0.16s ease,
+					transform 0.16s ease,
+					overlay 0.16s allow-discrete,
+					display 0.16s allow-discrete;
+			}
+
+			dialog.popup[open] {
+				opacity: 1;
+				transform: translateY(0) scale(1);
+			}
+
+			@starting-style {
+				dialog.popup[open] {
+					opacity: 0;
+					transform: translateY(8px) scale(0.98);
+				}
+			}
+
+			dialog.popup::backdrop {
+				background: rgba(20, 17, 15, 0.4);
+				opacity: 0;
+				transition:
+					opacity 0.16s ease,
+					overlay 0.16s allow-discrete,
+					display 0.16s allow-discrete;
+			}
+
+			dialog.popup[open]::backdrop {
+				opacity: 1;
+			}
+
+			@starting-style {
+				dialog.popup[open]::backdrop {
+					opacity: 0;
+				}
 			}
 
 			.popup h2 {
@@ -371,15 +379,26 @@ const {
 			}
 
 			@media (max-width: 720px) {
-				.popup-overlay {
-					align-items: flex-end;
-					padding: 0;
-				}
-				.popup {
+				dialog.popup {
+					position: fixed;
+					top: auto;
+					bottom: 0;
+					left: 0;
+					right: 0;
 					width: 100%;
 					max-height: 85vh;
+					margin: 0;
 					border-radius: 16px 16px 0 0;
 					border-bottom: none;
+					transform: translateY(100%);
+				}
+				dialog.popup[open] {
+					transform: translateY(0);
+				}
+				@starting-style {
+					dialog.popup[open] {
+						transform: translateY(100%);
+					}
 				}
 			}
 		</style>
@@ -427,6 +446,23 @@ const {
 				const cell = target.closest<HTMLElement>('[data-editable]');
 				if (cell && !cell.classList.contains('editing') && !cell.classList.contains('saving')) {
 					startCellEdit(cell);
+				}
+
+				const opener = target.closest<HTMLElement>('[data-open-popup]');
+				if (opener) {
+					const id = opener.dataset.openPopup ?? '';
+					const dialog = document.getElementById(id);
+					if (dialog instanceof HTMLDialogElement) dialog.showModal();
+				}
+
+				const closer = target.closest<HTMLElement>('[data-close-popup]');
+				if (closer) {
+					closer.closest('dialog')?.close();
+				}
+
+				// Clicking the ::backdrop fires on the <dialog> itself, not its content.
+				if (target instanceof HTMLDialogElement && target.classList.contains('popup')) {
+					target.close();
 				}
 			});
 

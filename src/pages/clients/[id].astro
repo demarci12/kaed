@@ -75,7 +75,7 @@ const error = Astro.url.searchParams.get('error');
 		<div class="section">
 			<div class="section-head">
 				<h2>Notes</h2>
-				<label for="new-note" class="btn ghost small">+ Add note</label>
+				<button type="button" class="btn ghost small" data-open-popup="new-note">+ Add note</button>
 			</div>
 
 			<div class="timeline">
@@ -99,20 +99,16 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<input type="checkbox" id="new-note" class="popup-toggle" />
-	<div class="popup-overlay">
-		<label for="new-note" class="popup-backdrop" aria-hidden="true"></label>
-		<div class="popup">
-			<h2>Add note</h2>
-			<form method="post" action={`/api/clients/${typed.id}/notes`}>
-				<textarea name="note" rows="3" placeholder="What happened?" required></textarea>
-				<div class="popup-actions">
-					<label for="new-note" class="btn ghost">Cancel</label>
-					<button type="submit" class="btn">Add note</button>
-				</div>
-			</form>
-		</div>
-	</div>
+	<dialog id="new-note" class="popup">
+		<h2>Add note</h2>
+		<form method="post" action={`/api/clients/${typed.id}/notes`}>
+			<textarea name="note" rows="3" placeholder="What happened?" required></textarea>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add note</button>
+			</div>
+		</form>
+	</dialog>
 </Layout>
 
 <style>

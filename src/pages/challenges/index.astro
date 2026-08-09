@@ -32,7 +32,7 @@ const error = Astro.url.searchParams.get('error');
 				<h1>Challenges.</h1>
 				<p class="lede">Things you've set out to accomplish, and the trail of proof behind them.</p>
 			</div>
-			<label for="new-challenge" class="btn">+ New challenge</label>
+			<button type="button" class="btn" data-open-popup="new-challenge">+ New challenge</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -109,36 +109,32 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<input type="checkbox" id="new-challenge" class="popup-toggle" />
-	<div class="popup-overlay">
-		<label for="new-challenge" class="popup-backdrop" aria-hidden="true"></label>
-		<div class="popup">
-			<h2>New challenge</h2>
-			<form method="post" action="/api/challenges/create">
-				<label for="title">Title</label>
-				<input id="title" name="title" type="text" required maxlength="120" />
+	<dialog id="new-challenge" class="popup">
+		<h2>New challenge</h2>
+		<form method="post" action="/api/challenges/create">
+			<label for="title">Title</label>
+			<input id="title" name="title" type="text" required maxlength="120" />
 
-				<label for="description">Description</label>
-				<textarea id="description" name="description" rows="3"></textarea>
+			<label for="description">Description</label>
+			<textarea id="description" name="description" rows="3"></textarea>
 
-				<div class="popup-row">
-					<div>
-						<label for="start_date">Start date</label>
-						<input id="start_date" name="start_date" type="date" />
-					</div>
-					<div>
-						<label for="target_end_date">Target end date</label>
-						<input id="target_end_date" name="target_end_date" type="date" />
-					</div>
+			<div class="popup-row">
+				<div>
+					<label for="start_date">Start date</label>
+					<input id="start_date" name="start_date" type="date" />
 				</div>
-
-				<div class="popup-actions">
-					<label for="new-challenge" class="btn ghost">Cancel</label>
-					<button type="submit" class="btn">Create challenge</button>
+				<div>
+					<label for="target_end_date">Target end date</label>
+					<input id="target_end_date" name="target_end_date" type="date" />
 				</div>
-			</form>
-		</div>
-	</div>
+			</div>
+
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Create challenge</button>
+			</div>
+		</form>
+	</dialog>
 </Layout>
 
 <style>

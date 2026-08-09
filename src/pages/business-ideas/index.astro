@@ -30,7 +30,7 @@ const error = Astro.url.searchParams.get('error');
 					what's been done to validate it.
 				</p>
 			</div>
-			<label for="new-business-idea" class="btn">+ Register idea</label>
+			<button type="button" class="btn" data-open-popup="new-business-idea">+ Register idea</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -96,31 +96,27 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<input type="checkbox" id="new-business-idea" class="popup-toggle" />
-	<div class="popup-overlay">
-		<label for="new-business-idea" class="popup-backdrop" aria-hidden="true"></label>
-		<div class="popup">
-			<h2>Register idea</h2>
-			<form method="post" action="/api/business-ideas/create">
-				<label for="title">Title</label>
-				<input id="title" name="title" type="text" required maxlength="160" />
+	<dialog id="new-business-idea" class="popup">
+		<h2>Register idea</h2>
+		<form method="post" action="/api/business-ideas/create">
+			<label for="title">Title</label>
+			<input id="title" name="title" type="text" required maxlength="160" />
 
-				<label for="pain_point">Pain point</label>
-				<textarea id="pain_point" name="pain_point" rows="2" placeholder="What problem does this solve, for whom?"></textarea>
+			<label for="pain_point">Pain point</label>
+			<textarea id="pain_point" name="pain_point" rows="2" placeholder="What problem does this solve, for whom?"></textarea>
 
-				<label for="target_market">Target market</label>
-				<textarea id="target_market" name="target_market" rows="2" placeholder="Who would pay for this?"></textarea>
+			<label for="target_market">Target market</label>
+			<textarea id="target_market" name="target_market" rows="2" placeholder="Who would pay for this?"></textarea>
 
-				<label for="validation">Validation</label>
-				<textarea id="validation" name="validation" rows="2" placeholder="What have you done to test this so far?"></textarea>
+			<label for="validation">Validation</label>
+			<textarea id="validation" name="validation" rows="2" placeholder="What have you done to test this so far?"></textarea>
 
-				<div class="popup-actions">
-					<label for="new-business-idea" class="btn ghost">Cancel</label>
-					<button type="submit" class="btn">Register idea</button>
-				</div>
-			</form>
-		</div>
-	</div>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Register idea</button>
+			</div>
+		</form>
+	</dialog>
 </Layout>
 
 <style>

@@ -35,7 +35,7 @@ const error = Astro.url.searchParams.get('error');
 				<h1>Clients.</h1>
 				<p class="lede">A lightweight pipeline for people you're talking to.</p>
 			</div>
-			<label for="new-client" class="btn">+ New client</label>
+			<button type="button" class="btn" data-open-popup="new-client">+ New client</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -123,53 +123,49 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<input type="checkbox" id="new-client" class="popup-toggle" />
-	<div class="popup-overlay">
-		<label for="new-client" class="popup-backdrop" aria-hidden="true"></label>
-		<div class="popup">
-			<h2>New client</h2>
-			<form method="post" action="/api/clients/create">
-				<label for="name">Name</label>
-				<input id="name" name="name" type="text" required maxlength="160" />
+	<dialog id="new-client" class="popup">
+		<h2>New client</h2>
+		<form method="post" action="/api/clients/create">
+			<label for="name">Name</label>
+			<input id="name" name="name" type="text" required maxlength="160" />
 
-				<label for="company">Company</label>
-				<input id="company" name="company" type="text" maxlength="160" />
+			<label for="company">Company</label>
+			<input id="company" name="company" type="text" maxlength="160" />
 
-				<div class="popup-row">
-					<div>
-						<label for="email">Email</label>
-						<input id="email" name="email" type="email" />
-					</div>
-					<div>
-						<label for="phone">Phone</label>
-						<input id="phone" name="phone" type="tel" />
-					</div>
+			<div class="popup-row">
+				<div>
+					<label for="email">Email</label>
+					<input id="email" name="email" type="email" />
 				</div>
-
-				<div class="popup-row">
-					<div>
-						<label for="stage">Stage</label>
-						<select id="stage" name="stage">
-							<option value="lead">Lead</option>
-							<option value="contacted">Contacted</option>
-							<option value="negotiating">Negotiating</option>
-							<option value="won">Won</option>
-							<option value="lost">Lost</option>
-						</select>
-					</div>
-					<div>
-						<label for="next_follow_up">Next follow-up</label>
-						<input id="next_follow_up" name="next_follow_up" type="date" />
-					</div>
+				<div>
+					<label for="phone">Phone</label>
+					<input id="phone" name="phone" type="tel" />
 				</div>
+			</div>
 
-				<div class="popup-actions">
-					<label for="new-client" class="btn ghost">Cancel</label>
-					<button type="submit" class="btn">Add client</button>
+			<div class="popup-row">
+				<div>
+					<label for="stage">Stage</label>
+					<select id="stage" name="stage">
+						<option value="lead">Lead</option>
+						<option value="contacted">Contacted</option>
+						<option value="negotiating">Negotiating</option>
+						<option value="won">Won</option>
+						<option value="lost">Lost</option>
+					</select>
 				</div>
-			</form>
-		</div>
-	</div>
+				<div>
+					<label for="next_follow_up">Next follow-up</label>
+					<input id="next_follow_up" name="next_follow_up" type="date" />
+				</div>
+			</div>
+
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add client</button>
+			</div>
+		</form>
+	</dialog>
 </Layout>
 
 <style>

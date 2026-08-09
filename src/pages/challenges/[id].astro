@@ -87,7 +87,7 @@ const error = Astro.url.searchParams.get('error');
 					{typedTodos.length > 0 && (
 						<span class="progress-count">{doneCount}/{typedTodos.length}</span>
 					)}
-					<label for="new-todo" class="btn ghost small">+ Add sub-goal</label>
+					<button type="button" class="btn ghost small" data-open-popup="new-todo">+ Add sub-goal</button>
 				</div>
 			</div>
 
@@ -135,7 +135,7 @@ const error = Astro.url.searchParams.get('error');
 		<div class="section">
 			<div class="section-head">
 				<h2>Timeline</h2>
-				<label for="new-log" class="btn ghost small">+ Log progress</label>
+				<button type="button" class="btn ghost small" data-open-popup="new-log">+ Log progress</button>
 			</div>
 
 			<div class="timeline">
@@ -170,55 +170,47 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<input type="checkbox" id="new-todo" class="popup-toggle" />
-	<div class="popup-overlay">
-		<label for="new-todo" class="popup-backdrop" aria-hidden="true"></label>
-		<div class="popup">
-			<h2>Add sub-goal</h2>
-			<form method="post" action={`/api/challenges/${typed.id}/todos`}>
-				<label for="todo-title">Title</label>
-				<input id="todo-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
-				<div class="popup-actions">
-					<label for="new-todo" class="btn ghost">Cancel</label>
-					<button type="submit" class="btn">Add</button>
-				</div>
-			</form>
-		</div>
-	</div>
+	<dialog id="new-todo" class="popup">
+		<h2>Add sub-goal</h2>
+		<form method="post" action={`/api/challenges/${typed.id}/todos`}>
+			<label for="todo-title">Title</label>
+			<input id="todo-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add</button>
+			</div>
+		</form>
+	</dialog>
 
-	<input type="checkbox" id="new-log" class="popup-toggle" />
-	<div class="popup-overlay">
-		<label for="new-log" class="popup-backdrop" aria-hidden="true"></label>
-		<div class="popup">
-			<h2>Log progress</h2>
-			<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data">
-				<label for="note">Note</label>
-				<textarea id="note" name="note" rows="3" required></textarea>
+	<dialog id="new-log" class="popup">
+		<h2>Log progress</h2>
+		<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data">
+			<label for="note">Note</label>
+			<textarea id="note" name="note" rows="3" required></textarea>
 
-				<label for="proof_type">Proof</label>
-				<select id="proof_type" name="proof_type" data-proof-select>
-					<option value="text">Text only</option>
-					<option value="link">Link</option>
-					<option value="image">Image</option>
-				</select>
+			<label for="proof_type">Proof</label>
+			<select id="proof_type" name="proof_type" data-proof-select>
+				<option value="text">Text only</option>
+				<option value="link">Link</option>
+				<option value="image">Image</option>
+			</select>
 
-				<div class="proof-field" data-proof-field="link" hidden>
-					<label for="proof_link">Proof URL</label>
-					<input id="proof_link" name="proof_link" type="url" placeholder="https://" />
-				</div>
+			<div class="proof-field" data-proof-field="link" hidden>
+				<label for="proof_link">Proof URL</label>
+				<input id="proof_link" name="proof_link" type="url" placeholder="https://" />
+			</div>
 
-				<div class="proof-field" data-proof-field="image" hidden>
-					<label for="proof_file">Proof image</label>
-					<input id="proof_file" name="proof_file" type="file" accept="image/*" />
-				</div>
+			<div class="proof-field" data-proof-field="image" hidden>
+				<label for="proof_file">Proof image</label>
+				<input id="proof_file" name="proof_file" type="file" accept="image/*" />
+			</div>
 
-				<div class="popup-actions">
-					<label for="new-log" class="btn ghost">Cancel</label>
-					<button type="submit" class="btn">Log progress</button>
-				</div>
-			</form>
-		</div>
-	</div>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Log progress</button>
+			</div>
+		</form>
+	</dialog>
 </Layout>
 
 <script>
