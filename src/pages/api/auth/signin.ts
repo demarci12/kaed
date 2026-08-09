@@ -7,14 +7,14 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	const password = String(form.get('password') ?? '');
 
 	if (!email || !password) {
-		return redirect('/?error=Email and password are required.');
+		return redirect('/login?error=Email and password are required.');
 	}
 
 	const supabase = createSupabaseServerClient(request, cookies);
 	const { error } = await supabase.auth.signInWithPassword({ email, password });
 
 	if (error) {
-		return redirect(`/?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/login?error=${encodeURIComponent(error.message)}`);
 	}
 
 	return redirect('/challenges');
