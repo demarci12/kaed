@@ -143,3 +143,11 @@ create index if not exists challenges_business_idea_id_idx on public.challenges 
 create unique index if not exists challenges_business_idea_id_unique_idx
   on public.challenges (business_idea_id)
   where business_idea_id is not null;
+
+-- Distinguishes external market validation (talked to a prospect, got paid,
+-- got rejected) from plain self-directed activity logging, so challenges
+-- can show "did I make progress" separately from "do I have proof anyone
+-- wants this" — the latter is what actually keeps motivation alive.
+alter table public.challenge_logs
+  add column if not exists signal_type text not null default 'progress'
+  check (signal_type in ('progress', 'customer_contact', 'interest_expressed', 'paid', 'rejected'));

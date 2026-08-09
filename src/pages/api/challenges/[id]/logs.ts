@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { requireUser, type ProofType } from '../../../../lib/challenges';
+import { requireUser, type ProofType, type SignalType } from '../../../../lib/challenges';
 
 const ALLOWED: ProofType[] = ['text', 'link', 'image'];
+const ALLOWED_SIGNALS: SignalType[] = ['progress', 'customer_contact', 'interest_expressed', 'paid', 'rejected'];
 
 export const POST: APIRoute = async ({ request, cookies, redirect, params }) => {
 	const auth = await requireUser(request, cookies);
@@ -15,12 +16,16 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 
 	const note = String(form.get('note') ?? '').trim();
 	const proofType = String(form.get('proof_type') ?? 'text') as ProofType;
+	const signalType = String(form.get('signal_type') ?? 'progress') as SignalType;
 
 	if (!note) {
 		return redirect(`/challenges/${challengeId}?error=A note is required.`);
 	}
 	if (!ALLOWED.includes(proofType)) {
 		return redirect(`/challenges/${challengeId}?error=Invalid proof type.`);
+	}
+	if (!ALLOWED_SIGNALS.includes(signalType)) {
+		return redirect(`/challenges/${challengeId}?error=Invalid signal type.`);
 	}
 
 	let proofUrl: string | null = null;
@@ -54,6 +59,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 		proof_type: proofType,
 		proof_url: proofUrl,
 		status: 'pending',
+		signal_type: signalType,
 	});
 
 	if (error) {

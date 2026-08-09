@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/auth';
+import { HEADLINE_SIGNAL_TYPES } from '../../lib/challenges';
 import type { BusinessIdea } from '../../lib/business-ideas';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -15,6 +16,34 @@ const { data: ideas } = await supabase
 	.order('created_at', { ascending: false });
 
 const typedIdeas = (ideas ?? []) as BusinessIdea[];
+
+const ideaIds = typedIdeas.map((idea) => idea.id);
+const signalCountByIdeaId = new Map<string, number>();
+
+if (ideaIds.length) {
+	const { data: linkedChallenges } = await supabase
+		.from('challenges')
+		.select('id, business_idea_id')
+		.in('business_idea_id', ideaIds);
+
+	const challengeIdToIdeaId = new Map(
+		(linkedChallenges ?? []).map((c) => [c.id, c.business_idea_id as string])
+	);
+
+	if (challengeIdToIdeaId.size) {
+		const { data: logs } = await supabase
+			.from('challenge_logs')
+			.select('challenge_id, signal_type')
+			.in('challenge_id', [...challengeIdToIdeaId.keys()])
+			.in('signal_type', HEADLINE_SIGNAL_TYPES);
+
+		for (const log of logs ?? []) {
+			const ideaId = challengeIdToIdeaId.get(log.challenge_id);
+			if (!ideaId) continue;
+			signalCountByIdeaId.set(ideaId, (signalCountByIdeaId.get(ideaId) ?? 0) + 1);
+		}
+	}
+}
 
 const error = Astro.url.searchParams.get('error');
 ---
@@ -43,6 +72,7 @@ const error = Astro.url.searchParams.get('error');
 						<th>Pain point</th>
 						<th>Target market</th>
 						<th>Validation</th>
+						<th>Signals</th>
 						<th>Added</th>
 					</tr>
 				</thead>
@@ -83,12 +113,13 @@ const error = Astro.url.searchParams.get('error');
 								>
 									{idea.validation ?? '—'}
 								</td>
+								<td class="cell-date">{signalCountByIdeaId.get(idea.id) ?? '—'}</td>
 								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
 							</tr>
 						))
 					) : (
 						<tr>
-							<td colspan="5" class="empty-cell">No business ideas registered yet.</td>
+							<td colspan="6" class="empty-cell">No business ideas registered yet.</td>
 						</tr>
 					)}
 				</tbody>

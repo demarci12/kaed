@@ -1,6 +1,13 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { requireUser, type Challenge, type ChallengeLog, type ChallengeTodo } from '../../lib/challenges';
+import {
+	requireUser,
+	HEADLINE_SIGNAL_TYPES,
+	type Challenge,
+	type ChallengeLog,
+	type ChallengeTodo,
+	type SignalType,
+} from '../../lib/challenges';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -47,6 +54,23 @@ if (typed.business_idea_id) {
 }
 
 const doneCount = typedTodos.filter((t) => t.is_done).length;
+
+const signalCounts = typedLogs.reduce(
+	(acc, log) => {
+		acc[log.signal_type] = (acc[log.signal_type] ?? 0) + 1;
+		return acc;
+	},
+	{} as Record<SignalType, number>
+);
+const headlineSignalCount = HEADLINE_SIGNAL_TYPES.reduce((sum, type) => sum + (signalCounts[type] ?? 0), 0);
+
+const signalLabel: Record<SignalType, string> = {
+	progress: 'Progress',
+	customer_contact: 'conversations',
+	interest_expressed: 'interested',
+	paid: 'paid',
+	rejected: 'rejected',
+};
 
 const statusLabel: Record<string, string> = {
 	not_started: 'Not started',
@@ -152,6 +176,15 @@ const error = Astro.url.searchParams.get('error');
 				<button type="button" class="btn ghost small" data-open-popup="new-log">+ Log progress</button>
 			</div>
 
+			<div class="signals">
+				<span class="signals-headline">{headlineSignalCount} validation signal{headlineSignalCount === 1 ? '' : 's'}</span>
+				{(Object.keys(signalCounts) as SignalType[])
+					.filter((type) => type !== 'progress' && signalCounts[type])
+					.map((type) => (
+						<span class="signals-breakdown">{signalCounts[type]} {signalLabel[type]}</span>
+					))}
+			</div>
+
 			<div class="timeline">
 				{typedLogs.length ? (
 					typedLogs.map((log) => (
@@ -203,6 +236,15 @@ const error = Astro.url.searchParams.get('error');
 		<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data">
 			<label for="note">Note</label>
 			<textarea id="note" name="note" rows="3" required></textarea>
+
+			<label for="signal_type">Signal</label>
+			<select id="signal_type" name="signal_type">
+				<option value="progress">Just progress — no external signal</option>
+				<option value="customer_contact">Talked to a prospect</option>
+				<option value="interest_expressed">Someone expressed interest</option>
+				<option value="paid">Someone paid</option>
+				<option value="rejected">Got a rejection</option>
+			</select>
 
 			<label for="proof_type">Proof</label>
 			<select id="proof_type" name="proof_type" data-proof-select>
@@ -449,6 +491,28 @@ const error = Astro.url.searchParams.get('error');
 	.empty {
 		color: var(--muted);
 		font-size: 15px;
+	}
+
+	.signals {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-bottom: 20px;
+	}
+
+	.signals-headline {
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.signals-breakdown {
+		padding: 3px 10px;
+		border-radius: 999px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		font-size: 12px;
+		color: var(--muted);
 	}
 
 	/* Table */

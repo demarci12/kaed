@@ -3,6 +3,9 @@ export { requireUser } from './auth';
 export type ChallengeStatus = 'not_started' | 'active' | 'done';
 export type ProofType = 'text' | 'link' | 'image';
 export type ProofStatus = 'pending' | 'verified' | 'rejected';
+export type SignalType = 'progress' | 'customer_contact' | 'interest_expressed' | 'paid' | 'rejected';
+
+export const HEADLINE_SIGNAL_TYPES: SignalType[] = ['customer_contact', 'interest_expressed', 'paid'];
 
 export interface Challenge {
 	id: string;
@@ -25,6 +28,7 @@ export interface ChallengeLog {
 	proof_type: ProofType;
 	proof_url: string | null;
 	status: ProofStatus;
+	signal_type: SignalType;
 	created_at: string;
 }
 

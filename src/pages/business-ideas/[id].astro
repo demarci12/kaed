@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/auth';
+import { HEADLINE_SIGNAL_TYPES } from '../../lib/challenges';
 import type { BusinessIdea } from '../../lib/business-ideas';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -25,6 +26,16 @@ const { data: linkedChallenge } = await supabase
 	.select('id, title')
 	.eq('business_idea_id', typed.id)
 	.maybeSingle();
+
+let headlineSignalCount = 0;
+if (linkedChallenge) {
+	const { data: logs } = await supabase
+		.from('challenge_logs')
+		.select('signal_type')
+		.eq('challenge_id', linkedChallenge.id)
+		.in('signal_type', HEADLINE_SIGNAL_TYPES);
+	headlineSignalCount = logs?.length ?? 0;
+}
 ---
 
 <Layout>
@@ -42,7 +53,12 @@ const { data: linkedChallenge } = await supabase
 
 		<div class="promote">
 			{linkedChallenge ? (
-				<a class="btn ghost" href={`/challenges/${linkedChallenge.id}`}>→ {linkedChallenge.title}</a>
+				<>
+					<a class="btn ghost" href={`/challenges/${linkedChallenge.id}`}>→ {linkedChallenge.title}</a>
+					<span class="signals-inline">
+						{headlineSignalCount} signal{headlineSignalCount === 1 ? '' : 's'}
+					</span>
+				</>
 			) : (
 				<form method="post" action="/api/challenges/create">
 					<input type="hidden" name="title" value={typed.title} />
@@ -122,6 +138,17 @@ const { data: linkedChallenge } = await supabase
 
 	.promote form {
 		margin: 0;
+	}
+
+	.promote {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.signals-inline {
+		font-size: 13px;
+		color: var(--muted);
 	}
 
 	.promote .btn.ghost {
