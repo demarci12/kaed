@@ -1,0 +1,408 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser, type Challenge, type ChallengeLog } from '../../lib/challenges';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { id } = Astro.params;
+
+const { data: challenge } = await supabase
+	.from('challenges')
+	.select('*')
+	.eq('id', id)
+	.maybeSingle();
+
+if (!challenge) {
+	return Astro.redirect('/challenges');
+}
+
+const { data: logs } = await supabase
+	.from('challenge_logs')
+	.select('*')
+	.eq('challenge_id', id)
+	.order('created_at', { ascending: false });
+
+const typed = challenge as Challenge;
+const typedLogs = (logs ?? []) as ChallengeLog[];
+
+const statusLabel: Record<string, string> = {
+	not_started: 'Not started',
+	active: 'Active',
+	done: 'Done',
+};
+
+const proofStatusLabel: Record<string, string> = {
+	pending: 'Pending',
+	verified: 'Verified',
+	rejected: 'Rejected',
+};
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout>
+	<section class="detail">
+		<a class="back" href="/challenges">← Challenges</a>
+
+		<div class="head">
+			<h1>{typed.title}</h1>
+			<span class={`pill pill-${typed.status}`}>{statusLabel[typed.status]}</span>
+		</div>
+
+		{typed.description && <p class="lede">{typed.description}</p>}
+
+		{(typed.start_date || typed.target_end_date) && (
+			<p class="dates">{typed.start_date ?? '—'} → {typed.target_end_date ?? '—'}</p>
+		)}
+
+		{error && <p class="form-error">{error}</p>}
+
+		<form method="post" action={`/api/challenges/${typed.id}/status`} class="status-form">
+			<label for="status">Status</label>
+			<select id="status" name="status">
+				<option value="not_started" selected={typed.status === 'not_started'}>Not started</option>
+				<option value="active" selected={typed.status === 'active'}>Active</option>
+				<option value="done" selected={typed.status === 'done'}>Done</option>
+			</select>
+			<button type="submit" class="btn ghost">Update status</button>
+		</form>
+
+		<div class="log-new">
+			<h2>Add progress</h2>
+			<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data" class="log-form">
+				<label for="note">Note</label>
+				<textarea id="note" name="note" rows="3" required></textarea>
+
+				<label for="proof_type">Proof</label>
+				<select id="proof_type" name="proof_type" data-proof-select>
+					<option value="text">Text only</option>
+					<option value="link">Link</option>
+					<option value="image">Image</option>
+				</select>
+
+				<div class="proof-field" data-proof-field="link" hidden>
+					<label for="proof_link">Proof URL</label>
+					<input id="proof_link" name="proof_link" type="url" placeholder="https://" />
+				</div>
+
+				<div class="proof-field" data-proof-field="image" hidden>
+					<label for="proof_file">Proof image</label>
+					<input id="proof_file" name="proof_file" type="file" accept="image/*" />
+				</div>
+
+				<button type="submit" class="btn">Log progress</button>
+			</form>
+		</div>
+
+		<div class="log-list">
+			<h2>Timeline</h2>
+			{typedLogs.length ? (
+				typedLogs.map((log) => (
+					<div class="log-entry">
+						<div class="log-entry-head">
+							<span class="log-date">{new Date(log.created_at).toLocaleString()}</span>
+							<span class={`proof-pill proof-${log.status}`}>{proofStatusLabel[log.status]}</span>
+						</div>
+						<p class="log-note">{log.note}</p>
+						{log.proof_type === 'link' && log.proof_url && (
+							<a class="log-proof" href={log.proof_url} target="_blank" rel="noopener noreferrer">
+								View proof link →
+							</a>
+						)}
+						{log.proof_type === 'image' && log.proof_url && (
+							<img class="log-proof-image" src={log.proof_url} alt="Proof" />
+						)}
+					</div>
+				))
+			) : (
+				<p class="empty">No progress logged yet.</p>
+			)}
+		</div>
+	</section>
+</Layout>
+
+<script>
+	const select = document.querySelector('[data-proof-select]') as HTMLSelectElement | null;
+	const fields = document.querySelectorAll<HTMLElement>('[data-proof-field]');
+
+	const sync = () => {
+		const value = select?.value ?? 'text';
+		fields.forEach((field) => {
+			field.hidden = field.dataset.proofField !== value;
+		});
+	};
+
+	select?.addEventListener('change', sync);
+	sync();
+</script>
+
+<style>
+	.detail {
+		max-width: 720px;
+	}
+
+	.back {
+		display: inline-block;
+		margin-bottom: 24px;
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 14px;
+	}
+
+	.back:hover {
+		color: var(--ink);
+	}
+
+	.head {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		flex-wrap: wrap;
+	}
+
+	h1 {
+		margin: 0;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2rem, 5vw, 2.8rem);
+		letter-spacing: -0.02em;
+	}
+
+	.lede {
+		margin: 18px 0 0;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	.dates {
+		margin: 10px 0 0;
+		font-size: 14px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.form-error {
+		margin: 20px 0 0;
+		padding: 12px 16px;
+		border: 1px solid #e7c3c1;
+		background: #fbf0ef;
+		border-radius: 10px;
+		color: #b4231f;
+		font-size: 14px;
+	}
+
+	.pill {
+		flex-shrink: 0;
+		padding: 4px 12px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.pill-not_started {
+		background: var(--canvas);
+		color: var(--muted);
+		border: 1px solid var(--line);
+	}
+
+	.pill-active {
+		background: #eef4ff;
+		color: #1d4ed8;
+	}
+
+	.pill-done {
+		background: #eafaf0;
+		color: #1f7a3d;
+	}
+
+	.status-form {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-top: 32px;
+	}
+
+	.status-form label {
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.status-form select {
+		height: 40px;
+		padding: 0 12px;
+		font-family: var(--sans);
+		font-size: 14px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		outline: none;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		height: 40px;
+		padding: 0 20px;
+		font-family: var(--sans);
+		font-size: 14px;
+		font-weight: 500;
+		color: #fff;
+		background: var(--ink);
+		border: 1px solid var(--ink);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.btn:hover {
+		background: transparent;
+		color: var(--ink);
+	}
+
+	.btn.ghost {
+		background: transparent;
+		color: var(--ink);
+		border-color: var(--line);
+	}
+
+	.btn.ghost:hover {
+		border-color: var(--ink);
+	}
+
+	.log-new,
+	.log-list {
+		margin-top: 56px;
+	}
+
+	.log-new h2,
+	.log-list h2 {
+		margin: 0 0 20px;
+		font-family: var(--serif);
+		font-size: 22px;
+		font-weight: 600;
+	}
+
+	.log-form {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 28px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+	}
+
+	.log-form label {
+		margin-top: 14px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--muted);
+	}
+
+	.log-form textarea,
+	.log-form select,
+	.log-form input {
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		padding: 10px 14px;
+		outline: none;
+		resize: vertical;
+	}
+
+	.log-form textarea:focus,
+	.log-form select:focus,
+	.log-form input:focus {
+		border-color: var(--ink);
+	}
+
+	.log-form .btn {
+		align-self: flex-start;
+		margin-top: 24px;
+	}
+
+	.empty {
+		color: var(--muted);
+		font-size: 15px;
+	}
+
+	.log-entry {
+		padding: 20px 24px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		margin-bottom: 14px;
+	}
+
+	.log-entry-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.log-date {
+		font-size: 13px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.proof-pill {
+		padding: 3px 10px;
+		border-radius: 999px;
+		font-size: 11px;
+		font-weight: 500;
+	}
+
+	.proof-pending {
+		background: #fff7e6;
+		color: #92620a;
+	}
+
+	.proof-verified {
+		background: #eafaf0;
+		color: #1f7a3d;
+	}
+
+	.proof-rejected {
+		background: #fbf0ef;
+		color: #b4231f;
+	}
+
+	.log-note {
+		margin: 12px 0 0;
+		font-size: 15px;
+		line-height: 1.6;
+	}
+
+	.log-proof {
+		display: inline-block;
+		margin-top: 10px;
+		font-size: 14px;
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.log-proof:hover {
+		border-color: var(--ink);
+	}
+
+	.log-proof-image {
+		display: block;
+		margin-top: 12px;
+		max-width: 100%;
+		border-radius: 10px;
+		border: 1px solid var(--line);
+	}
+</style>

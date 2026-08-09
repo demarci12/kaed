@@ -104,6 +104,16 @@ const {
 				font-variant-numeric: tabular-nums;
 			}
 
+			.nav .who-link {
+				color: var(--muted);
+				text-decoration: none;
+				transition: color 0.15s ease;
+			}
+
+			.nav .who-link:hover {
+				color: var(--ink);
+			}
+
 			.btn {
 				display: inline-flex;
 				align-items: center;
@@ -182,6 +192,7 @@ const {
 					{
 						user ? (
 							<>
+								<a href="/challenges" class="who-link">Challenges</a>
 								<span class="who">{user.email}</span>
 								<form method="post" action="/api/auth/signout">
 									<button type="submit" class="btn ghost">Sign out</button>

@@ -1,0 +1,275 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser, type Challenge } from '../../lib/challenges';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { data: challenges } = await supabase
+	.from('challenges')
+	.select('*')
+	.order('created_at', { ascending: false });
+
+const statusLabel: Record<string, string> = {
+	not_started: 'Not started',
+	active: 'Active',
+	done: 'Done',
+};
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout>
+	<section class="challenges">
+		<p class="eyebrow">Personal</p>
+		<h1>Challenges.</h1>
+		<p class="lede">Things you've set out to accomplish, and the trail of proof behind them.</p>
+
+		{error && <p class="form-error">{error}</p>}
+
+		<div class="list">
+			{(challenges as Challenge[] | null)?.length ? (
+				(challenges as Challenge[]).map((challenge) => (
+					<a class="card" href={`/challenges/${challenge.id}`}>
+						<div class="card-head">
+							<h3>{challenge.title}</h3>
+							<span class={`pill pill-${challenge.status}`}>{statusLabel[challenge.status]}</span>
+						</div>
+						{challenge.description && <p class="card-desc">{challenge.description}</p>}
+						{(challenge.start_date || challenge.target_end_date) && (
+							<p class="card-dates">
+								{challenge.start_date ?? '—'} → {challenge.target_end_date ?? '—'}
+							</p>
+						)}
+					</a>
+				))
+			) : (
+				<p class="empty">No challenges yet. Create your first one below.</p>
+			)}
+		</div>
+
+		<div class="new-challenge">
+			<h2>New challenge</h2>
+			<form method="post" action="/api/challenges/create" class="challenge-form">
+				<label for="title">Title</label>
+				<input id="title" name="title" type="text" required maxlength="120" />
+
+				<label for="description">Description</label>
+				<textarea id="description" name="description" rows="3"></textarea>
+
+				<div class="row">
+					<div>
+						<label for="start_date">Start date</label>
+						<input id="start_date" name="start_date" type="date" />
+					</div>
+					<div>
+						<label for="target_end_date">Target end date</label>
+						<input id="target_end_date" name="target_end_date" type="date" />
+					</div>
+				</div>
+
+				<button type="submit" class="btn">Create challenge</button>
+			</form>
+		</div>
+	</section>
+</Layout>
+
+<style>
+	.challenges {
+		max-width: 720px;
+	}
+
+	.eyebrow {
+		margin: 0 0 16px;
+		font-size: 13px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	h1 {
+		margin: 0;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2.2rem, 5vw, 3.2rem);
+		letter-spacing: -0.02em;
+	}
+
+	.lede {
+		margin: 18px 0 0;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	.form-error {
+		margin: 20px 0 0;
+		padding: 12px 16px;
+		border: 1px solid #e7c3c1;
+		background: #fbf0ef;
+		border-radius: 10px;
+		color: #b4231f;
+		font-size: 14px;
+	}
+
+	.list {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		margin-top: 40px;
+	}
+
+	.empty {
+		color: var(--muted);
+		font-size: 15px;
+	}
+
+	.card {
+		display: block;
+		padding: 20px 24px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		text-decoration: none;
+		color: var(--ink);
+		transition: border-color 0.15s ease;
+	}
+
+	.card:hover {
+		border-color: var(--ink);
+	}
+
+	.card-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.card-head h3 {
+		margin: 0;
+		font-family: var(--serif);
+		font-size: 19px;
+		font-weight: 600;
+	}
+
+	.pill {
+		flex-shrink: 0;
+		padding: 4px 12px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.pill-not_started {
+		background: var(--canvas);
+		color: var(--muted);
+		border: 1px solid var(--line);
+	}
+
+	.pill-active {
+		background: #eef4ff;
+		color: #1d4ed8;
+	}
+
+	.pill-done {
+		background: #eafaf0;
+		color: #1f7a3d;
+	}
+
+	.card-desc {
+		margin: 10px 0 0;
+		color: var(--muted);
+		font-size: 14px;
+	}
+
+	.card-dates {
+		margin: 10px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.new-challenge {
+		margin-top: 56px;
+		padding: 32px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+	}
+
+	.new-challenge h2 {
+		margin: 0 0 20px;
+		font-family: var(--serif);
+		font-size: 22px;
+		font-weight: 600;
+	}
+
+	.challenge-form {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.challenge-form label {
+		margin-top: 14px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--muted);
+	}
+
+	.challenge-form input,
+	.challenge-form textarea {
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		padding: 10px 14px;
+		outline: none;
+		resize: vertical;
+	}
+
+	.challenge-form input:focus,
+	.challenge-form textarea:focus {
+		border-color: var(--ink);
+	}
+
+	.row {
+		display: flex;
+		gap: 16px;
+	}
+
+	.row > div {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.challenge-form .btn {
+		align-self: flex-start;
+		margin-top: 24px;
+		height: 46px;
+		padding: 0 24px;
+		font-family: var(--sans);
+		font-size: 15px;
+		font-weight: 500;
+		color: #fff;
+		background: var(--ink);
+		border: 1px solid var(--ink);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.challenge-form .btn:hover {
+		background: transparent;
+		color: var(--ink);
+	}
+</style>
