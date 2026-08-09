@@ -29,6 +29,15 @@ export interface ChallengeLog {
 	created_at: string;
 }
 
+export interface ChallengeTodo {
+	id: string;
+	challenge_id: string;
+	user_id: string;
+	title: string;
+	is_done: boolean;
+	created_at: string;
+}
+
 /**
  * Resolve the signed-in user for a request, redirecting to the login page
  * when there isn't one. Returns the Supabase client alongside the user so

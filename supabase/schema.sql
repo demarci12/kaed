@@ -48,3 +48,20 @@ create policy "own proof uploads" on storage.objects
     bucket_id = 'challenge-proofs'
     and auth.uid()::text = (storage.foldername(name))[1]
   );
+
+-- Sub-todos: checklist items needed to reach a challenge's goal.
+create table if not exists public.challenge_todos (
+  id uuid primary key default gen_random_uuid(),
+  challenge_id uuid not null references public.challenges(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  is_done boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists challenge_todos_challenge_id_idx on public.challenge_todos (challenge_id);
+
+alter table public.challenge_todos enable row level security;
+
+create policy "own challenge todos" on public.challenge_todos
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

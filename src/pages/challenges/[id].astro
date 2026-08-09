@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { requireUser, type Challenge, type ChallengeLog } from '../../lib/challenges';
+import { requireUser, type Challenge, type ChallengeLog, type ChallengeTodo } from '../../lib/challenges';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -26,8 +26,17 @@ const { data: logs } = await supabase
 	.eq('challenge_id', id)
 	.order('created_at', { ascending: false });
 
+const { data: todos } = await supabase
+	.from('challenge_todos')
+	.select('*')
+	.eq('challenge_id', id)
+	.order('created_at', { ascending: true });
+
 const typed = challenge as Challenge;
 const typedLogs = (logs ?? []) as ChallengeLog[];
+const typedTodos = (todos ?? []) as ChallengeTodo[];
+
+const doneCount = typedTodos.filter((t) => t.is_done).length;
 
 const statusLabel: Record<string, string> = {
 	not_started: 'Not started',
@@ -71,56 +80,115 @@ const error = Astro.url.searchParams.get('error');
 			<button type="submit" class="btn ghost">Update status</button>
 		</form>
 
-		<div class="log-new">
-			<h2>Add progress</h2>
-			<form method="post" action={`/api/challenges/${typed.id}/logs`} enctype="multipart/form-data" class="log-form">
-				<label for="note">Note</label>
-				<textarea id="note" name="note" rows="3" required></textarea>
+		<div class="section">
+			<div class="section-head">
+				<h2>To reach the goal</h2>
+				{typedTodos.length > 0 && (
+					<span class="progress-count">{doneCount}/{typedTodos.length}</span>
+				)}
+			</div>
 
-				<label for="proof_type">Proof</label>
-				<select id="proof_type" name="proof_type" data-proof-select>
-					<option value="text">Text only</option>
-					<option value="link">Link</option>
-					<option value="image">Image</option>
-				</select>
-
-				<div class="proof-field" data-proof-field="link" hidden>
-					<label for="proof_link">Proof URL</label>
-					<input id="proof_link" name="proof_link" type="url" placeholder="https://" />
+			{typedTodos.length > 0 && (
+				<div class="progress-bar">
+					<div class="progress-bar-fill" style={`width: ${(doneCount / typedTodos.length) * 100}%`} />
 				</div>
+			)}
 
-				<div class="proof-field" data-proof-field="image" hidden>
-					<label for="proof_file">Proof image</label>
-					<input id="proof_file" name="proof_file" type="file" accept="image/*" />
+			<ul class="todo-list">
+				{typedTodos.length ? (
+					typedTodos.map((todo) => (
+						<li class="todo-item">
+							<form method="post" action={`/api/challenges/${typed.id}/todos/${todo.id}/toggle`} class="todo-form">
+								<input type="hidden" name="is_done" value={String(todo.is_done)} />
+								<button type="submit" class={`todo-check ${todo.is_done ? 'checked' : ''}`} aria-label="Toggle done">
+									{todo.is_done && '✓'}
+								</button>
+							</form>
+							<span class={`todo-title ${todo.is_done ? 'done' : ''}`}>{todo.title}</span>
+						</li>
+					))
+				) : (
+					<p class="empty">No sub-goals yet.</p>
+				)}
+			</ul>
+
+			<details class="dropup">
+				<summary class="dropup-trigger">+ Add sub-goal</summary>
+				<div class="dropup-panel">
+					<form method="post" action={`/api/challenges/${typed.id}/todos`} class="inline-form">
+						<input name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
+						<button type="submit" class="btn">Add</button>
+					</form>
 				</div>
-
-				<button type="submit" class="btn">Log progress</button>
-			</form>
+			</details>
 		</div>
 
-		<div class="log-list">
+		<div class="section">
 			<h2>Timeline</h2>
-			{typedLogs.length ? (
-				typedLogs.map((log) => (
-					<div class="log-entry">
-						<div class="log-entry-head">
-							<span class="log-date">{new Date(log.created_at).toLocaleString()}</span>
-							<span class={`proof-pill proof-${log.status}`}>{proofStatusLabel[log.status]}</span>
+
+			<div class="timeline">
+				{typedLogs.length ? (
+					typedLogs.map((log) => (
+						<div class="timeline-entry">
+							<div class="timeline-marker">
+								<span class={`timeline-dot proof-${log.status}`} />
+								<span class="timeline-line" />
+							</div>
+							<div class="timeline-content">
+								<div class="timeline-head">
+									<span class="log-date">{new Date(log.created_at).toLocaleString()}</span>
+									<span class={`proof-pill proof-${log.status}`}>{proofStatusLabel[log.status]}</span>
+								</div>
+								<p class="log-note">{log.note}</p>
+								{log.proof_type === 'link' && log.proof_url && (
+									<a class="log-proof" href={log.proof_url} target="_blank" rel="noopener noreferrer">
+										View proof link →
+									</a>
+								)}
+								{log.proof_type === 'image' && log.proof_url && (
+									<img class="log-proof-image" src={log.proof_url} alt="Proof" />
+								)}
+							</div>
 						</div>
-						<p class="log-note">{log.note}</p>
-						{log.proof_type === 'link' && log.proof_url && (
-							<a class="log-proof" href={log.proof_url} target="_blank" rel="noopener noreferrer">
-								View proof link →
-							</a>
-						)}
-						{log.proof_type === 'image' && log.proof_url && (
-							<img class="log-proof-image" src={log.proof_url} alt="Proof" />
-						)}
-					</div>
-				))
-			) : (
-				<p class="empty">No progress logged yet.</p>
-			)}
+					))
+				) : (
+					<p class="empty">No progress logged yet.</p>
+				)}
+			</div>
+
+			<details class="dropup">
+				<summary class="dropup-trigger">+ Log progress</summary>
+				<div class="dropup-panel">
+					<form
+						method="post"
+						action={`/api/challenges/${typed.id}/logs`}
+						enctype="multipart/form-data"
+						class="log-form"
+					>
+						<label for="note">Note</label>
+						<textarea id="note" name="note" rows="3" required></textarea>
+
+						<label for="proof_type">Proof</label>
+						<select id="proof_type" name="proof_type" data-proof-select>
+							<option value="text">Text only</option>
+							<option value="link">Link</option>
+							<option value="image">Image</option>
+						</select>
+
+						<div class="proof-field" data-proof-field="link" hidden>
+							<label for="proof_link">Proof URL</label>
+							<input id="proof_link" name="proof_link" type="url" placeholder="https://" />
+						</div>
+
+						<div class="proof-field" data-proof-field="image" hidden>
+							<label for="proof_file">Proof image</label>
+							<input id="proof_file" name="proof_file" type="file" accept="image/*" />
+						</div>
+
+						<button type="submit" class="btn">Log progress</button>
+					</form>
+				</div>
+			</details>
 		</div>
 	</section>
 </Layout>
@@ -138,6 +206,18 @@ const error = Astro.url.searchParams.get('error');
 
 	select?.addEventListener('change', sync);
 	sync();
+
+	// Only one dropup open at a time.
+	const dropups = document.querySelectorAll<HTMLDetailsElement>('.dropup');
+	dropups.forEach((dropup) => {
+		dropup.addEventListener('toggle', () => {
+			if (dropup.open) {
+				dropups.forEach((other) => {
+					if (other !== dropup) other.open = false;
+				});
+			}
+		});
+	});
 </script>
 
 <style>
@@ -276,59 +356,42 @@ const error = Astro.url.searchParams.get('error');
 		border-color: var(--ink);
 	}
 
-	.log-new,
-	.log-list {
+	.section {
 		margin-top: 56px;
 	}
 
-	.log-new h2,
-	.log-list h2 {
+	.section-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+	}
+
+	.section h2 {
 		margin: 0 0 20px;
 		font-family: var(--serif);
 		font-size: 22px;
 		font-weight: 600;
 	}
 
-	.log-form {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		padding: 28px;
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 16px;
-	}
-
-	.log-form label {
-		margin-top: 14px;
+	.progress-count {
 		font-size: 13px;
-		font-weight: 500;
 		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
 
-	.log-form textarea,
-	.log-form select,
-	.log-form input {
-		font-family: var(--sans);
-		font-size: 15px;
-		color: var(--ink);
+	.progress-bar {
+		height: 6px;
 		background: var(--canvas);
 		border: 1px solid var(--line);
-		border-radius: 10px;
-		padding: 10px 14px;
-		outline: none;
-		resize: vertical;
+		border-radius: 999px;
+		overflow: hidden;
+		margin: -8px 0 20px;
 	}
 
-	.log-form textarea:focus,
-	.log-form select:focus,
-	.log-form input:focus {
-		border-color: var(--ink);
-	}
-
-	.log-form .btn {
-		align-self: flex-start;
-		margin-top: 24px;
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--ink);
+		transition: width 0.2s ease;
 	}
 
 	.empty {
@@ -336,15 +399,122 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 15px;
 	}
 
-	.log-entry {
-		padding: 20px 24px;
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		margin-bottom: 14px;
+	/* Todos */
+	.todo-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
 	}
 
-	.log-entry-head {
+	.todo-item {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 12px 4px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.todo-item:last-child {
+		border-bottom: none;
+	}
+
+	.todo-form {
+		margin: 0;
+	}
+
+	.todo-check {
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		border: 1px solid var(--line);
+		background: var(--paper);
+		color: #fff;
+		font-size: 13px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.todo-check.checked {
+		background: var(--ink);
+		border-color: var(--ink);
+	}
+
+	.todo-title {
+		font-size: 15px;
+	}
+
+	.todo-title.done {
+		color: var(--muted);
+		text-decoration: line-through;
+	}
+
+	/* Timeline */
+	.timeline {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.timeline-entry {
+		display: flex;
+		gap: 18px;
+	}
+
+	.timeline-marker {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		flex-shrink: 0;
+		width: 12px;
+	}
+
+	.timeline-dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--muted);
+		border: 2px solid var(--paper);
+		box-shadow: 0 0 0 1px var(--line);
+		margin-top: 6px;
+	}
+
+	.timeline-dot.proof-verified {
+		background: #1f7a3d;
+	}
+
+	.timeline-dot.proof-rejected {
+		background: #b4231f;
+	}
+
+	.timeline-dot.proof-pending {
+		background: #92620a;
+	}
+
+	.timeline-line {
+		flex: 1;
+		width: 1px;
+		background: var(--line);
+		margin-top: 4px;
+	}
+
+	.timeline-entry:last-child .timeline-line {
+		display: none;
+	}
+
+	.timeline-content {
+		flex: 1;
+		padding-bottom: 28px;
+	}
+
+	.timeline-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -380,7 +550,7 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.log-note {
-		margin: 12px 0 0;
+		margin: 8px 0 0;
 		font-size: 15px;
 		line-height: 1.6;
 	}
@@ -404,5 +574,121 @@ const error = Astro.url.searchParams.get('error');
 		max-width: 100%;
 		border-radius: 10px;
 		border: 1px solid var(--line);
+	}
+
+	/* Dropup */
+	.dropup {
+		margin-top: 20px;
+	}
+
+	.dropup-trigger {
+		display: inline-flex;
+		align-items: center;
+		height: 40px;
+		padding: 0 20px;
+		font-family: var(--sans);
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--ink);
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		cursor: pointer;
+		list-style: none;
+		transition: border-color 0.15s ease;
+	}
+
+	.dropup-trigger::-webkit-details-marker {
+		display: none;
+	}
+
+	.dropup-trigger:hover {
+		border-color: var(--ink);
+	}
+
+	.dropup[open] .dropup-trigger {
+		border-color: var(--ink);
+	}
+
+	.dropup-panel {
+		display: flex;
+		flex-direction: column;
+		margin-bottom: 12px;
+		padding: 24px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+		animation: dropup-in 0.15s ease;
+	}
+
+	@keyframes dropup-in {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.inline-form {
+		display: flex;
+		gap: 10px;
+	}
+
+	.inline-form input {
+		flex: 1;
+		height: 44px;
+		padding: 0 14px;
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		outline: none;
+	}
+
+	.inline-form input:focus {
+		border-color: var(--ink);
+	}
+
+	.log-form {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.log-form label {
+		margin-top: 14px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--muted);
+	}
+
+	.log-form textarea,
+	.log-form select,
+	.log-form input {
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		padding: 10px 14px;
+		outline: none;
+		resize: vertical;
+	}
+
+	.log-form textarea:focus,
+	.log-form select:focus,
+	.log-form input:focus {
+		border-color: var(--ink);
+	}
+
+	.log-form .btn {
+		align-self: flex-start;
+		margin-top: 24px;
 	}
 </style>
