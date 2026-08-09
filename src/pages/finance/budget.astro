@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/finance';
-import type { FinanceBudget, FinanceCategory, FinanceTransaction } from '../../lib/finance';
+import type { FinanceBudget, FinanceCategory, FinanceTransaction, FinanceType } from '../../lib/finance';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -22,43 +22,29 @@ const nextMonth = toMonthStr(nextMonthDate);
 const prevMonth = toMonthStr(prevMonthDate);
 const monthLabel = monthDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', timeZone: 'UTC' });
 
-const { data: categories } = await supabase
-	.from('finance_categories')
-	.select('*')
-	.eq('type', 'expense')
-	.order('name', { ascending: true });
-
+const { data: categories } = await supabase.from('finance_categories').select('*').order('name', { ascending: true });
 const { data: budgets } = await supabase.from('finance_budgets').select('*').eq('month', month);
-
 const { data: transactions } = await supabase
 	.from('finance_transactions')
 	.select('*')
-	.eq('type', 'expense')
 	.gte('occurred_on', month)
 	.lt('occurred_on', nextMonth);
 
-const { data: incomeTransactions } = await supabase
-	.from('finance_transactions')
-	.select('amount')
-	.eq('type', 'income')
-	.gte('occurred_on', month)
-	.lt('occurred_on', nextMonth);
-
-const { data: incomeCategories } = await supabase.from('finance_categories').select('id').eq('type', 'income');
+// Savings balance is a global, all-time running total (matches the card on
+// the Finance page) -- not something that resets or gets "planned" per
+// month the way income/expense do. Shown here for context only.
+const { data: allSavingTx } = await supabase.from('finance_transactions').select('amount').eq('type', 'saving');
+const globalSavingsBalance = (allSavingTx ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
 
 const typedCategories = (categories ?? []) as FinanceCategory[];
+const typedBudgets = (budgets ?? []) as FinanceBudget[];
 const typedTransactions = (transactions ?? []) as FinanceTransaction[];
 
-// This page only plans expense categories -- budgets stored against
-// income/saving categories (e.g. an income target or a savings goal)
-// exist in the same table but must not bleed into these totals.
-const expenseCategoryIds = new Set(typedCategories.map((c) => c.id));
-const typedBudgets = ((budgets ?? []) as FinanceBudget[]).filter((b) => expenseCategoryIds.has(b.category_id));
-
-const incomeCategoryIds = new Set((incomeCategories ?? []).map((c) => c.id));
-const budgetedIncome = ((budgets ?? []) as FinanceBudget[])
-	.filter((b) => incomeCategoryIds.has(b.category_id))
-	.reduce((sum, b) => sum + Number(b.amount), 0);
+const categoriesByType: Record<FinanceType, FinanceCategory[]> = {
+	income: typedCategories.filter((c) => c.type === 'income'),
+	expense: typedCategories.filter((c) => c.type === 'expense'),
+	saving: typedCategories.filter((c) => c.type === 'saving'),
+};
 
 const budgetByCategoryId = new Map(typedBudgets.map((b) => [b.category_id, b]));
 const actualByCategoryId = new Map<string, number>();
@@ -67,32 +53,34 @@ for (const t of typedTransactions) {
 	actualByCategoryId.set(t.category_id, (actualByCategoryId.get(t.category_id) ?? 0) + Number(t.amount));
 }
 
-const totalBudgeted = typedBudgets.reduce((sum, b) => sum + Number(b.amount), 0);
-const totalActual = [...actualByCategoryId.values()].reduce((sum, n) => sum + n, 0);
-const monthIncomeActual = (incomeTransactions ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
-// Prefer actual logged income once any exists; otherwise fall back to the
-// income budget/plan so "expected savings" isn't 100% negative before the
-// month's income transactions are ever entered.
-const monthIncome = monthIncomeActual > 0 ? monthIncomeActual : budgetedIncome;
-const usingBudgetedIncome = monthIncomeActual === 0 && budgetedIncome > 0;
+function totals(type: FinanceType) {
+	const cats = categoriesByType[type];
+	const budgeted = cats.reduce((sum, c) => sum + Number(budgetByCategoryId.get(c.id)?.amount ?? 0), 0);
+	const actual = typedTransactions.filter((t) => t.type === type).reduce((sum, t) => sum + Number(t.amount), 0);
+	return { budgeted, actual };
+}
 
-// Weekly/daily equivalents of a monthly budget, for the breakdown columns
-// and the summary bar. Weeks-in-month is approximate (days / 7) since
-// months don't divide evenly into weeks.
+const incomeTotals = totals('income');
+const expenseTotals = totals('expense');
+const savingTotals = totals('saving');
+
+// Projected balance if the plan is followed exactly, and the actual
+// position so far based on what's really been logged this month.
+const plannedEndOfMonth = incomeTotals.budgeted - expenseTotals.budgeted - savingTotals.budgeted;
+const actualSoFar = incomeTotals.actual - expenseTotals.actual - savingTotals.actual;
+
+// Weekly/daily equivalents of a monthly amount. Weeks-in-month is
+// approximate (days / 7) since months don't divide evenly into weeks.
 const daysInMonth = new Date(Date.UTC(monthDate.getUTCFullYear(), monthDate.getUTCMonth() + 1, 0)).getUTCDate();
 const weeksInMonth = daysInMonth / 7;
 const toWeekly = (n: number) => n / weeksInMonth;
 const toDaily = (n: number) => n / daysInMonth;
 
-// What's left over if you stick to the plan (income minus budgeted, not
-// actual spend) -- the number that answers "how much will I actually save
-// this month if I hold the line on this budget."
-const expectedSavings = monthIncome - totalBudgeted;
-
 function formatAmount(n: number) {
 	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const sectionLabel: Record<FinanceType, string> = { income: 'Income', expense: 'Expense', saving: 'Saving' };
 const error = Astro.url.searchParams.get('error');
 ---
 
@@ -104,7 +92,10 @@ const error = Astro.url.searchParams.get('error');
 			<div>
 				<p class="eyebrow">Household</p>
 				<h1>Budget planning.</h1>
-				<p class="lede">Set a monthly budget per expense category and see it against what actually went out.</p>
+				<p class="lede">
+					Plan income, spending, and saving for the month together, and see what's left over if you
+					stick to it.
+				</p>
 			</div>
 		</div>
 
@@ -116,118 +107,98 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		{typedCategories.length ? (
-			<div class="table-wrap">
-				<table class="data-table">
-					<thead>
-						<tr>
-							<th>Category</th>
-							<th>Budgeted / month</th>
-							<th>≈ / week</th>
-							<th>≈ / day</th>
-							<th>Actual</th>
-							<th>Remaining</th>
-						</tr>
-					</thead>
-					<tbody>
-						{typedCategories.map((cat) => {
-							const budgeted = Number(budgetByCategoryId.get(cat.id)?.amount ?? 0);
-							const actual = actualByCategoryId.get(cat.id) ?? 0;
-							const remaining = budgeted - actual;
-							const pct = budgeted > 0 ? Math.min(100, Math.round((actual / budgeted) * 100)) : 0;
-							return (
-								<tr>
-									<td class="cell-title">{cat.name}</td>
-									<td>
-										<form method="post" action="/api/finance/budgets/set" class="budget-form">
-											<input type="hidden" name="category_id" value={cat.id} />
-											<input type="hidden" name="month" value={month} />
-											<input
-												type="number"
-												name="amount"
-												step="0.01"
-												min="0"
-												value={budgeted || ''}
-												placeholder="0.00"
-											/>
-											<button type="submit" class="btn ghost small">Save</button>
-										</form>
-									</td>
-									<td class="cell-amount cell-muted">{budgeted > 0 ? formatAmount(toWeekly(budgeted)) : '—'}</td>
-									<td class="cell-amount cell-muted">{budgeted > 0 ? formatAmount(toDaily(budgeted)) : '—'}</td>
-									<td class="cell-amount">{formatAmount(actual)}</td>
-									<td>
-										<div class="remaining-cell">
-											<span class={remaining < 0 ? 'negative' : ''}>{formatAmount(remaining)}</span>
-											{budgeted > 0 && (
-												<div class="progress-bar">
-													<div
-														class={`progress-bar-fill ${actual > budgeted ? 'over' : ''}`}
-														style={`width: ${pct}%`}
-													/>
-												</div>
-											)}
-										</div>
-									</td>
-								</tr>
-							);
-						})}
-					</tbody>
-				</table>
+		<div class="summary-bar">
+			<div>
+				<span class="summary-bar-label">Planned income</span>
+				<span class="summary-bar-value">{formatAmount(incomeTotals.budgeted)}</span>
 			</div>
-		) : (
-			<div class="empty-state">No expense categories yet. Add some from the Finance page first.</div>
-		)}
+			<div>
+				<span class="summary-bar-label">Planned expense</span>
+				<span class="summary-bar-value">{formatAmount(expenseTotals.budgeted)}</span>
+			</div>
+			<div>
+				<span class="summary-bar-label">Planned saving</span>
+				<span class="summary-bar-value">{formatAmount(savingTotals.budgeted)}</span>
+			</div>
+			<div>
+				<span class="summary-bar-label">End-of-month balance</span>
+				<span class={`summary-bar-value big ${plannedEndOfMonth < 0 ? 'negative' : 'positive'}`}>
+					{formatAmount(plannedEndOfMonth)}
+				</span>
+			</div>
+		</div>
 
-		{totalBudgeted > 0 ? (
-			<>
-				<div class="summary-bar">
-					<div>
-						<span class="summary-bar-label">Budgeted (month)</span>
-						<span class="summary-bar-value">{formatAmount(totalBudgeted)}</span>
+		<div class="sub-summary">
+			<div>
+				<span class="sub-summary-label">Actual so far this month</span>
+				<span class={`sub-summary-value ${actualSoFar < 0 ? 'negative' : 'positive'}`}>{formatAmount(actualSoFar)}</span>
+			</div>
+			<div>
+				<span class="sub-summary-label">Global savings balance</span>
+				<span class="sub-summary-value saving">{formatAmount(globalSavingsBalance)}</span>
+			</div>
+		</div>
+
+		{(['income', 'expense', 'saving'] as FinanceType[]).map((type) => (
+			<div class="type-section">
+				<h2>{sectionLabel[type]}</h2>
+				{categoriesByType[type].length ? (
+					<div class="table-wrap">
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>Category</th>
+									<th>Planned / month</th>
+									<th>≈ / week</th>
+									<th>≈ / day</th>
+									<th>Actual</th>
+									<th>{type === 'expense' ? 'Remaining' : 'Difference'}</th>
+								</tr>
+							</thead>
+							<tbody>
+								{categoriesByType[type].map((cat) => {
+									const budgeted = Number(budgetByCategoryId.get(cat.id)?.amount ?? 0);
+									const actual = actualByCategoryId.get(cat.id) ?? 0;
+									const remaining = type === 'expense' ? budgeted - actual : actual - budgeted;
+									const pct = budgeted > 0 ? Math.min(100, Math.round((actual / budgeted) * 100)) : 0;
+									return (
+										<tr>
+											<td class="cell-title">{cat.name}</td>
+											<td>
+												<form method="post" action="/api/finance/budgets/set" class="budget-form">
+													<input type="hidden" name="category_id" value={cat.id} />
+													<input type="hidden" name="month" value={month} />
+													<input type="number" name="amount" step="0.01" min="0" value={budgeted || ''} placeholder="0.00" />
+													<button type="submit" class="btn ghost small">Save</button>
+												</form>
+											</td>
+											<td class="cell-amount cell-muted">{budgeted > 0 ? formatAmount(toWeekly(budgeted)) : '—'}</td>
+											<td class="cell-amount cell-muted">{budgeted > 0 ? formatAmount(toDaily(budgeted)) : '—'}</td>
+											<td class="cell-amount">{formatAmount(actual)}</td>
+											<td>
+												<div class="remaining-cell">
+													<span class={type === 'expense' && remaining < 0 ? 'negative' : ''}>{formatAmount(remaining)}</span>
+													{budgeted > 0 && (
+														<div class="progress-bar">
+															<div
+																class={`progress-bar-fill ${type === 'expense' && actual > budgeted ? 'over' : ''}`}
+																style={`width: ${pct}%`}
+															/>
+														</div>
+													)}
+												</div>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
 					</div>
-					<div>
-						<span class="summary-bar-label">≈ Budgeted / week</span>
-						<span class="summary-bar-value">{formatAmount(toWeekly(totalBudgeted))}</span>
-					</div>
-					<div>
-						<span class="summary-bar-label">≈ Budgeted / day</span>
-						<span class="summary-bar-value">{formatAmount(toDaily(totalBudgeted))}</span>
-					</div>
-					<div>
-						<span class="summary-bar-label">Spent so far</span>
-						<span class="summary-bar-value">{formatAmount(totalActual)}</span>
-					</div>
-					<div>
-						<span class="summary-bar-label">Remaining</span>
-						<span class={`summary-bar-value ${totalBudgeted - totalActual < 0 ? 'negative' : 'positive'}`}>
-							{formatAmount(totalBudgeted - totalActual)}
-						</span>
-					</div>
-					<div>
-						<span class="summary-bar-label">
-							Expected savings{usingBudgetedIncome && <span class="summary-bar-note"> (planned income)</span>}
-						</span>
-						<span class={`summary-bar-value ${expectedSavings < 0 ? 'negative' : 'positive'}`}>
-							{formatAmount(expectedSavings)}
-						</span>
-					</div>
-				</div>
-			</>
-		) : (
-			monthIncome > 0 && (
-				<div class="summary-bar">
-					<div>
-						<span class="summary-bar-label">Income this month</span>
-						<span class="summary-bar-value">{formatAmount(monthIncome)}</span>
-					</div>
-					<div>
-						<span class="summary-bar-label">Expected savings</span>
-						<span class="summary-bar-hint">Set a budget above to project this</span>
-					</div>
-				</div>
-			)
-		)}
+				) : (
+					<div class="empty-state">No {sectionLabel[type].toLowerCase()} categories yet. Add some from the Finance page.</div>
+				)}
+			</div>
+		))}
 	</section>
 </Layout>
 
@@ -324,8 +295,100 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 12px;
 	}
 
-	.table-wrap {
+	.summary-bar {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
 		margin-top: 28px;
+		padding: 20px 24px;
+		background: var(--ink);
+		color: #fff;
+		border-radius: 14px;
+		flex-wrap: wrap;
+	}
+
+	.summary-bar > div {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.summary-bar-label {
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		opacity: 0.7;
+	}
+
+	.summary-bar-value {
+		font-family: var(--serif);
+		font-size: 20px;
+		font-weight: 600;
+	}
+
+	.summary-bar-value.big {
+		font-size: 26px;
+	}
+
+	.summary-bar-value.negative {
+		color: #ff9b95;
+	}
+
+	.summary-bar-value.positive {
+		color: #8fe0ac;
+	}
+
+	.sub-summary {
+		display: flex;
+		gap: 32px;
+		margin-top: 16px;
+		padding: 0 4px;
+		flex-wrap: wrap;
+	}
+
+	.sub-summary > div {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.sub-summary-label {
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.sub-summary-value {
+		font-family: var(--serif);
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.sub-summary-value.negative {
+		color: #b4231f;
+	}
+
+	.sub-summary-value.positive {
+		color: #1f7a3d;
+	}
+
+	.sub-summary-value.saving {
+		color: #1d4ed8;
+	}
+
+	.type-section {
+		margin-top: 40px;
+	}
+
+	.type-section h2 {
+		margin: 0 0 14px;
+		font-family: var(--serif);
+		font-size: 18px;
+		font-weight: 600;
+	}
+
+	.table-wrap {
 		overflow-x: auto;
 		border: 1px solid var(--line);
 		border-radius: 14px;
@@ -428,63 +491,12 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.empty-state {
-		margin-top: 28px;
-		padding: 32px;
+		padding: 24px;
 		text-align: center;
 		color: var(--muted);
 		border: 1px solid var(--line);
 		border-radius: 14px;
 		background: var(--paper);
-	}
-
-	.summary-bar {
-		display: flex;
-		justify-content: space-between;
-		gap: 16px;
-		margin-top: 24px;
-		padding: 20px 24px;
-		background: var(--ink);
-		color: #fff;
-		border-radius: 14px;
-		flex-wrap: wrap;
-	}
-
-	.summary-bar > div {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.summary-bar-label {
-		font-size: 11px;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		opacity: 0.7;
-	}
-
-	.summary-bar-note {
-		text-transform: none;
-		letter-spacing: normal;
-		opacity: 0.6;
-	}
-
-	.summary-bar-value {
-		font-family: var(--serif);
-		font-size: 20px;
-		font-weight: 600;
-	}
-
-	.summary-bar-hint {
-		font-size: 13px;
-		opacity: 0.8;
-	}
-
-	.summary-bar-value.negative {
-		color: #ff9b95;
-	}
-
-	.summary-bar-value.positive {
-		color: #8fe0ac;
 	}
 
 	@media (max-width: 720px) {
