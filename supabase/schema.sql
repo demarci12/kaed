@@ -193,7 +193,7 @@ create table if not exists public.finance_categories (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
-  type text not null check (type in ('income', 'expense')),
+  type text not null check (type in ('income', 'expense', 'saving')),
   created_at timestamptz not null default now()
 );
 
@@ -201,7 +201,7 @@ create table if not exists public.finance_transactions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   category_id uuid references public.finance_categories(id) on delete set null,
-  type text not null check (type in ('income', 'expense')),
+  type text not null check (type in ('income', 'expense', 'saving')),
   amount numeric(12, 2) not null check (amount > 0),
   note text,
   occurred_on date not null default current_date,

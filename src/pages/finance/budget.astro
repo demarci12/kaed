@@ -37,6 +37,13 @@ const { data: transactions } = await supabase
 	.gte('occurred_on', month)
 	.lt('occurred_on', nextMonth);
 
+const { data: incomeTransactions } = await supabase
+	.from('finance_transactions')
+	.select('amount')
+	.eq('type', 'income')
+	.gte('occurred_on', month)
+	.lt('occurred_on', nextMonth);
+
 const typedCategories = (categories ?? []) as FinanceCategory[];
 const typedBudgets = (budgets ?? []) as FinanceBudget[];
 const typedTransactions = (transactions ?? []) as FinanceTransaction[];
@@ -50,6 +57,12 @@ for (const t of typedTransactions) {
 
 const totalBudgeted = typedBudgets.reduce((sum, b) => sum + Number(b.amount), 0);
 const totalActual = [...actualByCategoryId.values()].reduce((sum, n) => sum + n, 0);
+const monthIncome = (incomeTransactions ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
+
+// What's left over if you stick to the plan (income minus budgeted, not
+// actual spend) -- the number that answers "how much will I actually save
+// this month if I hold the line on this budget."
+const expectedSavings = monthIncome - totalBudgeted;
 
 function formatAmount(n: number) {
 	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -152,6 +165,24 @@ const error = Astro.url.searchParams.get('error');
 					<span class={`summary-bar-value ${totalBudgeted - totalActual < 0 ? 'negative' : 'positive'}`}>
 						{formatAmount(totalBudgeted - totalActual)}
 					</span>
+				</div>
+				<div>
+					<span class="summary-bar-label">Expected savings</span>
+					<span class={`summary-bar-value ${expectedSavings < 0 ? 'negative' : 'positive'}`}>
+						{formatAmount(expectedSavings)}
+					</span>
+				</div>
+			</div>
+		)}
+		{totalBudgeted === 0 && monthIncome > 0 && (
+			<div class="summary-bar">
+				<div>
+					<span class="summary-bar-label">Income this month</span>
+					<span class="summary-bar-value">{formatAmount(monthIncome)}</span>
+				</div>
+				<div>
+					<span class="summary-bar-label">Expected savings</span>
+					<span class="summary-bar-hint">Set a budget above to project this</span>
 				</div>
 			</div>
 		)}
@@ -389,6 +420,11 @@ const error = Astro.url.searchParams.get('error');
 		font-family: var(--serif);
 		font-size: 20px;
 		font-weight: 600;
+	}
+
+	.summary-bar-hint {
+		font-size: 13px;
+		opacity: 0.8;
 	}
 
 	.summary-bar-value.negative {

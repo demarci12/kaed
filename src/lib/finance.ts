@@ -1,6 +1,6 @@
 export { requireUser } from './auth';
 
-export type FinanceType = 'income' | 'expense';
+export type FinanceType = 'income' | 'expense' | 'saving';
 
 export interface FinanceCategory {
 	id: string;

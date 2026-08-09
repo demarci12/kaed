@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { requireUser, type FinanceType } from '../../../../lib/finance';
 
-const ALLOWED: FinanceType[] = ['income', 'expense'];
+const ALLOWED: FinanceType[] = ['income', 'expense', 'saving'];
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	const auth = await requireUser(request, cookies);
