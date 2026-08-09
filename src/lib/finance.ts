@@ -20,3 +20,13 @@ export interface FinanceTransaction {
 	occurred_on: string;
 	created_at: string;
 }
+
+export interface FinanceBudget {
+	id: string;
+	user_id: string;
+	category_id: string;
+	month: string;
+	amount: number;
+	created_at: string;
+	updated_at: string;
+}

@@ -218,3 +218,19 @@ create policy "household finance categories" on public.finance_categories
 
 create policy "household finance transactions" on public.finance_transactions
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+create table if not exists public.finance_budgets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category_id uuid not null references public.finance_categories(id) on delete cascade,
+  month date not null,
+  amount numeric(12, 2) not null check (amount >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (category_id, month)
+);
+
+alter table public.finance_budgets enable row level security;
+
+create policy "household finance budgets" on public.finance_budgets
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
