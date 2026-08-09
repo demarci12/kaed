@@ -44,9 +44,21 @@ const { data: incomeTransactions } = await supabase
 	.gte('occurred_on', month)
 	.lt('occurred_on', nextMonth);
 
+const { data: incomeCategories } = await supabase.from('finance_categories').select('id').eq('type', 'income');
+
 const typedCategories = (categories ?? []) as FinanceCategory[];
-const typedBudgets = (budgets ?? []) as FinanceBudget[];
 const typedTransactions = (transactions ?? []) as FinanceTransaction[];
+
+// This page only plans expense categories -- budgets stored against
+// income/saving categories (e.g. an income target or a savings goal)
+// exist in the same table but must not bleed into these totals.
+const expenseCategoryIds = new Set(typedCategories.map((c) => c.id));
+const typedBudgets = ((budgets ?? []) as FinanceBudget[]).filter((b) => expenseCategoryIds.has(b.category_id));
+
+const incomeCategoryIds = new Set((incomeCategories ?? []).map((c) => c.id));
+const budgetedIncome = ((budgets ?? []) as FinanceBudget[])
+	.filter((b) => incomeCategoryIds.has(b.category_id))
+	.reduce((sum, b) => sum + Number(b.amount), 0);
 
 const budgetByCategoryId = new Map(typedBudgets.map((b) => [b.category_id, b]));
 const actualByCategoryId = new Map<string, number>();
@@ -57,7 +69,20 @@ for (const t of typedTransactions) {
 
 const totalBudgeted = typedBudgets.reduce((sum, b) => sum + Number(b.amount), 0);
 const totalActual = [...actualByCategoryId.values()].reduce((sum, n) => sum + n, 0);
-const monthIncome = (incomeTransactions ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
+const monthIncomeActual = (incomeTransactions ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
+// Prefer actual logged income once any exists; otherwise fall back to the
+// income budget/plan so "expected savings" isn't 100% negative before the
+// month's income transactions are ever entered.
+const monthIncome = monthIncomeActual > 0 ? monthIncomeActual : budgetedIncome;
+const usingBudgetedIncome = monthIncomeActual === 0 && budgetedIncome > 0;
+
+// Weekly/daily equivalents of a monthly budget, for the breakdown columns
+// and the summary bar. Weeks-in-month is approximate (days / 7) since
+// months don't divide evenly into weeks.
+const daysInMonth = new Date(Date.UTC(monthDate.getUTCFullYear(), monthDate.getUTCMonth() + 1, 0)).getUTCDate();
+const weeksInMonth = daysInMonth / 7;
+const toWeekly = (n: number) => n / weeksInMonth;
+const toDaily = (n: number) => n / daysInMonth;
 
 // What's left over if you stick to the plan (income minus budgeted, not
 // actual spend) -- the number that answers "how much will I actually save
@@ -97,7 +122,9 @@ const error = Astro.url.searchParams.get('error');
 					<thead>
 						<tr>
 							<th>Category</th>
-							<th>Budgeted</th>
+							<th>Budgeted / month</th>
+							<th>≈ / week</th>
+							<th>≈ / day</th>
 							<th>Actual</th>
 							<th>Remaining</th>
 						</tr>
@@ -126,6 +153,8 @@ const error = Astro.url.searchParams.get('error');
 											<button type="submit" class="btn ghost small">Save</button>
 										</form>
 									</td>
+									<td class="cell-amount cell-muted">{budgeted > 0 ? formatAmount(toWeekly(budgeted)) : '—'}</td>
+									<td class="cell-amount cell-muted">{budgeted > 0 ? formatAmount(toDaily(budgeted)) : '—'}</td>
 									<td class="cell-amount">{formatAmount(actual)}</td>
 									<td>
 										<div class="remaining-cell">
@@ -150,41 +179,54 @@ const error = Astro.url.searchParams.get('error');
 			<div class="empty-state">No expense categories yet. Add some from the Finance page first.</div>
 		)}
 
-		{totalBudgeted > 0 && (
-			<div class="summary-bar">
-				<div>
-					<span class="summary-bar-label">Budgeted</span>
-					<span class="summary-bar-value">{formatAmount(totalBudgeted)}</span>
+		{totalBudgeted > 0 ? (
+			<>
+				<div class="summary-bar">
+					<div>
+						<span class="summary-bar-label">Budgeted (month)</span>
+						<span class="summary-bar-value">{formatAmount(totalBudgeted)}</span>
+					</div>
+					<div>
+						<span class="summary-bar-label">≈ Budgeted / week</span>
+						<span class="summary-bar-value">{formatAmount(toWeekly(totalBudgeted))}</span>
+					</div>
+					<div>
+						<span class="summary-bar-label">≈ Budgeted / day</span>
+						<span class="summary-bar-value">{formatAmount(toDaily(totalBudgeted))}</span>
+					</div>
+					<div>
+						<span class="summary-bar-label">Spent so far</span>
+						<span class="summary-bar-value">{formatAmount(totalActual)}</span>
+					</div>
+					<div>
+						<span class="summary-bar-label">Remaining</span>
+						<span class={`summary-bar-value ${totalBudgeted - totalActual < 0 ? 'negative' : 'positive'}`}>
+							{formatAmount(totalBudgeted - totalActual)}
+						</span>
+					</div>
+					<div>
+						<span class="summary-bar-label">
+							Expected savings{usingBudgetedIncome && <span class="summary-bar-note"> (planned income)</span>}
+						</span>
+						<span class={`summary-bar-value ${expectedSavings < 0 ? 'negative' : 'positive'}`}>
+							{formatAmount(expectedSavings)}
+						</span>
+					</div>
 				</div>
-				<div>
-					<span class="summary-bar-label">Spent</span>
-					<span class="summary-bar-value">{formatAmount(totalActual)}</span>
+			</>
+		) : (
+			monthIncome > 0 && (
+				<div class="summary-bar">
+					<div>
+						<span class="summary-bar-label">Income this month</span>
+						<span class="summary-bar-value">{formatAmount(monthIncome)}</span>
+					</div>
+					<div>
+						<span class="summary-bar-label">Expected savings</span>
+						<span class="summary-bar-hint">Set a budget above to project this</span>
+					</div>
 				</div>
-				<div>
-					<span class="summary-bar-label">Remaining</span>
-					<span class={`summary-bar-value ${totalBudgeted - totalActual < 0 ? 'negative' : 'positive'}`}>
-						{formatAmount(totalBudgeted - totalActual)}
-					</span>
-				</div>
-				<div>
-					<span class="summary-bar-label">Expected savings</span>
-					<span class={`summary-bar-value ${expectedSavings < 0 ? 'negative' : 'positive'}`}>
-						{formatAmount(expectedSavings)}
-					</span>
-				</div>
-			</div>
-		)}
-		{totalBudgeted === 0 && monthIncome > 0 && (
-			<div class="summary-bar">
-				<div>
-					<span class="summary-bar-label">Income this month</span>
-					<span class="summary-bar-value">{formatAmount(monthIncome)}</span>
-				</div>
-				<div>
-					<span class="summary-bar-label">Expected savings</span>
-					<span class="summary-bar-hint">Set a budget above to project this</span>
-				</div>
-			</div>
+			)
 		)}
 	</section>
 </Layout>
@@ -329,6 +371,10 @@ const error = Astro.url.searchParams.get('error');
 		white-space: nowrap;
 	}
 
+	.cell-muted {
+		color: var(--muted);
+	}
+
 	.budget-form {
 		display: flex;
 		align-items: center;
@@ -414,6 +460,12 @@ const error = Astro.url.searchParams.get('error');
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		opacity: 0.7;
+	}
+
+	.summary-bar-note {
+		text-transform: none;
+		letter-spacing: normal;
+		opacity: 0.6;
 	}
 
 	.summary-bar-value {
