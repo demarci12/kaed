@@ -1,0 +1,413 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser } from '../../lib/auth';
+import type { Client, ClientNote, ClientStage } from '../../lib/clients';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { id } = Astro.params;
+
+const { data: client } = await supabase.from('clients').select('*').eq('id', id).maybeSingle();
+
+if (!client) {
+	return Astro.redirect('/clients');
+}
+
+const { data: notes } = await supabase
+	.from('client_notes')
+	.select('*')
+	.eq('client_id', id)
+	.order('created_at', { ascending: false });
+
+const typed = client as Client;
+const typedNotes = (notes ?? []) as ClientNote[];
+
+const stageLabel: Record<ClientStage, string> = {
+	lead: 'Lead',
+	contacted: 'Contacted',
+	negotiating: 'Negotiating',
+	won: 'Won',
+	lost: 'Lost',
+};
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout>
+	<section class="detail">
+		<a class="back" href="/clients">← Clients</a>
+
+		<div class="head">
+			<h1>{typed.name}</h1>
+			<span class={`pill pill-${typed.stage}`}>{stageLabel[typed.stage]}</span>
+		</div>
+
+		{typed.company && <p class="lede">{typed.company}</p>}
+
+		{(typed.email || typed.phone) && (
+			<p class="contact">{[typed.email, typed.phone].filter(Boolean).join(' · ')}</p>
+		)}
+
+		{error && <p class="form-error">{error}</p>}
+
+		<form method="post" action={`/api/clients/${typed.id}/update`} class="update-form">
+			<div>
+				<label for="stage">Stage</label>
+				<select id="stage" name="stage">
+					<option value="lead" selected={typed.stage === 'lead'}>Lead</option>
+					<option value="contacted" selected={typed.stage === 'contacted'}>Contacted</option>
+					<option value="negotiating" selected={typed.stage === 'negotiating'}>Negotiating</option>
+					<option value="won" selected={typed.stage === 'won'}>Won</option>
+					<option value="lost" selected={typed.stage === 'lost'}>Lost</option>
+				</select>
+			</div>
+			<div>
+				<label for="next_follow_up">Next follow-up</label>
+				<input id="next_follow_up" name="next_follow_up" type="date" value={typed.next_follow_up ?? ''} />
+			</div>
+			<button type="submit" class="btn ghost">Update</button>
+		</form>
+
+		<div class="section">
+			<h2>Notes</h2>
+
+			<div class="timeline">
+				{typedNotes.length ? (
+					typedNotes.map((note) => (
+						<div class="timeline-entry">
+							<div class="timeline-marker">
+								<span class="timeline-dot" />
+								<span class="timeline-line" />
+							</div>
+							<div class="timeline-content">
+								<span class="note-date">{new Date(note.created_at).toLocaleString()}</span>
+								<p class="note-text">{note.note}</p>
+							</div>
+						</div>
+					))
+				) : (
+					<p class="empty">No notes yet.</p>
+				)}
+			</div>
+
+			<details class="dropup">
+				<summary class="dropup-trigger">+ Add note</summary>
+				<div class="dropup-panel">
+					<form method="post" action={`/api/clients/${typed.id}/notes`} class="note-form">
+						<textarea name="note" rows="3" placeholder="What happened?" required></textarea>
+						<button type="submit" class="btn">Add note</button>
+					</form>
+				</div>
+			</details>
+		</div>
+	</section>
+</Layout>
+
+<style>
+	.detail {
+		max-width: 720px;
+	}
+
+	.back {
+		display: inline-block;
+		margin-bottom: 24px;
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 14px;
+	}
+
+	.back:hover {
+		color: var(--ink);
+	}
+
+	.head {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		flex-wrap: wrap;
+	}
+
+	h1 {
+		margin: 0;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2rem, 5vw, 2.8rem);
+		letter-spacing: -0.02em;
+	}
+
+	.lede {
+		margin: 18px 0 0;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	.contact {
+		margin: 8px 0 0;
+		font-size: 14px;
+		color: var(--muted);
+	}
+
+	.form-error {
+		margin: 20px 0 0;
+		padding: 12px 16px;
+		border: 1px solid #e7c3c1;
+		background: #fbf0ef;
+		border-radius: 10px;
+		color: #b4231f;
+		font-size: 14px;
+	}
+
+	.pill {
+		flex-shrink: 0;
+		padding: 4px 12px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.pill-lead {
+		background: var(--canvas);
+		color: var(--muted);
+		border: 1px solid var(--line);
+	}
+
+	.pill-contacted {
+		background: #eef4ff;
+		color: #1d4ed8;
+	}
+
+	.pill-negotiating {
+		background: #fff7e6;
+		color: #92620a;
+	}
+
+	.pill-won {
+		background: #eafaf0;
+		color: #1f7a3d;
+	}
+
+	.pill-lost {
+		background: #fbf0ef;
+		color: #b4231f;
+	}
+
+	.update-form {
+		display: flex;
+		align-items: flex-end;
+		gap: 14px;
+		margin-top: 32px;
+		flex-wrap: wrap;
+	}
+
+	.update-form > div {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.update-form label {
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.update-form select,
+	.update-form input {
+		height: 40px;
+		padding: 0 12px;
+		font-family: var(--sans);
+		font-size: 14px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		outline: none;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		height: 40px;
+		padding: 0 20px;
+		font-family: var(--sans);
+		font-size: 14px;
+		font-weight: 500;
+		color: #fff;
+		background: var(--ink);
+		border: 1px solid var(--ink);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.btn:hover {
+		background: transparent;
+		color: var(--ink);
+	}
+
+	.btn.ghost {
+		background: transparent;
+		color: var(--ink);
+		border-color: var(--line);
+	}
+
+	.btn.ghost:hover {
+		border-color: var(--ink);
+	}
+
+	.section {
+		margin-top: 56px;
+	}
+
+	.section h2 {
+		margin: 0 0 20px;
+		font-family: var(--serif);
+		font-size: 22px;
+		font-weight: 600;
+	}
+
+	.empty {
+		color: var(--muted);
+		font-size: 15px;
+	}
+
+	.timeline {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.timeline-entry {
+		display: flex;
+		gap: 18px;
+	}
+
+	.timeline-marker {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		flex-shrink: 0;
+		width: 12px;
+	}
+
+	.timeline-dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--ink);
+		border: 2px solid var(--paper);
+		box-shadow: 0 0 0 1px var(--line);
+		margin-top: 6px;
+	}
+
+	.timeline-line {
+		flex: 1;
+		width: 1px;
+		background: var(--line);
+		margin-top: 4px;
+	}
+
+	.timeline-entry:last-child .timeline-line {
+		display: none;
+	}
+
+	.timeline-content {
+		flex: 1;
+		padding-bottom: 28px;
+	}
+
+	.note-date {
+		font-size: 13px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.note-text {
+		margin: 8px 0 0;
+		font-size: 15px;
+		line-height: 1.6;
+	}
+
+	.dropup {
+		margin-top: 20px;
+	}
+
+	.dropup-trigger {
+		display: inline-flex;
+		align-items: center;
+		height: 40px;
+		padding: 0 20px;
+		font-family: var(--sans);
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--ink);
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		cursor: pointer;
+		list-style: none;
+		transition: border-color 0.15s ease;
+	}
+
+	.dropup-trigger::-webkit-details-marker {
+		display: none;
+	}
+
+	.dropup-trigger:hover {
+		border-color: var(--ink);
+	}
+
+	.dropup[open] .dropup-trigger {
+		border-color: var(--ink);
+	}
+
+	.dropup-panel {
+		margin-top: 16px;
+		padding: 24px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+		animation: dropup-in 0.15s ease;
+	}
+
+	@keyframes dropup-in {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.note-form {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.note-form textarea {
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		padding: 10px 14px;
+		outline: none;
+		resize: vertical;
+	}
+
+	.note-form textarea:focus {
+		border-color: var(--ink);
+	}
+
+	.note-form .btn {
+		align-self: flex-start;
+	}
+</style>

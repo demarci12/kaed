@@ -65,3 +65,50 @@ alter table public.challenge_todos enable row level security;
 
 create policy "own challenge todos" on public.challenge_todos
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Brainstorming space: freeform ideas.
+create table if not exists public.ideas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  body text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.ideas enable row level security;
+
+create policy "own ideas" on public.ideas
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Mini CRM: prospective clients and per-client notes.
+create table if not exists public.clients (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  company text,
+  email text,
+  phone text,
+  stage text not null default 'lead' check (stage in ('lead', 'contacted', 'negotiating', 'won', 'lost')),
+  next_follow_up date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.client_notes (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  note text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists client_notes_client_id_idx on public.client_notes (client_id);
+
+alter table public.clients enable row level security;
+alter table public.client_notes enable row level security;
+
+create policy "own clients" on public.clients
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "own client notes" on public.client_notes
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
