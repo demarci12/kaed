@@ -163,15 +163,45 @@ const {
 				color: var(--muted);
 			}
 
-			/* Shared popup dialog, used by every "add new" trigger across the app. */
+			@media (max-width: 720px) {
+				.shell {
+					width: calc(100% - 24px);
+				}
+				.content {
+					padding: 28px 0 32px;
+				}
+				.site-header {
+					flex-wrap: wrap;
+					gap: 12px;
+					padding: 20px 0 16px;
+				}
+				.nav {
+					gap: 12px;
+					font-size: 13px;
+					row-gap: 8px;
+					flex-wrap: wrap;
+				}
+				.nav .who {
+					display: none;
+				}
+				.site-footer {
+					flex-direction: column;
+					align-items: flex-start;
+				}
+			}
+		</style>
+		<style is:global>
+			/* Shared popup dialog, used by every "add new" trigger across the app.
+			   Global because the <dialog> markup itself lives in each page component,
+			   outside Layout's own scoped style boundary. */
 			dialog.popup {
 				width: min(480px, calc(100vw - 32px));
 				margin: auto;
 				padding: 0;
-				border: 1px solid var(--line);
+				border: 1px solid var(--line, #e4e0d8);
 				border-radius: 16px;
-				background: var(--paper);
-				color: var(--ink);
+				background: var(--paper, #fff);
+				color: var(--ink, #14110f);
 			}
 
 			dialog.popup::backdrop {
@@ -214,6 +244,7 @@ const {
 				padding: 10px 14px;
 				outline: none;
 				resize: vertical;
+				width: 100%;
 			}
 
 			dialog.popup input:focus,
@@ -240,31 +271,68 @@ const {
 				margin-top: 24px;
 			}
 
+			/* Inline editable table cells. Locked by default; click unlocks into an
+			   input, blur/Enter saves and locks it back in. */
+			[data-editable] {
+				position: relative;
+				cursor: pointer;
+				border-radius: 6px;
+				transition: background 0.1s ease;
+			}
+
+			[data-editable]:hover:not(.editing):not(.saving) {
+				background: var(--canvas);
+				box-shadow: inset 0 0 0 1px var(--line);
+			}
+
+			[data-editable]:hover:not(.editing):not(.saving)::after {
+				content: '✎';
+				position: absolute;
+				top: 50%;
+				right: 6px;
+				transform: translateY(-50%);
+				font-size: 11px;
+				color: var(--muted);
+				opacity: 0.7;
+			}
+
+			[data-editable].editing {
+				background: var(--paper);
+				box-shadow: inset 0 0 0 2px var(--ink);
+				white-space: normal !important;
+				overflow: visible !important;
+				text-overflow: unset !important;
+				max-width: none !important;
+			}
+
+			[data-editable].saving {
+				opacity: 0.55;
+				cursor: progress;
+			}
+
+			[data-editable].save-error {
+				box-shadow: inset 0 0 0 2px #b4231f;
+			}
+
+			.cell-input {
+				display: block;
+				width: 100%;
+				min-width: 120px;
+				font-family: var(--sans);
+				font-size: 14px;
+				color: var(--ink);
+				background: transparent;
+				border: none;
+				outline: none;
+				padding: 0;
+				resize: vertical;
+			}
+
+			select.cell-input {
+				cursor: pointer;
+			}
+
 			@media (max-width: 720px) {
-				.shell {
-					width: calc(100% - 24px);
-				}
-				.content {
-					padding: 28px 0 32px;
-				}
-				.site-header {
-					flex-wrap: wrap;
-					gap: 12px;
-					padding: 20px 0 16px;
-				}
-				.nav {
-					gap: 12px;
-					font-size: 13px;
-					row-gap: 8px;
-					flex-wrap: wrap;
-				}
-				.nav .who {
-					display: none;
-				}
-				.site-footer {
-					flex-direction: column;
-					align-items: flex-start;
-				}
 				dialog.popup {
 					align-self: flex-end;
 					margin: 0 auto auto auto;
@@ -339,7 +407,122 @@ const {
 					// Click landed directly on the dialog element, i.e. the backdrop.
 					target.close();
 				}
+
+				const cell = target.closest<HTMLElement>('[data-editable]');
+				if (cell && !cell.classList.contains('editing') && !cell.classList.contains('saving')) {
+					startCellEdit(cell);
+				}
 			});
+
+			/**
+			 * Inline table-cell editing: click a cell to "unlock" it into an input,
+			 * blur/Enter "locks" it back in by saving, Escape cancels without saving.
+			 */
+			function startCellEdit(cell: HTMLElement) {
+				const type = cell.dataset.editable ?? 'text';
+				const field = cell.dataset.field ?? '';
+				const rowId = cell.dataset.id ?? '';
+				const endpoint = cell.dataset.endpoint ?? '';
+				const originalValue = cell.dataset.value ?? '';
+				const originalHtml = cell.innerHTML;
+
+				cell.classList.add('editing');
+
+				let input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+				if (type === 'select') {
+					const select = document.createElement('select');
+					const options = (cell.dataset.options ?? '')
+						.split(',')
+						.filter(Boolean)
+						.map((pair) => pair.split(':'));
+					for (const [value, label] of options) {
+						const opt = document.createElement('option');
+						opt.value = value;
+						opt.textContent = label;
+						if (value === originalValue) opt.selected = true;
+						select.appendChild(opt);
+					}
+					input = select;
+				} else if (type === 'textarea') {
+					const textarea = document.createElement('textarea');
+					textarea.rows = 2;
+					textarea.value = originalValue;
+					input = textarea;
+				} else {
+					const el = document.createElement('input');
+					el.type = type === 'date' ? 'date' : 'text';
+					el.value = originalValue;
+					input = el;
+				}
+
+				input.className = 'cell-input';
+				cell.innerHTML = '';
+				cell.appendChild(input);
+				input.focus();
+				if (input instanceof HTMLInputElement) input.select();
+
+				let settled = false;
+
+				const finish = () => cell.classList.remove('editing', 'saving');
+
+				const cancel = () => {
+					if (settled) return;
+					settled = true;
+					cell.innerHTML = originalHtml;
+					finish();
+				};
+
+				const save = async () => {
+					if (settled) return;
+					settled = true;
+					const newValue = input.value.trim();
+
+					if (newValue === originalValue) {
+						cell.innerHTML = originalHtml;
+						finish();
+						return;
+					}
+
+					cell.classList.remove('editing');
+					cell.classList.add('saving');
+
+					try {
+						const response = await fetch(`${endpoint}/${rowId}/field`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ field, value: newValue }),
+						});
+						if (!response.ok) throw new Error('save failed');
+
+						cell.dataset.value = newValue;
+						if (type === 'select' && input instanceof HTMLSelectElement) {
+							const label = input.options[input.selectedIndex]?.textContent ?? newValue;
+							cell.innerHTML = `<span class="pill pill-${newValue}">${label}</span>`;
+						} else {
+							cell.textContent = newValue || '—';
+						}
+					} catch {
+						cell.innerHTML = originalHtml;
+						cell.classList.add('save-error');
+						setTimeout(() => cell.classList.remove('save-error'), 1200);
+					} finally {
+						finish();
+					}
+				};
+
+				input.addEventListener('keydown', (event) => {
+					if (event.key === 'Enter' && type !== 'textarea') {
+						event.preventDefault();
+						save();
+					} else if (event.key === 'Escape') {
+						event.preventDefault();
+						cancel();
+					}
+				});
+				input.addEventListener('blur', save);
+				if (type === 'select') input.addEventListener('change', save);
+			}
 		</script>
 	</body>
 </html>

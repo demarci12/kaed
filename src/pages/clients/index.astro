@@ -60,11 +60,56 @@ const error = Astro.url.searchParams.get('error');
 								<td class="cell-title">
 									<a href={`/clients/${client.id}`}>{client.name}</a>
 								</td>
-								<td class="cell-muted">{client.company ?? '—'}</td>
-								<td class="cell-muted">{client.email ?? '—'}</td>
-								<td class="cell-muted">{client.phone ?? '—'}</td>
-								<td><span class={`pill pill-${client.stage}`}>{stageLabel[client.stage]}</span></td>
-								<td class="cell-date">{client.next_follow_up ?? '—'}</td>
+								<td
+									class="cell-muted"
+									data-editable="text"
+									data-field="company"
+									data-id={client.id}
+									data-endpoint="/api/clients"
+									data-value={client.company ?? ''}
+								>
+									{client.company ?? '—'}
+								</td>
+								<td
+									class="cell-muted"
+									data-editable="text"
+									data-field="email"
+									data-id={client.id}
+									data-endpoint="/api/clients"
+									data-value={client.email ?? ''}
+								>
+									{client.email ?? '—'}
+								</td>
+								<td
+									class="cell-muted"
+									data-editable="text"
+									data-field="phone"
+									data-id={client.id}
+									data-endpoint="/api/clients"
+									data-value={client.phone ?? ''}
+								>
+									{client.phone ?? '—'}
+								</td>
+								<td
+									data-editable="select"
+									data-field="stage"
+									data-id={client.id}
+									data-endpoint="/api/clients"
+									data-value={client.stage}
+									data-options="lead:Lead,contacted:Contacted,negotiating:Negotiating,won:Won,lost:Lost"
+								>
+									<span class={`pill pill-${client.stage}`}>{stageLabel[client.stage]}</span>
+								</td>
+								<td
+									class="cell-date"
+									data-editable="date"
+									data-field="next_follow_up"
+									data-id={client.id}
+									data-endpoint="/api/clients"
+									data-value={client.next_follow_up ?? ''}
+								>
+									{client.next_follow_up ?? '—'}
+								</td>
 								<td class="cell-date">{new Date(client.created_at).toLocaleDateString()}</td>
 							</tr>
 						))

@@ -56,10 +56,46 @@ const error = Astro.url.searchParams.get('error');
 								<td class="cell-title">
 									<a href={`/challenges/${challenge.id}`}>{challenge.title}</a>
 								</td>
-								<td class="cell-muted">{challenge.description ?? '—'}</td>
-								<td><span class={`pill pill-${challenge.status}`}>{statusLabel[challenge.status]}</span></td>
-								<td class="cell-date">{challenge.start_date ?? '—'}</td>
-								<td class="cell-date">{challenge.target_end_date ?? '—'}</td>
+								<td
+									class="cell-muted"
+									data-editable="textarea"
+									data-field="description"
+									data-id={challenge.id}
+									data-endpoint="/api/challenges"
+									data-value={challenge.description ?? ''}
+								>
+									{challenge.description ?? '—'}
+								</td>
+								<td
+									data-editable="select"
+									data-field="status"
+									data-id={challenge.id}
+									data-endpoint="/api/challenges"
+									data-value={challenge.status}
+									data-options="not_started:Not started,active:Active,done:Done"
+								>
+									<span class={`pill pill-${challenge.status}`}>{statusLabel[challenge.status]}</span>
+								</td>
+								<td
+									class="cell-date"
+									data-editable="date"
+									data-field="start_date"
+									data-id={challenge.id}
+									data-endpoint="/api/challenges"
+									data-value={challenge.start_date ?? ''}
+								>
+									{challenge.start_date ?? '—'}
+								</td>
+								<td
+									class="cell-date"
+									data-editable="date"
+									data-field="target_end_date"
+									data-id={challenge.id}
+									data-endpoint="/api/challenges"
+									data-value={challenge.target_end_date ?? ''}
+								>
+									{challenge.target_end_date ?? '—'}
+								</td>
 								<td class="cell-date">{new Date(challenge.created_at).toLocaleDateString()}</td>
 							</tr>
 						))

@@ -46,8 +46,26 @@ const error = Astro.url.searchParams.get('error');
 					{typedIdeas.length ? (
 						typedIdeas.map((idea) => (
 							<tr>
-								<td class="cell-title">{idea.title}</td>
-								<td class="cell-muted">{idea.body ?? '—'}</td>
+								<td
+									class="cell-title"
+									data-editable="text"
+									data-field="title"
+									data-id={idea.id}
+									data-endpoint="/api/ideas"
+									data-value={idea.title}
+								>
+									{idea.title}
+								</td>
+								<td
+									class="cell-muted"
+									data-editable="textarea"
+									data-field="body"
+									data-id={idea.id}
+									data-endpoint="/api/ideas"
+									data-value={idea.body ?? ''}
+								>
+									{idea.body ?? '—'}
+								</td>
 								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
 								<td class="cell-actions">
 									<form method="post" action={`/api/ideas/${idea.id}/delete`}>

@@ -53,9 +53,36 @@ const error = Astro.url.searchParams.get('error');
 								<td class="cell-title">
 									<a href={`/business-ideas/${idea.id}`}>{idea.title}</a>
 								</td>
-								<td class="cell-muted">{idea.pain_point ?? '—'}</td>
-								<td class="cell-muted">{idea.target_market ?? '—'}</td>
-								<td class="cell-muted">{idea.validation ?? '—'}</td>
+								<td
+									class="cell-muted"
+									data-editable="textarea"
+									data-field="pain_point"
+									data-id={idea.id}
+									data-endpoint="/api/business-ideas"
+									data-value={idea.pain_point ?? ''}
+								>
+									{idea.pain_point ?? '—'}
+								</td>
+								<td
+									class="cell-muted"
+									data-editable="textarea"
+									data-field="target_market"
+									data-id={idea.id}
+									data-endpoint="/api/business-ideas"
+									data-value={idea.target_market ?? ''}
+								>
+									{idea.target_market ?? '—'}
+								</td>
+								<td
+									class="cell-muted"
+									data-editable="textarea"
+									data-field="validation"
+									data-id={idea.id}
+									data-endpoint="/api/business-ideas"
+									data-value={idea.validation ?? ''}
+								>
+									{idea.validation ?? '—'}
+								</td>
 								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
 							</tr>
 						))
