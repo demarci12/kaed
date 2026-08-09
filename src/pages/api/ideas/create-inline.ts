@@ -8,19 +8,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 	}
 	const { supabase, user } = auth;
 
-	const body = await request.json().catch(() => null);
-	const x = Number(body?.position_x);
-	const y = Number(body?.position_y);
-
 	const { data, error } = await supabase
 		.from('ideas')
-		.insert({
-			user_id: user.id,
-			title: 'Untitled idea',
-			...(Number.isFinite(x) && Number.isFinite(y)
-				? { position_x: Math.round(x), position_y: Math.round(y) }
-				: {}),
-		})
+		.insert({ user_id: user.id, title: '' })
 		.select('*')
 		.single();
 

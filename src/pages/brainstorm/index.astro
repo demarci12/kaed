@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireOwner } from '../../lib/auth';
-import type { Idea, IdeaConnection } from '../../lib/ideas';
+import type { Idea } from '../../lib/ideas';
 
 const auth = await requireOwner(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -14,10 +14,7 @@ const { data: ideas } = await supabase
 	.select('*')
 	.order('created_at', { ascending: false });
 
-const { data: connections } = await supabase.from('idea_connections').select('*');
-
 const typedIdeas = (ideas ?? []) as Idea[];
-const typedConnections = (connections ?? []) as IdeaConnection[];
 
 const error = Astro.url.searchParams.get('error');
 ---
@@ -28,287 +25,98 @@ const error = Astro.url.searchParams.get('error');
 			<div>
 				<p class="eyebrow">Personal</p>
 				<h1>Brainstorm.</h1>
-				<p class="lede">
-					Click anywhere on the board to drop a new idea. Drag cards to arrange them, drag from
-					the dot to connect related ideas.
-				</p>
+				<p class="lede">Freeform notes before an idea is worth anything more formal. Click a title or note to write.</p>
 			</div>
+			<button type="button" class="btn" id="new-idea-btn">+ New note</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="board-wrap">
-			<div class="board" id="board">
-				<svg class="board-lines" id="board-lines"></svg>
-				{typedIdeas.map((idea) => (
-					<div
-						class="idea-card"
-						data-id={idea.id}
-						style={`left:${idea.position_x}px; top:${idea.position_y}px;`}
-					>
-						<div class="idea-card-body">
+		<div class="notes" id="notes">
+			{typedIdeas.length ? (
+				typedIdeas.map((idea) => (
+					<article class="note" data-id={idea.id}>
+						<div class="note-body">
 							<div
-								class="idea-title"
+								class="note-title"
 								data-editable="text"
 								data-field="title"
 								data-id={idea.id}
 								data-endpoint="/api/ideas"
 								data-value={idea.title}
 							>
-								{idea.title}
+								{idea.title || 'Untitled'}
 							</div>
 							<div
-								class="idea-notes"
+								class="note-text"
 								data-editable="textarea"
 								data-field="body"
 								data-id={idea.id}
 								data-endpoint="/api/ideas"
 								data-value={idea.body ?? ''}
 							>
-								{idea.body ?? '—'}
+								{idea.body || 'Write something…'}
 							</div>
 						</div>
-						<div class="idea-card-actions">
+						<div class="note-actions">
 							{idea.business_idea_id ? (
-								<a class="idea-link" href={`/business-ideas/${idea.business_idea_id}`}>→ View idea</a>
+								<a class="note-link" href={`/business-ideas/${idea.business_idea_id}`}>→ View business idea</a>
 							) : (
 								<form method="post" action={`/api/ideas/${idea.id}/promote`}>
-									<button type="submit" class="idea-link idea-link-btn">Generate business idea →</button>
+									<button type="submit" class="note-link note-link-btn">Generate business idea →</button>
 								</form>
 							)}
 							<form method="post" action={`/api/ideas/${idea.id}/delete`}>
-								<button type="submit" class="idea-delete" aria-label="Delete idea">×</button>
+								<button type="submit" class="note-delete" aria-label="Delete note">×</button>
 							</form>
 						</div>
-						<div class="connect-handle" title="Drag to connect to another idea"></div>
-					</div>
-				))}
-			</div>
+					</article>
+				))
+			) : (
+				<p class="empty">Nothing here yet. Click "+ New note" to start writing.</p>
+			)}
 		</div>
 	</section>
 </Layout>
 
-<script define:vars={{ connections: typedConnections }}>
-	const board = document.getElementById('board');
-	const svg = document.getElementById('board-lines');
-	const CARD_WIDTH = 220;
-	const CARD_EST_HEIGHT = 90;
+<script>
+	const notes = document.getElementById('notes');
+	const newIdeaBtn = document.getElementById('new-idea-btn');
 
-	function cardCenter(card) {
-		return {
-			x: card.offsetLeft + card.offsetWidth / 2,
-			y: card.offsetTop + card.offsetHeight / 2,
-		};
-	}
-
-	function cardById(id) {
-		return board.querySelector(`.idea-card[data-id="${id}"]`);
-	}
-
-	const lineState = new Map(); // connectionId -> { line, fromId, toId }
-
-	function drawLine(id, fromId, toId) {
-		const fromCard = cardById(fromId);
-		const toCard = cardById(toId);
-		if (!fromCard || !toCard) return;
-		const a = cardCenter(fromCard);
-		const b = cardCenter(toCard);
-
-		let line = lineState.get(id)?.line;
-		if (!line) {
-			line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-			line.setAttribute('class', 'board-line');
-			line.addEventListener('click', async (ev) => {
-				ev.stopPropagation();
-				if (!confirm('Remove this connection?')) return;
-				await fetch(`/api/idea-connections/${id}/delete`, { method: 'POST' });
-				line.remove();
-				lineState.delete(id);
-			});
-			svg.appendChild(line);
-		}
-		line.setAttribute('x1', a.x);
-		line.setAttribute('y1', a.y);
-		line.setAttribute('x2', b.x);
-		line.setAttribute('y2', b.y);
-		lineState.set(id, { line, fromId, toId });
-	}
-
-	function refreshAllLines() {
-		for (const [id, { fromId, toId }] of lineState) drawLine(id, fromId, toId);
-	}
-
-	for (const conn of connections) {
-		drawLine(conn.id, conn.from_idea_id, conn.to_idea_id);
-	}
-
-	// --- Card template (used for cards created inline, without a reload) ---
-	function buildCard(idea) {
-		const card = document.createElement('div');
-		card.className = 'idea-card';
-		card.dataset.id = idea.id;
-		card.style.left = `${idea.position_x}px`;
-		card.style.top = `${idea.position_y}px`;
-
-		card.innerHTML = `
-			<div class="idea-card-body">
-				<div class="idea-title" data-editable="text" data-field="title" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="${idea.title ?? ''}">${idea.title ?? ''}</div>
-				<div class="idea-notes" data-editable="textarea" data-field="body" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="${idea.body ?? ''}">${idea.body ?? '—'}</div>
+	function buildNote(idea: { id: string; title: string; body: string | null }) {
+		const article = document.createElement('article');
+		article.className = 'note';
+		article.dataset.id = idea.id;
+		article.innerHTML = `
+			<div class="note-body">
+				<div class="note-title" data-editable="text" data-field="title" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="">Untitled</div>
+				<div class="note-text" data-editable="textarea" data-field="body" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="">Write something…</div>
 			</div>
-			<div class="idea-card-actions">
-				<form method="post" action="/api/ideas/${idea.id}/promote"><button type="submit" class="idea-link idea-link-btn">Generate business idea →</button></form>
-				<form method="post" action="/api/ideas/${idea.id}/delete"><button type="submit" class="idea-delete" aria-label="Delete idea">×</button></form>
+			<div class="note-actions">
+				<form method="post" action="/api/ideas/${idea.id}/promote"><button type="submit" class="note-link note-link-btn">Generate business idea →</button></form>
+				<form method="post" action="/api/ideas/${idea.id}/delete"><button type="submit" class="note-delete" aria-label="Delete note">×</button></form>
 			</div>
-			<div class="connect-handle" title="Drag to connect to another idea"></div>
 		`;
-		return card;
+		return article;
 	}
 
-	// --- Dragging cards ---
-	let dragState = null;
+	newIdeaBtn?.addEventListener('click', async () => {
+		const empty = notes?.querySelector('.empty');
+		empty?.remove();
 
-	board.addEventListener('pointerdown', (e) => {
-		const card = e.target.closest('.idea-card');
-		if (!card) return;
-		if (e.target.closest('[data-editable], button, a, .connect-handle')) return;
-
-		dragState = {
-			card,
-			startX: e.clientX,
-			startY: e.clientY,
-			origLeft: card.offsetLeft,
-			origTop: card.offsetTop,
-			moved: false,
-		};
-		card.setPointerCapture(e.pointerId);
-	});
-
-	board.addEventListener('pointermove', (e) => {
-		if (!dragState) return;
-		const dx = e.clientX - dragState.startX;
-		const dy = e.clientY - dragState.startY;
-		if (!dragState.moved && Math.hypot(dx, dy) > 4) dragState.moved = true;
-		if (dragState.moved) {
-			dragState.card.style.left = `${Math.max(0, dragState.origLeft + dx)}px`;
-			dragState.card.style.top = `${Math.max(0, dragState.origTop + dy)}px`;
-			refreshAllLines();
-		}
-	});
-
-	board.addEventListener('pointerup', (e) => {
-		if (!dragState) return;
-		const { card, moved } = dragState;
-		if (moved) {
-			const suppressClick = (ev) => ev.stopPropagation();
-			card.addEventListener('click', suppressClick, { capture: true, once: true });
-			board.addEventListener('click', suppressClick, { capture: true, once: true });
-			fetch(`/api/ideas/${card.dataset.id}/position`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ position_x: card.offsetLeft, position_y: card.offsetTop }),
-			});
-		}
-		dragState = null;
-	});
-
-	// --- Connecting cards ---
-	let connectState = null;
-	let previewLine = null;
-
-	board.addEventListener('pointerdown', (e) => {
-		const handle = e.target.closest('.connect-handle');
-		if (!handle) return;
-		e.stopPropagation();
-		const card = handle.closest('.idea-card');
-		connectState = { fromId: card.dataset.id };
-
-		previewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-		previewLine.setAttribute('class', 'board-line board-line-preview');
-		const start = cardCenter(card);
-		previewLine.setAttribute('x1', start.x);
-		previewLine.setAttribute('y1', start.y);
-		previewLine.setAttribute('x2', start.x);
-		previewLine.setAttribute('y2', start.y);
-		svg.appendChild(previewLine);
-		handle.setPointerCapture(e.pointerId);
-	});
-
-	board.addEventListener('pointermove', (e) => {
-		if (!connectState || !previewLine) return;
-		const boardRect = board.getBoundingClientRect();
-		previewLine.setAttribute('x2', e.clientX - boardRect.left + board.scrollLeft);
-		previewLine.setAttribute('y2', e.clientY - boardRect.top + board.scrollTop);
-	});
-
-	board.addEventListener('pointerup', async (e) => {
-		if (!connectState) return;
-		previewLine?.remove();
-		previewLine = null;
-
-		const suppressClick = (ev) => ev.stopPropagation();
-		board.addEventListener('click', suppressClick, { capture: true, once: true });
-
-		const targetCard = document.elementFromPoint(e.clientX, e.clientY)?.closest('.idea-card');
-		const fromId = connectState.fromId;
-		connectState = null;
-
-		if (!targetCard || targetCard.dataset.id === fromId) return;
-		const toId = targetCard.dataset.id;
-
-		const res = await fetch('/api/idea-connections/create', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ from_idea_id: fromId, to_idea_id: toId }),
-		});
-		const result = await res.json().catch(() => null);
-		if (result?.id) drawLine(result.id, fromId, toId);
-	});
-
-	// --- Click empty board to create a new card, centered on the click ---
-	let creating = false;
-
-	board.addEventListener('click', async (e) => {
-		if (e.target.closest('.idea-card')) return;
-		if (e.target.tagName === 'line' || e.target.closest('#board-lines')) return;
-		if (creating) return;
-		creating = true;
-
-		const boardRect = board.getBoundingClientRect();
-		const clickX = e.clientX - boardRect.left + board.scrollLeft;
-		const clickY = e.clientY - boardRect.top + board.scrollTop;
-
-		const res = await fetch('/api/ideas/create-inline', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				position_x: Math.round(clickX - CARD_WIDTH / 2),
-				position_y: Math.round(clickY - CARD_EST_HEIGHT / 2),
-			}),
-		});
+		const res = await fetch('/api/ideas/create-inline', { method: 'POST' });
 		const idea = await res.json().catch(() => null);
-		creating = false;
-		if (!idea?.id) return;
+		if (!idea?.id || !notes) return;
 
-		const card = buildCard(idea);
-		board.appendChild(card);
-
-		// Recenter on the actual rendered height, then persist.
-		const h = card.offsetHeight;
-		const top = Math.max(0, Math.round(clickY - h / 2));
-		card.style.top = `${top}px`;
-		fetch(`/api/ideas/${idea.id}/position`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ position_x: card.offsetLeft, position_y: top }),
-		});
-
-		card.querySelector('.idea-title')?.click();
+		const note = buildNote(idea);
+		notes.prepend(note);
+		note.querySelector<HTMLElement>('.note-title')?.click();
 	});
 </script>
 
 <style>
 	.brainstorm {
-		max-width: none;
+		max-width: 760px;
 	}
 
 	.page-head {
@@ -342,6 +150,10 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 16px;
 	}
 
+	.page-head .btn {
+		flex-shrink: 0;
+	}
+
 	.form-error {
 		margin: 20px 0 0;
 		padding: 12px 16px;
@@ -352,115 +164,71 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 14px;
 	}
 
-	.board-wrap {
-		width: 100vw;
-		margin-left: calc(50% - 50vw);
-		margin-right: calc(50% - 50vw);
-		margin-top: 24px;
-		padding: 0 24px 24px;
+	.notes {
+		margin-top: 40px;
+		display: flex;
+		flex-direction: column;
 	}
 
-	.board-wrap > .board {
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
+	.note {
+		padding: 28px 0;
+		border-bottom: 1px solid var(--line);
 	}
 
-	.board {
-		position: relative;
-		width: 100%;
-		height: calc(100vh - 220px);
-		min-height: 560px;
-		overflow: auto;
-		background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
-		background-size: 24px 24px;
-		background-attachment: local;
+	.note:first-child {
+		padding-top: 0;
 	}
 
-	.board-lines {
-		position: absolute;
-		inset: 0;
-		width: 3000px;
-		height: 3000px;
-		pointer-events: none;
-		overflow: visible;
-	}
-
-	:global(.board-line) {
-		stroke: var(--muted);
-		stroke-width: 2;
-		pointer-events: stroke;
-		cursor: pointer;
-	}
-
-	:global(.board-line:hover) {
-		stroke: #b4231f;
-	}
-
-	:global(.board-line-preview) {
-		stroke: var(--ink);
-		stroke-dasharray: 4 4;
-		pointer-events: none;
-	}
-
-	.idea-card {
-		position: absolute;
-		width: 220px;
-		padding: 14px;
-		border: 1px solid var(--line);
-		border-radius: 12px;
-		background: var(--paper);
-		box-shadow: 0 4px 14px -6px rgba(20, 17, 15, 0.18);
-		cursor: grab;
-		touch-action: none;
-		user-select: none;
-	}
-
-	.idea-card:active {
-		cursor: grabbing;
-	}
-
-	.idea-title {
+	.note-title {
+		font-family: var(--serif);
+		font-size: 22px;
 		font-weight: 600;
-		font-size: 14px;
 		cursor: text;
 	}
 
-	.idea-notes {
-		margin-top: 8px;
-		font-size: 13px;
+	.note-text {
+		margin-top: 10px;
+		font-size: 15px;
+		line-height: 1.7;
+		color: var(--ink);
+		white-space: pre-wrap;
+		cursor: text;
+	}
+
+	.note-text:not(.editing) {
 		color: var(--muted);
-		cursor: text;
-		display: -webkit-box;
-		-webkit-line-clamp: 4;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
 	}
 
-	.idea-card-actions {
+	.note-title[data-value]:not([data-value=""]),
+	.note-text[data-value]:not([data-value=""]) {
+		color: var(--ink);
+	}
+
+	.note-actions {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 8px;
-		margin-top: 12px;
+		gap: 12px;
+		margin-top: 16px;
 	}
 
-	.idea-card-actions form {
+	.note-actions form {
 		margin: 0;
 	}
 
-	.idea-link {
-		font-size: 12px;
-		color: var(--ink);
+	.note-link {
+		font-size: 13px;
+		color: var(--muted);
 		text-decoration: none;
 		border-bottom: 1px solid var(--line);
 	}
 
-	.idea-link:hover {
+	.note-link:hover {
+		color: var(--ink);
 		border-color: var(--ink);
 	}
 
-	.idea-link-btn {
+	.note-link-btn {
 		background: none;
 		border: none;
 		border-bottom: 1px solid var(--line);
@@ -469,10 +237,9 @@ const error = Astro.url.searchParams.get('error');
 		cursor: pointer;
 	}
 
-	.idea-delete {
-		flex-shrink: 0;
-		width: 20px;
-		height: 20px;
+	.note-delete {
+		width: 22px;
+		height: 22px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -480,32 +247,32 @@ const error = Astro.url.searchParams.get('error');
 		border: 1px solid transparent;
 		background: transparent;
 		color: var(--muted);
-		font-size: 14px;
+		font-size: 15px;
 		line-height: 1;
 		cursor: pointer;
 	}
 
-	.idea-delete:hover {
+	.note-delete:hover {
 		border-color: var(--line);
 		color: #b4231f;
 	}
 
-	.connect-handle {
-		position: absolute;
-		right: -6px;
-		bottom: -6px;
-		width: 14px;
-		height: 14px;
-		border-radius: 50%;
-		background: var(--ink);
-		border: 2px solid var(--paper);
-		cursor: crosshair;
+	.empty {
+		margin-top: 40px;
+		color: var(--muted);
+		font-size: 15px;
 	}
 
-	@media (max-width: 720px) {
-		.page-head {
-			flex-direction: column;
-			align-items: stretch;
-		}
+	.cell-input {
+		font-family: inherit;
+		font-size: inherit;
+		line-height: inherit;
+		color: inherit;
+		font-weight: inherit;
+	}
+
+	.note-text .cell-input {
+		min-height: 120px;
+		resize: vertical;
 	}
 </style>
