@@ -35,32 +35,39 @@ const error = Astro.url.searchParams.get('error');
 		{error && <p class="form-error">{error}</p>}
 
 		<form method="post" action={`/api/business-ideas/${typed.id}/update`} class="edit-form">
-			<label for="title">Title</label>
-			<input id="title" name="title" type="text" required maxlength="160" value={typed.title} />
+			<div class="field">
+				<label for="title">Title</label>
+				<input id="title" name="title" type="text" required maxlength="160" value={typed.title} />
+			</div>
 
-			<label for="pain_point">Pain point</label>
-			<textarea id="pain_point" name="pain_point" rows="3">{typed.pain_point}</textarea>
+			<div class="field">
+				<label for="pain_point">Pain point</label>
+				<textarea id="pain_point" name="pain_point" rows="3">{typed.pain_point}</textarea>
+			</div>
 
-			<label for="target_market">Target market</label>
-			<textarea id="target_market" name="target_market" rows="3">{typed.target_market}</textarea>
+			<div class="field">
+				<label for="target_market">Target market</label>
+				<textarea id="target_market" name="target_market" rows="3">{typed.target_market}</textarea>
+			</div>
 
-			<label for="validation">Validation</label>
-			<textarea id="validation" name="validation" rows="3">{typed.validation}</textarea>
+			<div class="field">
+				<label for="validation">Validation</label>
+				<textarea id="validation" name="validation" rows="3">{typed.validation}</textarea>
+			</div>
 
 			<div class="actions">
 				<button type="submit" class="btn">Save changes</button>
+				<button type="submit" form="delete-idea" class="btn danger">Delete idea</button>
 			</div>
 		</form>
 
-		<form method="post" action={`/api/business-ideas/${typed.id}/delete`} class="delete-form">
-			<button type="submit" class="btn danger">Delete idea</button>
-		</form>
+		<form id="delete-idea" method="post" action={`/api/business-ideas/${typed.id}/delete`}></form>
 	</section>
 </Layout>
 
 <style>
 	.detail {
-		max-width: 640px;
+		max-width: 760px;
 	}
 
 	.back {
@@ -102,41 +109,55 @@ const error = Astro.url.searchParams.get('error');
 	.edit-form {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
-		margin-top: 32px;
-		padding: 28px;
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 16px;
+		gap: 28px;
+		margin-top: 40px;
+		width: 100%;
 	}
 
-	.edit-form label {
-		margin-top: 14px;
-		font-size: 13px;
-		font-weight: 500;
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.field label {
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
 		color: var(--muted);
 	}
 
-	.edit-form input,
-	.edit-form textarea {
+	.field input,
+	.field textarea {
+		width: 100%;
 		font-family: var(--sans);
-		font-size: 15px;
+		font-size: 16px;
 		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		padding: 10px 14px;
+		background: transparent;
+		border: none;
+		border-bottom: 1px solid var(--line);
+		padding: 8px 0;
 		outline: none;
 		resize: vertical;
+		transition: border-color 0.15s ease;
 	}
 
-	.edit-form input:focus,
-	.edit-form textarea:focus {
+	.field input {
+		font-family: var(--serif);
+		font-size: 22px;
+	}
+
+	.field input:focus,
+	.field textarea:focus {
 		border-color: var(--ink);
 	}
 
 	.actions {
-		margin-top: 24px;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		margin-top: 8px;
 	}
 
 	.btn {
@@ -160,10 +181,6 @@ const error = Astro.url.searchParams.get('error');
 	.btn:hover {
 		background: transparent;
 		color: var(--ink);
-	}
-
-	.delete-form {
-		margin-top: 20px;
 	}
 
 	.btn.danger {
