@@ -1,13 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { createSupabaseServerClient } from '../lib/supabase';
+import { isMember } from '../lib/auth';
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 const {
 	data: { user },
 } = await supabase.auth.getUser();
 if (user) {
-	return Astro.redirect('/projects');
+	return Astro.redirect(isMember(user) ? '/finance' : '/projects');
 }
 
 const error = Astro.url.searchParams.get('error');

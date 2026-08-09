@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro';
-import { requireUser } from '../../../../lib/auth';
+import { requireOwner } from '../../../../lib/auth';
 import type { ClientStage } from '../../../../lib/clients';
 
 const ALLOWED_STAGES: ClientStage[] = ['lead', 'contacted', 'negotiating', 'won', 'lost'];
 
 export const POST: APIRoute = async ({ request, cookies, redirect, params }) => {
-	const auth = await requireUser(request, cookies);
+	const auth = await requireOwner(request, cookies);
 	if ('redirect' in auth) {
 		return redirect(auth.redirect);
 	}

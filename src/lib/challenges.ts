@@ -1,4 +1,4 @@
-export { requireUser } from './auth';
+export { requireOwner as requireUser } from './auth';
 
 export interface Challenge {
 	id: string;

@@ -183,3 +183,38 @@ alter table public.ideas
 create unique index if not exists ideas_business_idea_id_unique_idx
   on public.ideas (business_idea_id)
   where business_idea_id is not null;
+
+-- Household finance tracker. Shared data: unlike every other table in this
+-- file, RLS is NOT scoped to auth.uid() = user_id — any authenticated user
+-- (owner or the restricted "member" role, see auth.ts requireOwner) can
+-- read/write every row, because this is jointly-managed household money,
+-- not personal-to-one-account data.
+create table if not exists public.finance_categories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  type text not null check (type in ('income', 'expense')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.finance_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category_id uuid references public.finance_categories(id) on delete set null,
+  type text not null check (type in ('income', 'expense')),
+  amount numeric(12, 2) not null check (amount > 0),
+  note text,
+  occurred_on date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists finance_transactions_occurred_on_idx on public.finance_transactions (occurred_on desc);
+
+alter table public.finance_categories enable row level security;
+alter table public.finance_transactions enable row level security;
+
+create policy "household finance categories" on public.finance_categories
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+create policy "household finance transactions" on public.finance_transactions
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

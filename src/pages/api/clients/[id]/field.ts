@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro';
-import { requireUser } from '../../../../lib/auth';
+import { requireOwner } from '../../../../lib/auth';
 
 const EDITABLE_FIELDS = new Set(['name', 'company', 'email', 'phone', 'stage', 'next_follow_up']);
 const STAGE_VALUES = new Set(['lead', 'contacted', 'negotiating', 'won', 'lost']);
 
 export const POST: APIRoute = async ({ request, cookies, params }) => {
-	const auth = await requireUser(request, cookies);
+	const auth = await requireOwner(request, cookies);
 	if ('redirect' in auth) {
 		return new Response(JSON.stringify({ error: 'Not signed in.' }), { status: 401 });
 	}

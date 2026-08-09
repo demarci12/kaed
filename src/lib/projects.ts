@@ -1,4 +1,4 @@
-export { requireUser } from './auth';
+export { requireOwner as requireUser } from './auth';
 
 export type ProjectStatus = 'not_started' | 'active' | 'done';
 export type ProofType = 'text' | 'link' | 'image';

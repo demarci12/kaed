@@ -1,10 +1,12 @@
 ---
 import { createSupabaseServerClient } from '../lib/supabase';
+import { isMember } from '../lib/auth';
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 const {
 	data: { user },
 } = await supabase.auth.getUser();
+const memberOnly = user ? isMember(user) : false;
 ---
 
 <!doctype html>
@@ -473,10 +475,17 @@ const {
 					{
 						user ? (
 							<>
-								<a href="/brainstorm" class="who-link">Brainstorm</a>
-								<a href="/business-ideas" class="who-link">Ideas</a>
-								<a href="/projects" class="who-link">Projects</a>
-								<a href="/clients" class="who-link">Clients</a>
+								{memberOnly ? (
+									<a href="/finance" class="who-link">Finance</a>
+								) : (
+									<>
+										<a href="/brainstorm" class="who-link">Brainstorm</a>
+										<a href="/business-ideas" class="who-link">Ideas</a>
+										<a href="/projects" class="who-link">Projects</a>
+										<a href="/clients" class="who-link">Clients</a>
+										<a href="/finance" class="who-link">Finance</a>
+									</>
+								)}
 								<span class="who">{user.email}</span>
 								<form method="post" action="/api/auth/signout">
 									<button type="submit" class="btn ghost">Sign out</button>

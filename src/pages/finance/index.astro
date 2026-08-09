@@ -1,0 +1,492 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser } from '../../lib/finance';
+import type { FinanceCategory, FinanceTransaction } from '../../lib/finance';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { data: transactions } = await supabase
+	.from('finance_transactions')
+	.select('*')
+	.order('occurred_on', { ascending: false })
+	.order('created_at', { ascending: false });
+
+const { data: categories } = await supabase
+	.from('finance_categories')
+	.select('*')
+	.order('name', { ascending: true });
+
+const typedTransactions = (transactions ?? []) as FinanceTransaction[];
+const typedCategories = (categories ?? []) as FinanceCategory[];
+
+const categoryById = new Map(typedCategories.map((c) => [c.id, c]));
+const incomeCategories = typedCategories.filter((c) => c.type === 'income');
+const expenseCategories = typedCategories.filter((c) => c.type === 'expense');
+
+const totalIncome = typedTransactions
+	.filter((t) => t.type === 'income')
+	.reduce((sum, t) => sum + Number(t.amount), 0);
+const totalExpense = typedTransactions
+	.filter((t) => t.type === 'expense')
+	.reduce((sum, t) => sum + Number(t.amount), 0);
+const balance = totalIncome - totalExpense;
+
+function formatAmount(n: number) {
+	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout>
+	<section class="finance">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Household</p>
+				<h1>Finance.</h1>
+				<p class="lede">Shared income and spending — every transaction visible to both of you.</p>
+			</div>
+			<div class="page-head-actions">
+				<button type="button" class="btn ghost" data-open-popup="manage-categories">Manage categories</button>
+				<button type="button" class="btn" data-open-popup="new-transaction">+ Add transaction</button>
+			</div>
+		</div>
+
+		{error && <p class="form-error">{error}</p>}
+
+		<div class="summary-cards">
+			<div class="summary-card">
+				<span class="summary-label">Balance</span>
+				<span class={`summary-value ${balance >= 0 ? '' : 'negative'}`}>{formatAmount(balance)}</span>
+			</div>
+			<div class="summary-card">
+				<span class="summary-label">Total income</span>
+				<span class="summary-value positive">{formatAmount(totalIncome)}</span>
+			</div>
+			<div class="summary-card">
+				<span class="summary-label">Total spending</span>
+				<span class="summary-value negative">{formatAmount(totalExpense)}</span>
+			</div>
+		</div>
+
+		<div class="table-wrap">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Date</th>
+						<th>Type</th>
+						<th>Category</th>
+						<th>Note</th>
+						<th>Amount</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{typedTransactions.length ? (
+						typedTransactions.map((t) => (
+							<tr>
+								<td class="cell-date">{t.occurred_on}</td>
+								<td>
+									<span class={`pill pill-${t.type}`}>{t.type === 'income' ? 'Income' : 'Expense'}</span>
+								</td>
+								<td class="cell-muted">{t.category_id ? categoryById.get(t.category_id)?.name ?? '—' : '—'}</td>
+								<td class="cell-muted">{t.note ?? '—'}</td>
+								<td class={`cell-amount ${t.type === 'income' ? 'positive' : 'negative'}`}>
+									{t.type === 'income' ? '+' : '−'}
+									{formatAmount(Number(t.amount))}
+								</td>
+								<td class="cell-actions">
+									<form method="post" action={`/api/finance/transactions/${t.id}/delete`}>
+										<button type="submit" class="row-delete" aria-label="Delete transaction">×</button>
+									</form>
+								</td>
+							</tr>
+						))
+					) : (
+						<tr>
+							<td colspan="6" class="empty-cell">No transactions yet. Add your first one.</td>
+						</tr>
+					)}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<dialog id="new-transaction" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add transaction</h2>
+		<form method="post" action="/api/finance/transactions/create">
+			<label for="type">Type</label>
+			<select id="type" name="type" required>
+				<option value="expense">Expense</option>
+				<option value="income">Income</option>
+			</select>
+
+			<label for="amount">Amount</label>
+			<input id="amount" name="amount" type="number" step="0.01" min="0.01" required />
+
+			<label for="category_id">Category</label>
+			<select id="category_id" name="category_id">
+				<option value="">No category</option>
+				<optgroup label="Income">
+					{incomeCategories.map((c) => <option value={c.id}>{c.name}</option>)}
+				</optgroup>
+				<optgroup label="Expense">
+					{expenseCategories.map((c) => <option value={c.id}>{c.name}</option>)}
+				</optgroup>
+			</select>
+
+			<label for="occurred_on">Date</label>
+			<input id="occurred_on" name="occurred_on" type="date" />
+
+			<label for="note">Note</label>
+			<input id="note" name="note" type="text" maxlength="200" placeholder="Optional" />
+
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="manage-categories" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Manage categories</h2>
+
+		<div class="category-groups">
+			<div>
+				<h3>Income</h3>
+				<ul class="category-list">
+					{incomeCategories.length ? (
+						incomeCategories.map((c) => (
+							<li>
+								<span>{c.name}</span>
+								<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
+									<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+								</form>
+							</li>
+						))
+					) : (
+						<li class="category-empty">None yet.</li>
+					)}
+				</ul>
+			</div>
+			<div>
+				<h3>Expense</h3>
+				<ul class="category-list">
+					{expenseCategories.length ? (
+						expenseCategories.map((c) => (
+							<li>
+								<span>{c.name}</span>
+								<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
+									<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+								</form>
+							</li>
+						))
+					) : (
+						<li class="category-empty">None yet.</li>
+					)}
+				</ul>
+			</div>
+		</div>
+
+		<form method="post" action="/api/finance/categories/create" class="new-category-form">
+			<div class="popup-row">
+				<div>
+					<label for="cat-name">New category</label>
+					<input id="cat-name" name="name" type="text" required maxlength="80" />
+				</div>
+				<div>
+					<label for="cat-type">Type</label>
+					<select id="cat-type" name="type">
+						<option value="expense">Expense</option>
+						<option value="income">Income</option>
+					</select>
+				</div>
+			</div>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Close</button>
+				<button type="submit" class="btn">Add category</button>
+			</div>
+		</form>
+	</dialog>
+</Layout>
+
+<style>
+	.finance {
+		max-width: 1080px;
+	}
+
+	.page-head {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 24px;
+		flex-wrap: wrap;
+	}
+
+	.page-head-actions {
+		display: flex;
+		gap: 10px;
+		flex-shrink: 0;
+	}
+
+	.eyebrow {
+		margin: 0 0 16px;
+		font-size: 13px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	h1 {
+		margin: 0;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2.2rem, 5vw, 3.2rem);
+		letter-spacing: -0.02em;
+	}
+
+	.lede {
+		max-width: 54ch;
+		margin: 18px 0 0;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	.form-error {
+		margin: 20px 0 0;
+		padding: 12px 16px;
+		border: 1px solid #e7c3c1;
+		background: #fbf0ef;
+		border-radius: 10px;
+		color: #b4231f;
+		font-size: 14px;
+	}
+
+	.summary-cards {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		margin-top: 32px;
+	}
+
+	.summary-card {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 20px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
+	}
+
+	.summary-label {
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.summary-value {
+		font-family: var(--serif);
+		font-size: 28px;
+		font-weight: 600;
+	}
+
+	.summary-value.positive {
+		color: #1f7a3d;
+	}
+
+	.summary-value.negative {
+		color: #b4231f;
+	}
+
+	.table-wrap {
+		margin-top: 32px;
+		overflow-x: auto;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
+	}
+
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 14px;
+	}
+
+	.data-table th {
+		text-align: left;
+		padding: 12px 16px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
+		border-bottom: 1px solid var(--line);
+		background: var(--canvas);
+		white-space: nowrap;
+	}
+
+	.data-table td {
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--line);
+		vertical-align: middle;
+		white-space: nowrap;
+	}
+
+	.data-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.cell-muted {
+		color: var(--muted);
+	}
+
+	.cell-date {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.cell-amount {
+		font-variant-numeric: tabular-nums;
+		font-weight: 500;
+		text-align: right;
+	}
+
+	.cell-amount.positive {
+		color: #1f7a3d;
+	}
+
+	.cell-amount.negative {
+		color: #b4231f;
+	}
+
+	.cell-actions {
+		text-align: right;
+	}
+
+	.cell-actions form {
+		margin: 0;
+		display: inline-block;
+	}
+
+	.row-delete {
+		width: 22px;
+		height: 22px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--muted);
+		font-size: 15px;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.row-delete:hover {
+		border-color: var(--line);
+		color: #b4231f;
+	}
+
+	.pill {
+		padding: 3px 10px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.pill-income {
+		background: #eafaf0;
+		color: #1f7a3d;
+	}
+
+	.pill-expense {
+		background: #fbf0ef;
+		color: #b4231f;
+	}
+
+	.empty-cell {
+		padding: 32px 16px;
+		text-align: center;
+		color: var(--muted);
+		white-space: normal;
+	}
+
+	.category-groups {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+		margin-top: 4px;
+	}
+
+	.category-groups h3 {
+		margin: 0 0 10px;
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.category-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.category-list li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 6px 10px;
+		border-radius: 8px;
+		background: var(--canvas);
+		font-size: 14px;
+	}
+
+	.category-list li form {
+		margin: 0;
+	}
+
+	.category-empty {
+		color: var(--muted);
+		font-size: 13px;
+		background: none !important;
+		padding: 6px 10px 6px 0 !important;
+	}
+
+	.new-category-form {
+		margin-top: 20px;
+		padding-top: 18px;
+		border-top: 1px solid var(--line);
+	}
+
+	@media (max-width: 720px) {
+		.page-head {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.page-head-actions {
+			flex-wrap: wrap;
+		}
+		.summary-cards {
+			grid-template-columns: 1fr;
+		}
+		.category-groups {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

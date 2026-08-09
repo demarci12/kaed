@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createSupabaseServerClient } from '../../../lib/supabase';
+import { isMember } from '../../../lib/auth';
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	const form = await request.formData();
@@ -11,11 +12,11 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 	}
 
 	const supabase = createSupabaseServerClient(request, cookies);
-	const { error } = await supabase.auth.signInWithPassword({ email, password });
+	const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
 	if (error) {
 		return redirect(`/login?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect('/projects');
+	return redirect(data.user && isMember(data.user) ? '/finance' : '/projects');
 };
