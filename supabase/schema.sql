@@ -234,3 +234,17 @@ alter table public.finance_budgets enable row level security;
 
 create policy "household finance budgets" on public.finance_budgets
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- Single shared row: household-wide daily/weekly spending caps.
+create table if not exists public.finance_limits (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  daily_limit numeric(12, 2),
+  weekly_limit numeric(12, 2),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.finance_limits enable row level security;
+
+create policy "household finance limits" on public.finance_limits
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

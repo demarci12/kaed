@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/finance';
-import type { FinanceCategory, FinanceTransaction } from '../../lib/finance';
+import type { FinanceCategory, FinanceLimits, FinanceTransaction } from '../../lib/finance';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -20,8 +20,11 @@ const { data: categories } = await supabase
 	.select('*')
 	.order('name', { ascending: true });
 
+const { data: limits } = await supabase.from('finance_limits').select('*').limit(1).maybeSingle();
+
 const typedTransactions = (transactions ?? []) as FinanceTransaction[];
 const typedCategories = (categories ?? []) as FinanceCategory[];
+const typedLimits = limits as FinanceLimits | null;
 
 const categoryById = new Map(typedCategories.map((c) => [c.id, c]));
 const incomeCategories = typedCategories.filter((c) => c.type === 'income');
@@ -34,6 +37,25 @@ const totalExpense = typedTransactions
 	.filter((t) => t.type === 'expense')
 	.reduce((sum, t) => sum + Number(t.amount), 0);
 const balance = totalIncome - totalExpense;
+
+// Today (local date) and this ISO week (Monday..Sunday) spend, for the
+// daily/weekly limit panel.
+const todayStr = new Date().toISOString().slice(0, 10);
+const now = new Date();
+const dayOfWeek = (now.getDay() + 6) % 7; // 0 = Monday
+const monday = new Date(now);
+monday.setDate(now.getDate() - dayOfWeek);
+const mondayStr = monday.toISOString().slice(0, 10);
+
+const spentToday = typedTransactions
+	.filter((t) => t.type === 'expense' && t.occurred_on === todayStr)
+	.reduce((sum, t) => sum + Number(t.amount), 0);
+const spentThisWeek = typedTransactions
+	.filter((t) => t.type === 'expense' && t.occurred_on >= mondayStr && t.occurred_on <= todayStr)
+	.reduce((sum, t) => sum + Number(t.amount), 0);
+
+const dailyRemaining = typedLimits?.daily_limit != null ? Number(typedLimits.daily_limit) - spentToday : null;
+const weeklyRemaining = typedLimits?.weekly_limit != null ? Number(typedLimits.weekly_limit) - spentThisWeek : null;
 
 function formatAmount(n: number) {
 	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -71,6 +93,53 @@ const error = Astro.url.searchParams.get('error');
 			<div class="summary-card">
 				<span class="summary-label">Total spending</span>
 				<span class="summary-value negative">{formatAmount(totalExpense)}</span>
+			</div>
+		</div>
+
+		<div class="limits-panel">
+			<div class="limits-head">
+				<h2>Spending limits</h2>
+				<button type="button" class="link-btn" data-open-popup="edit-limits">Edit</button>
+			</div>
+			<div class="limits-cards">
+				<div class="limit-card">
+					<span class="summary-label">Today</span>
+					{typedLimits?.daily_limit != null ? (
+						<>
+							<span class={`summary-value ${dailyRemaining! < 0 ? 'negative' : 'positive'}`}>
+								{formatAmount(dailyRemaining!)} left
+							</span>
+							<span class="limit-sub">{formatAmount(spentToday)} of {formatAmount(Number(typedLimits.daily_limit))}</span>
+							<div class="progress-bar">
+								<div
+									class={`progress-bar-fill ${spentToday > Number(typedLimits.daily_limit) ? 'over' : ''}`}
+									style={`width: ${Math.min(100, Math.round((spentToday / Number(typedLimits.daily_limit)) * 100))}%`}
+								/>
+							</div>
+						</>
+					) : (
+						<span class="limit-sub">No daily limit set. {formatAmount(spentToday)} spent today.</span>
+					)}
+				</div>
+				<div class="limit-card">
+					<span class="summary-label">This week</span>
+					{typedLimits?.weekly_limit != null ? (
+						<>
+							<span class={`summary-value ${weeklyRemaining! < 0 ? 'negative' : 'positive'}`}>
+								{formatAmount(weeklyRemaining!)} left
+							</span>
+							<span class="limit-sub">{formatAmount(spentThisWeek)} of {formatAmount(Number(typedLimits.weekly_limit))}</span>
+							<div class="progress-bar">
+								<div
+									class={`progress-bar-fill ${spentThisWeek > Number(typedLimits.weekly_limit) ? 'over' : ''}`}
+									style={`width: ${Math.min(100, Math.round((spentThisWeek / Number(typedLimits.weekly_limit)) * 100))}%`}
+								/>
+							</div>
+						</>
+					) : (
+						<span class="limit-sub">No weekly limit set. {formatAmount(spentThisWeek)} spent this week.</span>
+					)}
+				</div>
 			</div>
 		</div>
 
@@ -150,6 +219,39 @@ const error = Astro.url.searchParams.get('error');
 			<div class="popup-actions">
 				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
 				<button type="submit" class="btn">Add</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="edit-limits" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Spending limits</h2>
+		<form method="post" action="/api/finance/limits/set">
+			<label for="daily_limit">Daily limit</label>
+			<input
+				id="daily_limit"
+				name="daily_limit"
+				type="number"
+				step="0.01"
+				min="0"
+				value={typedLimits?.daily_limit ?? ''}
+				placeholder="No limit"
+			/>
+
+			<label for="weekly_limit">Weekly limit</label>
+			<input
+				id="weekly_limit"
+				name="weekly_limit"
+				type="number"
+				step="0.01"
+				min="0"
+				value={typedLimits?.weekly_limit ?? ''}
+				placeholder="No limit"
+			/>
+
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Save</button>
 			</div>
 		</form>
 	</dialog>
@@ -306,6 +408,79 @@ const error = Astro.url.searchParams.get('error');
 
 	.summary-value.negative {
 		color: #b4231f;
+	}
+
+	.limits-panel {
+		margin-top: 24px;
+		padding: 20px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
+	}
+
+	.limits-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.limits-head h2 {
+		margin: 0;
+		font-family: var(--serif);
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.link-btn {
+		background: none;
+		border: none;
+		padding: 0;
+		font-family: var(--sans);
+		font-size: 13px;
+		color: var(--muted);
+		border-bottom: 1px solid var(--line);
+		cursor: pointer;
+	}
+
+	.link-btn:hover {
+		color: var(--ink);
+		border-color: var(--ink);
+	}
+
+	.limits-cards {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+		margin-top: 16px;
+	}
+
+	.limit-card {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.limit-sub {
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.limit-card .progress-bar {
+		height: 5px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		overflow: hidden;
+		margin-top: 2px;
+	}
+
+	.limit-card .progress-bar-fill {
+		height: 100%;
+		background: var(--ink);
+	}
+
+	.limit-card .progress-bar-fill.over {
+		background: #b4231f;
 	}
 
 	.table-wrap {
