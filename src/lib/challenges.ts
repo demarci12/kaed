@@ -30,8 +30,8 @@ export interface ChallengeLog {
 }
 
 /**
- * Resolve the signed-in user for a request, redirecting to /login when
- * there isn't one. Returns the Supabase client alongside the user so
+ * Resolve the signed-in user for a request, redirecting to the login page
+ * when there isn't one. Returns the Supabase client alongside the user so
  * callers can reuse the same request-scoped client for queries.
  */
 export async function requireUser(
@@ -44,7 +44,7 @@ export async function requireUser(
 	} = await supabase.auth.getUser();
 
 	if (!user) {
-		return { redirect: '/login' };
+		return { redirect: '/' };
 	}
 
 	return { supabase, user };
