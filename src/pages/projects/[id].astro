@@ -110,7 +110,10 @@ const error = Astro.url.searchParams.get('error');
 				<option value="done" selected={typed.status === 'done'}>Done</option>
 			</select>
 			<button type="submit" class="btn ghost">Update status</button>
+			<button type="submit" form="delete-project" class="btn danger">Delete project</button>
 		</form>
+
+		<form id="delete-project" method="post" action={`/api/projects/${typed.id}/delete`}></form>
 
 		<div class="section">
 			<div class="section-head">
@@ -434,6 +437,17 @@ const error = Astro.url.searchParams.get('error');
 		height: 34px;
 		padding: 0 14px;
 		font-size: 13px;
+	}
+
+	.btn.danger {
+		color: #b4231f;
+		background: transparent;
+		border-color: var(--line);
+	}
+
+	.btn.danger:hover {
+		background: #fbf0ef;
+		border-color: #e7c3c1;
 	}
 
 	.section {
