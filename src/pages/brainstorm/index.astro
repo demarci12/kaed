@@ -29,12 +29,10 @@ const error = Astro.url.searchParams.get('error');
 				<p class="eyebrow">Personal</p>
 				<h1>Brainstorm.</h1>
 				<p class="lede">
-					A whiteboard for ideas before they're worth anything more formal. Drag cards to arrange
-					them, drag from the dot to connect related ideas, double-click empty space to drop a
-					new one.
+					Click anywhere on the board to drop a new idea. Drag cards to arrange them, drag from
+					the dot to connect related ideas.
 				</p>
 			</div>
-			<button type="button" class="btn" id="new-idea-btn" data-open-popup="new-idea">+ New idea</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -88,32 +86,13 @@ const error = Astro.url.searchParams.get('error');
 			</div>
 		</div>
 	</section>
-
-	<dialog id="new-idea" class="popup">
-		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
-		<h2>New idea</h2>
-		<form method="post" action="/api/ideas/create" id="new-idea-form">
-			<input type="hidden" name="position_x" id="new-idea-x" value="80" />
-			<input type="hidden" name="position_y" id="new-idea-y" value="80" />
-
-			<label for="title">Title</label>
-			<input id="title" name="title" type="text" required maxlength="160" />
-
-			<label for="body">Notes</label>
-			<textarea id="body" name="body" rows="4"></textarea>
-
-			<div class="popup-actions">
-				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
-				<button type="submit" class="btn">Add idea</button>
-			</div>
-		</form>
-	</dialog>
 </Layout>
 
 <script define:vars={{ connections: typedConnections }}>
 	const board = document.getElementById('board');
 	const svg = document.getElementById('board-lines');
-	const cards = () => Array.from(board.querySelectorAll('.idea-card'));
+	const CARD_WIDTH = 220;
+	const CARD_EST_HEIGHT = 90;
 
 	function cardCenter(card) {
 		return {
@@ -139,7 +118,8 @@ const error = Astro.url.searchParams.get('error');
 		if (!line) {
 			line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 			line.setAttribute('class', 'board-line');
-			line.addEventListener('click', async () => {
+			line.addEventListener('click', async (ev) => {
+				ev.stopPropagation();
 				if (!confirm('Remove this connection?')) return;
 				await fetch(`/api/idea-connections/${id}/delete`, { method: 'POST' });
 				line.remove();
@@ -160,6 +140,28 @@ const error = Astro.url.searchParams.get('error');
 
 	for (const conn of connections) {
 		drawLine(conn.id, conn.from_idea_id, conn.to_idea_id);
+	}
+
+	// --- Card template (used for cards created inline, without a reload) ---
+	function buildCard(idea) {
+		const card = document.createElement('div');
+		card.className = 'idea-card';
+		card.dataset.id = idea.id;
+		card.style.left = `${idea.position_x}px`;
+		card.style.top = `${idea.position_y}px`;
+
+		card.innerHTML = `
+			<div class="idea-card-body">
+				<div class="idea-title" data-editable="text" data-field="title" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="${idea.title ?? ''}">${idea.title ?? ''}</div>
+				<div class="idea-notes" data-editable="textarea" data-field="body" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="${idea.body ?? ''}">${idea.body ?? '—'}</div>
+			</div>
+			<div class="idea-card-actions">
+				<form method="post" action="/api/ideas/${idea.id}/promote"><button type="submit" class="idea-link idea-link-btn">Generate business idea →</button></form>
+				<form method="post" action="/api/ideas/${idea.id}/delete"><button type="submit" class="idea-delete" aria-label="Delete idea">×</button></form>
+			</div>
+			<div class="connect-handle" title="Drag to connect to another idea"></div>
+		`;
+		return card;
 	}
 
 	// --- Dragging cards ---
@@ -199,6 +201,7 @@ const error = Astro.url.searchParams.get('error');
 		if (moved) {
 			const suppressClick = (ev) => ev.stopPropagation();
 			card.addEventListener('click', suppressClick, { capture: true, once: true });
+			board.addEventListener('click', suppressClick, { capture: true, once: true });
 			fetch(`/api/ideas/${card.dataset.id}/position`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -242,6 +245,9 @@ const error = Astro.url.searchParams.get('error');
 		previewLine?.remove();
 		previewLine = null;
 
+		const suppressClick = (ev) => ev.stopPropagation();
+		board.addEventListener('click', suppressClick, { capture: true, once: true });
+
 		const targetCard = document.elementFromPoint(e.clientX, e.clientY)?.closest('.idea-card');
 		const fromId = connectState.fromId;
 		connectState = null;
@@ -258,27 +264,51 @@ const error = Astro.url.searchParams.get('error');
 		if (result?.id) drawLine(result.id, fromId, toId);
 	});
 
-	// --- New idea at click position ---
-	const newIdeaX = document.getElementById('new-idea-x');
-	const newIdeaY = document.getElementById('new-idea-y');
+	// --- Click empty board to create a new card, centered on the click ---
+	let creating = false;
 
-	document.getElementById('new-idea-btn')?.addEventListener('click', () => {
-		newIdeaX.value = String(board.scrollLeft + board.clientWidth / 2 - 110 + Math.round(Math.random() * 60 - 30));
-		newIdeaY.value = String(board.scrollTop + 120 + Math.round(Math.random() * 60 - 30));
-	});
-
-	board.addEventListener('dblclick', (e) => {
+	board.addEventListener('click', async (e) => {
 		if (e.target.closest('.idea-card')) return;
+		if (e.target.tagName === 'line' || e.target.closest('#board-lines')) return;
+		if (creating) return;
+		creating = true;
+
 		const boardRect = board.getBoundingClientRect();
-		newIdeaX.value = String(Math.round(e.clientX - boardRect.left + board.scrollLeft - 110));
-		newIdeaY.value = String(Math.round(e.clientY - boardRect.top + board.scrollTop - 20));
-		document.getElementById('new-idea')?.showModal();
+		const clickX = e.clientX - boardRect.left + board.scrollLeft;
+		const clickY = e.clientY - boardRect.top + board.scrollTop;
+
+		const res = await fetch('/api/ideas/create-inline', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				position_x: Math.round(clickX - CARD_WIDTH / 2),
+				position_y: Math.round(clickY - CARD_EST_HEIGHT / 2),
+			}),
+		});
+		const idea = await res.json().catch(() => null);
+		creating = false;
+		if (!idea?.id) return;
+
+		const card = buildCard(idea);
+		board.appendChild(card);
+
+		// Recenter on the actual rendered height, then persist.
+		const h = card.offsetHeight;
+		const top = Math.max(0, Math.round(clickY - h / 2));
+		card.style.top = `${top}px`;
+		fetch(`/api/ideas/${idea.id}/position`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ position_x: card.offsetLeft, position_y: top }),
+		});
+
+		card.querySelector('.idea-title')?.click();
 	});
 </script>
 
 <style>
 	.brainstorm {
-		max-width: 1400px;
+		max-width: none;
 	}
 
 	.page-head {
@@ -312,10 +342,6 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 16px;
 	}
 
-	.page-head .btn {
-		flex-shrink: 0;
-	}
-
 	.form-error {
 		margin: 20px 0 0;
 		padding: 12px 16px;
@@ -327,27 +353,35 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.board-wrap {
-		margin-top: 32px;
+		width: 100vw;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
+		margin-top: 24px;
+		padding: 0 24px 24px;
+	}
+
+	.board-wrap > .board {
 		border: 1px solid var(--line);
 		border-radius: 14px;
 		background: var(--paper);
-		overflow: auto;
-		height: 70vh;
 	}
 
 	.board {
 		position: relative;
-		width: 2400px;
-		height: 1600px;
+		width: 100%;
+		height: calc(100vh - 220px);
+		min-height: 560px;
+		overflow: auto;
 		background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
 		background-size: 24px 24px;
+		background-attachment: local;
 	}
 
 	.board-lines {
 		position: absolute;
 		inset: 0;
-		width: 100%;
-		height: 100%;
+		width: 3000px;
+		height: 3000px;
 		pointer-events: none;
 		overflow: visible;
 	}
