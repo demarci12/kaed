@@ -21,51 +21,81 @@ const error = Astro.url.searchParams.get('error');
 
 <Layout>
 	<section class="brainstorm">
-		<p class="eyebrow">Personal</p>
-		<h1>Brainstorm.</h1>
-		<p class="lede">A dumping ground for ideas before they're worth anything more formal.</p>
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Personal</p>
+				<h1>Brainstorm.</h1>
+				<p class="lede">A dumping ground for ideas before they're worth anything more formal.</p>
+			</div>
+			<button type="button" class="btn" data-open-dialog="new-idea">+ New idea</button>
+		</div>
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="grid">
-			{typedIdeas.length ? (
-				typedIdeas.map((idea) => (
-					<div class="idea-card">
-						<div class="idea-head">
-							<h3>{idea.title}</h3>
-							<form method="post" action={`/api/ideas/${idea.id}/delete`}>
-								<button type="submit" class="idea-delete" aria-label="Delete idea">×</button>
-							</form>
-						</div>
-						{idea.body && <p class="idea-body">{idea.body}</p>}
-						<span class="idea-date">{new Date(idea.created_at).toLocaleDateString()}</span>
-					</div>
-				))
-			) : (
-				<p class="empty">No ideas yet. Drop your first one below.</p>
-			)}
+		<div class="table-wrap">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Title</th>
+						<th>Notes</th>
+						<th>Added</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{typedIdeas.length ? (
+						typedIdeas.map((idea) => (
+							<tr>
+								<td class="cell-title">{idea.title}</td>
+								<td class="cell-muted">{idea.body ?? '—'}</td>
+								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
+								<td class="cell-actions">
+									<form method="post" action={`/api/ideas/${idea.id}/delete`}>
+										<button type="submit" class="idea-delete" aria-label="Delete idea">×</button>
+									</form>
+								</td>
+							</tr>
+						))
+					) : (
+						<tr>
+							<td colspan="4" class="empty-cell">No ideas yet. Drop your first one.</td>
+						</tr>
+					)}
+				</tbody>
+			</table>
 		</div>
-
-		<details class="dropup">
-			<summary class="dropup-trigger">+ New idea</summary>
-			<div class="dropup-panel">
-				<form method="post" action="/api/ideas/create" class="idea-form">
-					<label for="title">Title</label>
-					<input id="title" name="title" type="text" required maxlength="160" />
-
-					<label for="body">Notes</label>
-					<textarea id="body" name="body" rows="4"></textarea>
-
-					<button type="submit" class="btn">Add idea</button>
-				</form>
-			</div>
-		</details>
 	</section>
+
+	<dialog id="new-idea" class="popup">
+		<div class="popup-inner">
+			<h2>New idea</h2>
+			<form method="post" action="/api/ideas/create">
+				<label for="title">Title</label>
+				<input id="title" name="title" type="text" required maxlength="160" />
+
+				<label for="body">Notes</label>
+				<textarea id="body" name="body" rows="4"></textarea>
+
+				<div class="popup-actions">
+					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<button type="submit" class="btn">Add idea</button>
+				</div>
+			</form>
+		</div>
+	</dialog>
 </Layout>
 
 <style>
 	.brainstorm {
-		max-width: 860px;
+		max-width: 1040px;
+	}
+
+	.page-head {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 24px;
+		flex-wrap: wrap;
 	}
 
 	.eyebrow {
@@ -90,6 +120,10 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 16px;
 	}
 
+	.page-head .btn {
+		flex-shrink: 0;
+	}
+
 	.form-error {
 		margin: 20px 0 0;
 		padding: 12px 16px;
@@ -100,51 +134,75 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 14px;
 	}
 
-	.empty {
-		color: var(--muted);
-		font-size: 15px;
+	.table-wrap {
 		margin-top: 40px;
-	}
-
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-		gap: 16px;
-		margin-top: 40px;
-	}
-
-	.idea-card {
-		padding: 20px;
-		background: var(--paper);
+		overflow-x: auto;
 		border: 1px solid var(--line);
 		border-radius: 14px;
-		display: flex;
-		flex-direction: column;
+		background: var(--paper);
 	}
 
-	.idea-head {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 8px;
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 14px;
 	}
 
-	.idea-head h3 {
-		margin: 0;
-		font-family: var(--serif);
-		font-size: 17px;
+	.data-table th {
+		text-align: left;
+		padding: 12px 16px;
+		font-size: 11px;
 		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
+		border-bottom: 1px solid var(--line);
+		background: var(--canvas);
+		white-space: nowrap;
 	}
 
-	.idea-head form {
+	.data-table td {
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--line);
+		vertical-align: middle;
+	}
+
+	.data-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.cell-title {
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.cell-muted {
+		color: var(--muted);
+		max-width: 420px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.cell-date {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.cell-actions {
+		text-align: right;
+	}
+
+	.cell-actions form {
 		margin: 0;
+		display: inline-block;
 	}
 
 	.idea-delete {
-		flex-shrink: 0;
 		width: 24px;
 		height: 24px;
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		border-radius: 50%;
@@ -164,128 +222,19 @@ const error = Astro.url.searchParams.get('error');
 		color: #b4231f;
 	}
 
-	.idea-body {
-		margin: 10px 0 0;
-		font-size: 14px;
-		line-height: 1.5;
+	.empty-cell {
+		padding: 32px 16px;
+		text-align: center;
 		color: var(--muted);
-		white-space: pre-wrap;
 	}
 
-	.idea-date {
-		margin-top: 16px;
-		font-size: 12px;
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.dropup {
-		margin-top: 40px;
-	}
-
-	.dropup-trigger {
-		display: inline-flex;
-		align-items: center;
-		height: 44px;
-		padding: 0 22px;
-		font-family: var(--sans);
-		font-size: 15px;
-		font-weight: 500;
-		color: var(--ink);
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		cursor: pointer;
-		list-style: none;
-		transition: border-color 0.15s ease;
-	}
-
-	.dropup-trigger::-webkit-details-marker {
-		display: none;
-	}
-
-	.dropup-trigger:hover {
-		border-color: var(--ink);
-	}
-
-	.dropup[open] .dropup-trigger {
-		border-color: var(--ink);
-	}
-
-	.dropup-panel {
-		margin-top: 16px;
-		padding: 32px;
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 16px;
-		max-width: 480px;
-		animation: dropup-in 0.15s ease;
-	}
-
-	@keyframes dropup-in {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
+	@media (max-width: 720px) {
+		.page-head {
+			flex-direction: column;
+			align-items: stretch;
 		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
+		.cell-muted {
+			max-width: 160px;
 		}
-	}
-
-	.idea-form {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.idea-form label {
-		margin-top: 14px;
-		font-size: 13px;
-		font-weight: 500;
-		color: var(--muted);
-	}
-
-	.idea-form input,
-	.idea-form textarea {
-		font-family: var(--sans);
-		font-size: 15px;
-		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		padding: 10px 14px;
-		outline: none;
-		resize: vertical;
-	}
-
-	.idea-form input:focus,
-	.idea-form textarea:focus {
-		border-color: var(--ink);
-	}
-
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		align-self: flex-start;
-		margin-top: 24px;
-		height: 44px;
-		padding: 0 22px;
-		font-family: var(--sans);
-		font-size: 15px;
-		font-weight: 500;
-		color: #fff;
-		background: var(--ink);
-		border: 1px solid var(--ink);
-		border-radius: 999px;
-		cursor: pointer;
-		transition:
-			background 0.15s ease,
-			color 0.15s ease;
-	}
-
-	.btn:hover {
-		background: transparent;
-		color: var(--ink);
 	}
 </style>

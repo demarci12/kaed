@@ -73,7 +73,10 @@ const error = Astro.url.searchParams.get('error');
 		</form>
 
 		<div class="section">
-			<h2>Notes</h2>
+			<div class="section-head">
+				<h2>Notes</h2>
+				<button type="button" class="btn ghost small" data-open-dialog="new-note">+ Add note</button>
+			</div>
 
 			<div class="timeline">
 				{typedNotes.length ? (
@@ -93,18 +96,21 @@ const error = Astro.url.searchParams.get('error');
 					<p class="empty">No notes yet.</p>
 				)}
 			</div>
-
-			<details class="dropup">
-				<summary class="dropup-trigger">+ Add note</summary>
-				<div class="dropup-panel">
-					<form method="post" action={`/api/clients/${typed.id}/notes`} class="note-form">
-						<textarea name="note" rows="3" placeholder="What happened?" required></textarea>
-						<button type="submit" class="btn">Add note</button>
-					</form>
-				</div>
-			</details>
 		</div>
 	</section>
+
+	<dialog id="new-note" class="popup">
+		<div class="popup-inner">
+			<h2>Add note</h2>
+			<form method="post" action={`/api/clients/${typed.id}/notes`}>
+				<textarea name="note" rows="3" placeholder="What happened?" required></textarea>
+				<div class="popup-actions">
+					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<button type="submit" class="btn">Add note</button>
+				</div>
+			</form>
+		</div>
+	</dialog>
 </Layout>
 
 <style>
@@ -264,11 +270,25 @@ const error = Astro.url.searchParams.get('error');
 		margin-top: 56px;
 	}
 
+	.section-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
 	.section h2 {
 		margin: 0 0 20px;
 		font-family: var(--serif);
 		font-size: 22px;
 		font-weight: 600;
+	}
+
+	.btn.small {
+		height: 34px;
+		padding: 0 14px;
+		font-size: 13px;
 	}
 
 	.empty {
@@ -332,82 +352,4 @@ const error = Astro.url.searchParams.get('error');
 		line-height: 1.6;
 	}
 
-	.dropup {
-		margin-top: 20px;
-	}
-
-	.dropup-trigger {
-		display: inline-flex;
-		align-items: center;
-		height: 40px;
-		padding: 0 20px;
-		font-family: var(--sans);
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--ink);
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		cursor: pointer;
-		list-style: none;
-		transition: border-color 0.15s ease;
-	}
-
-	.dropup-trigger::-webkit-details-marker {
-		display: none;
-	}
-
-	.dropup-trigger:hover {
-		border-color: var(--ink);
-	}
-
-	.dropup[open] .dropup-trigger {
-		border-color: var(--ink);
-	}
-
-	.dropup-panel {
-		margin-top: 16px;
-		padding: 24px;
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 16px;
-		animation: dropup-in 0.15s ease;
-	}
-
-	@keyframes dropup-in {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.note-form {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.note-form textarea {
-		font-family: var(--sans);
-		font-size: 15px;
-		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		padding: 10px 14px;
-		outline: none;
-		resize: vertical;
-	}
-
-	.note-form textarea:focus {
-		border-color: var(--ink);
-	}
-
-	.note-form .btn {
-		align-self: flex-start;
-	}
 </style>

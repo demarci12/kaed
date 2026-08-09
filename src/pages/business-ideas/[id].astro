@@ -1,0 +1,179 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser } from '../../lib/auth';
+import type { BusinessIdea } from '../../lib/business-ideas';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { id } = Astro.params;
+
+const { data: idea } = await supabase.from('business_ideas').select('*').eq('id', id).maybeSingle();
+
+if (!idea) {
+	return Astro.redirect('/business-ideas');
+}
+
+const typed = idea as BusinessIdea;
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout>
+	<section class="detail">
+		<a class="back" href="/business-ideas">← Business ideas</a>
+
+		<h1>{typed.title}</h1>
+		<p class="dates">
+			Registered {new Date(typed.created_at).toLocaleDateString()}
+			{typed.updated_at !== typed.created_at &&
+				` · updated ${new Date(typed.updated_at).toLocaleDateString()}`}
+		</p>
+
+		{error && <p class="form-error">{error}</p>}
+
+		<form method="post" action={`/api/business-ideas/${typed.id}/update`} class="edit-form">
+			<label for="title">Title</label>
+			<input id="title" name="title" type="text" required maxlength="160" value={typed.title} />
+
+			<label for="pain_point">Pain point</label>
+			<textarea id="pain_point" name="pain_point" rows="3">{typed.pain_point}</textarea>
+
+			<label for="target_market">Target market</label>
+			<textarea id="target_market" name="target_market" rows="3">{typed.target_market}</textarea>
+
+			<label for="validation">Validation</label>
+			<textarea id="validation" name="validation" rows="3">{typed.validation}</textarea>
+
+			<div class="actions">
+				<button type="submit" class="btn">Save changes</button>
+			</div>
+		</form>
+
+		<form method="post" action={`/api/business-ideas/${typed.id}/delete`} class="delete-form">
+			<button type="submit" class="btn danger">Delete idea</button>
+		</form>
+	</section>
+</Layout>
+
+<style>
+	.detail {
+		max-width: 640px;
+	}
+
+	.back {
+		display: inline-block;
+		margin-bottom: 24px;
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 14px;
+	}
+
+	.back:hover {
+		color: var(--ink);
+	}
+
+	h1 {
+		margin: 0;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2rem, 5vw, 2.8rem);
+		letter-spacing: -0.02em;
+	}
+
+	.dates {
+		margin: 10px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.form-error {
+		margin: 20px 0 0;
+		padding: 12px 16px;
+		border: 1px solid #e7c3c1;
+		background: #fbf0ef;
+		border-radius: 10px;
+		color: #b4231f;
+		font-size: 14px;
+	}
+
+	.edit-form {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin-top: 32px;
+		padding: 28px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+	}
+
+	.edit-form label {
+		margin-top: 14px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--muted);
+	}
+
+	.edit-form input,
+	.edit-form textarea {
+		font-family: var(--sans);
+		font-size: 15px;
+		color: var(--ink);
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		padding: 10px 14px;
+		outline: none;
+		resize: vertical;
+	}
+
+	.edit-form input:focus,
+	.edit-form textarea:focus {
+		border-color: var(--ink);
+	}
+
+	.actions {
+		margin-top: 24px;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		height: 44px;
+		padding: 0 22px;
+		font-family: var(--sans);
+		font-size: 15px;
+		font-weight: 500;
+		color: #fff;
+		background: var(--ink);
+		border: 1px solid var(--ink);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.btn:hover {
+		background: transparent;
+		color: var(--ink);
+	}
+
+	.delete-form {
+		margin-top: 20px;
+	}
+
+	.btn.danger {
+		color: #b4231f;
+		background: transparent;
+		border-color: var(--line);
+	}
+
+	.btn.danger:hover {
+		background: #fbf0ef;
+		border-color: #e7c3c1;
+	}
+</style>

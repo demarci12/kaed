@@ -112,3 +112,20 @@ create policy "own clients" on public.clients
 
 create policy "own client notes" on public.client_notes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Business idea register: structured pitches, distinct from the freeform brainstorm space.
+create table if not exists public.business_ideas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  pain_point text,
+  target_market text,
+  validation text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.business_ideas enable row level security;
+
+create policy "own business ideas" on public.business_ideas
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

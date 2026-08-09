@@ -24,102 +24,118 @@ const stageLabel: Record<ClientStage, string> = {
 	lost: 'Lost',
 };
 
-const stageOrder: ClientStage[] = ['lead', 'contacted', 'negotiating', 'won', 'lost'];
-
 const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout>
 	<section class="clients">
-		<p class="eyebrow">Personal</p>
-		<h1>Clients.</h1>
-		<p class="lede">A lightweight pipeline for people you're talking to.</p>
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Personal</p>
+				<h1>Clients.</h1>
+				<p class="lede">A lightweight pipeline for people you're talking to.</p>
+			</div>
+			<button type="button" class="btn" data-open-dialog="new-client">+ New client</button>
+		</div>
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="list">
-			{typedClients.length ? (
-				stageOrder.map((stage) => {
-					const inStage = typedClients.filter((c) => c.stage === stage);
-					return inStage.length > 0 ? (
-						<div class="stage-group">
-							<h2 class="stage-heading">
-								{stageLabel[stage]} <span class="stage-count">{inStage.length}</span>
-							</h2>
-							<div class="stage-list">
-								{inStage.map((client) => (
-									<a class="card" href={`/clients/${client.id}`}>
-										<div class="card-head">
-											<h3>{client.name}</h3>
-											{client.next_follow_up && (
-												<span class="follow-up">Follow up {client.next_follow_up}</span>
-											)}
-										</div>
-										{client.company && <p class="card-company">{client.company}</p>}
-										{(client.email || client.phone) && (
-											<p class="card-contact">
-												{[client.email, client.phone].filter(Boolean).join(' · ')}
-											</p>
-										)}
-									</a>
-								))}
-							</div>
-						</div>
-					) : null;
-				})
-			) : (
-				<p class="empty">No clients yet. Add your first one below.</p>
-			)}
+		<div class="table-wrap">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Company</th>
+						<th>Email</th>
+						<th>Phone</th>
+						<th>Stage</th>
+						<th>Next follow-up</th>
+						<th>Added</th>
+					</tr>
+				</thead>
+				<tbody>
+					{typedClients.length ? (
+						typedClients.map((client) => (
+							<tr>
+								<td class="cell-title">
+									<a href={`/clients/${client.id}`}>{client.name}</a>
+								</td>
+								<td class="cell-muted">{client.company ?? '—'}</td>
+								<td class="cell-muted">{client.email ?? '—'}</td>
+								<td class="cell-muted">{client.phone ?? '—'}</td>
+								<td><span class={`pill pill-${client.stage}`}>{stageLabel[client.stage]}</span></td>
+								<td class="cell-date">{client.next_follow_up ?? '—'}</td>
+								<td class="cell-date">{new Date(client.created_at).toLocaleDateString()}</td>
+							</tr>
+						))
+					) : (
+						<tr>
+							<td colspan="7" class="empty-cell">No clients yet. Add your first one.</td>
+						</tr>
+					)}
+				</tbody>
+			</table>
 		</div>
-
-		<details class="dropup">
-			<summary class="dropup-trigger">+ New client</summary>
-			<div class="dropup-panel">
-				<form method="post" action="/api/clients/create" class="client-form">
-					<label for="name">Name</label>
-					<input id="name" name="name" type="text" required maxlength="160" />
-
-					<label for="company">Company</label>
-					<input id="company" name="company" type="text" maxlength="160" />
-
-					<div class="row">
-						<div>
-							<label for="email">Email</label>
-							<input id="email" name="email" type="email" />
-						</div>
-						<div>
-							<label for="phone">Phone</label>
-							<input id="phone" name="phone" type="tel" />
-						</div>
-					</div>
-
-					<div class="row">
-						<div>
-							<label for="stage">Stage</label>
-							<select id="stage" name="stage">
-								<option value="lead">Lead</option>
-								<option value="contacted">Contacted</option>
-								<option value="negotiating">Negotiating</option>
-								<option value="won">Won</option>
-								<option value="lost">Lost</option>
-							</select>
-						</div>
-						<div>
-							<label for="next_follow_up">Next follow-up</label>
-							<input id="next_follow_up" name="next_follow_up" type="date" />
-						</div>
-					</div>
-
-					<button type="submit" class="btn">Add client</button>
-				</form>
-			</div>
-		</details>
 	</section>
+
+	<dialog id="new-client" class="popup">
+		<div class="popup-inner">
+			<h2>New client</h2>
+			<form method="post" action="/api/clients/create">
+				<label for="name">Name</label>
+				<input id="name" name="name" type="text" required maxlength="160" />
+
+				<label for="company">Company</label>
+				<input id="company" name="company" type="text" maxlength="160" />
+
+				<div class="popup-row">
+					<div>
+						<label for="email">Email</label>
+						<input id="email" name="email" type="email" />
+					</div>
+					<div>
+						<label for="phone">Phone</label>
+						<input id="phone" name="phone" type="tel" />
+					</div>
+				</div>
+
+				<div class="popup-row">
+					<div>
+						<label for="stage">Stage</label>
+						<select id="stage" name="stage">
+							<option value="lead">Lead</option>
+							<option value="contacted">Contacted</option>
+							<option value="negotiating">Negotiating</option>
+							<option value="won">Won</option>
+							<option value="lost">Lost</option>
+						</select>
+					</div>
+					<div>
+						<label for="next_follow_up">Next follow-up</label>
+						<input id="next_follow_up" name="next_follow_up" type="date" />
+					</div>
+				</div>
+
+				<div class="popup-actions">
+					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+					<button type="submit" class="btn">Add client</button>
+				</div>
+			</form>
+		</div>
+	</dialog>
 </Layout>
 
 <style>
 	.clients {
-		max-width: 760px;
+		max-width: 1120px;
+	}
+
+	.page-head {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 24px;
+		flex-wrap: wrap;
 	}
 
 	.eyebrow {
@@ -144,6 +160,10 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 16px;
 	}
 
+	.page-head .btn {
+		flex-shrink: 0;
+	}
+
 	.form-error {
 		margin: 20px 0 0;
 		padding: 12px 16px;
@@ -154,202 +174,109 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 14px;
 	}
 
-	.empty {
-		color: var(--muted);
-		font-size: 15px;
+	.table-wrap {
 		margin-top: 40px;
-	}
-
-	.list {
-		margin-top: 40px;
-		display: flex;
-		flex-direction: column;
-		gap: 32px;
-	}
-
-	.stage-heading {
-		margin: 0 0 14px;
-		font-family: var(--serif);
-		font-size: 16px;
-		font-weight: 600;
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
-	}
-
-	.stage-count {
-		font-family: var(--sans);
-		font-size: 12px;
-		font-weight: 500;
-		color: var(--muted);
-	}
-
-	.stage-list {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.card {
-		display: block;
-		padding: 16px 20px;
-		background: var(--paper);
+		overflow-x: auto;
 		border: 1px solid var(--line);
-		border-radius: 12px;
-		text-decoration: none;
-		color: var(--ink);
-		transition: border-color 0.15s ease;
+		border-radius: 14px;
+		background: var(--paper);
 	}
 
-	.card:hover {
-		border-color: var(--ink);
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 14px;
 	}
 
-	.card-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.card-head h3 {
-		margin: 0;
-		font-family: var(--serif);
-		font-size: 16px;
+	.data-table th {
+		text-align: left;
+		padding: 12px 16px;
+		font-size: 11px;
 		font-weight: 600;
-	}
-
-	.follow-up {
-		flex-shrink: 0;
-		font-size: 12px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
 		color: var(--muted);
+		border-bottom: 1px solid var(--line);
+		background: var(--canvas);
 		white-space: nowrap;
 	}
 
-	.card-company,
-	.card-contact {
-		margin: 6px 0 0;
-		font-size: 13px;
+	.data-table td {
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--line);
+		vertical-align: middle;
+		white-space: nowrap;
+	}
+
+	.data-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.cell-title a {
+		color: var(--ink);
+		text-decoration: none;
+		font-weight: 500;
+	}
+
+	.cell-title a:hover {
+		text-decoration: underline;
+	}
+
+	.cell-muted {
 		color: var(--muted);
 	}
 
-	.dropup {
-		margin-top: 40px;
+	.cell-date {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
 
-	.dropup-trigger {
-		display: inline-flex;
-		align-items: center;
-		height: 44px;
-		padding: 0 22px;
-		font-family: var(--sans);
-		font-size: 15px;
-		font-weight: 500;
-		color: var(--ink);
-		background: var(--paper);
-		border: 1px solid var(--line);
+	.empty-cell {
+		padding: 32px 16px;
+		text-align: center;
+		color: var(--muted);
+		white-space: normal;
+	}
+
+	.pill {
+		flex-shrink: 0;
+		padding: 4px 12px;
 		border-radius: 999px;
-		cursor: pointer;
-		list-style: none;
-		transition: border-color 0.15s ease;
-	}
-
-	.dropup-trigger::-webkit-details-marker {
-		display: none;
-	}
-
-	.dropup-trigger:hover {
-		border-color: var(--ink);
-	}
-
-	.dropup[open] .dropup-trigger {
-		border-color: var(--ink);
-	}
-
-	.dropup-panel {
-		margin-top: 16px;
-		padding: 32px;
-		background: var(--paper);
-		border: 1px solid var(--line);
-		border-radius: 16px;
-		animation: dropup-in 0.15s ease;
-	}
-
-	@keyframes dropup-in {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.client-form {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.client-form label {
-		margin-top: 14px;
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 500;
-		color: var(--muted);
+		white-space: nowrap;
 	}
 
-	.client-form input,
-	.client-form select {
-		height: 44px;
-		padding: 0 14px;
-		font-family: var(--sans);
-		font-size: 15px;
-		color: var(--ink);
+	.pill-lead {
 		background: var(--canvas);
+		color: var(--muted);
 		border: 1px solid var(--line);
-		border-radius: 10px;
-		outline: none;
 	}
 
-	.client-form input:focus,
-	.client-form select:focus {
-		border-color: var(--ink);
+	.pill-contacted {
+		background: #eef4ff;
+		color: #1d4ed8;
 	}
 
-	.row {
-		display: flex;
-		gap: 16px;
+	.pill-negotiating {
+		background: #fff7e6;
+		color: #92620a;
 	}
 
-	.row > div {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
+	.pill-won {
+		background: #eafaf0;
+		color: #1f7a3d;
 	}
 
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		align-self: flex-start;
-		margin-top: 24px;
-		height: 44px;
-		padding: 0 22px;
-		font-family: var(--sans);
-		font-size: 15px;
-		font-weight: 500;
-		color: #fff;
-		background: var(--ink);
-		border: 1px solid var(--ink);
-		border-radius: 999px;
-		cursor: pointer;
-		transition:
-			background 0.15s ease,
-			color 0.15s ease;
+	.pill-lost {
+		background: #fbf0ef;
+		color: #b4231f;
 	}
 
-	.btn:hover {
-		background: transparent;
-		color: var(--ink);
+	@media (max-width: 720px) {
+		.page-head {
+			flex-direction: column;
+			align-items: stretch;
+		}
 	}
 </style>

@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { requireUser, type Challenge } from '../../lib/challenges';
+import { requireUser } from '../../lib/auth';
+import type { BusinessIdea } from '../../lib/business-ideas';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -8,31 +9,28 @@ if ('redirect' in auth) {
 }
 const { supabase } = auth;
 
-const { data: challenges } = await supabase
-	.from('challenges')
+const { data: ideas } = await supabase
+	.from('business_ideas')
 	.select('*')
 	.order('created_at', { ascending: false });
 
-const typedChallenges = (challenges ?? []) as Challenge[];
-
-const statusLabel: Record<string, string> = {
-	not_started: 'Not started',
-	active: 'Active',
-	done: 'Done',
-};
+const typedIdeas = (ideas ?? []) as BusinessIdea[];
 
 const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout>
-	<section class="challenges">
+	<section class="ideas">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
-				<h1>Challenges.</h1>
-				<p class="lede">Things you've set out to accomplish, and the trail of proof behind them.</p>
+				<h1>Business idea register.</h1>
+				<p class="lede">
+					Ideas worth evaluating as businesses — the pain point they solve, who has it, and
+					what's been done to validate it.
+				</p>
 			</div>
-			<button type="button" class="btn" data-open-dialog="new-challenge">+ New challenge</button>
+			<button type="button" class="btn" data-open-dialog="new-business-idea">+ Register idea</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -42,30 +40,28 @@ const error = Astro.url.searchParams.get('error');
 				<thead>
 					<tr>
 						<th>Title</th>
-						<th>Description</th>
-						<th>Status</th>
-						<th>Start</th>
-						<th>Target end</th>
-						<th>Created</th>
+						<th>Pain point</th>
+						<th>Target market</th>
+						<th>Validation</th>
+						<th>Added</th>
 					</tr>
 				</thead>
 				<tbody>
-					{typedChallenges.length ? (
-						typedChallenges.map((challenge) => (
-							<tr class="row-link">
+					{typedIdeas.length ? (
+						typedIdeas.map((idea) => (
+							<tr>
 								<td class="cell-title">
-									<a href={`/challenges/${challenge.id}`}>{challenge.title}</a>
+									<a href={`/business-ideas/${idea.id}`}>{idea.title}</a>
 								</td>
-								<td class="cell-muted">{challenge.description ?? '—'}</td>
-								<td><span class={`pill pill-${challenge.status}`}>{statusLabel[challenge.status]}</span></td>
-								<td class="cell-date">{challenge.start_date ?? '—'}</td>
-								<td class="cell-date">{challenge.target_end_date ?? '—'}</td>
-								<td class="cell-date">{new Date(challenge.created_at).toLocaleDateString()}</td>
+								<td class="cell-muted">{idea.pain_point ?? '—'}</td>
+								<td class="cell-muted">{idea.target_market ?? '—'}</td>
+								<td class="cell-muted">{idea.validation ?? '—'}</td>
+								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
 							</tr>
 						))
 					) : (
 						<tr>
-							<td colspan="6" class="empty-cell">No challenges yet. Create your first one.</td>
+							<td colspan="5" class="empty-cell">No business ideas registered yet.</td>
 						</tr>
 					)}
 				</tbody>
@@ -73,30 +69,25 @@ const error = Astro.url.searchParams.get('error');
 		</div>
 	</section>
 
-	<dialog id="new-challenge" class="popup">
+	<dialog id="new-business-idea" class="popup">
 		<div class="popup-inner">
-			<h2>New challenge</h2>
-			<form method="post" action="/api/challenges/create">
+			<h2>Register idea</h2>
+			<form method="post" action="/api/business-ideas/create">
 				<label for="title">Title</label>
-				<input id="title" name="title" type="text" required maxlength="120" />
+				<input id="title" name="title" type="text" required maxlength="160" />
 
-				<label for="description">Description</label>
-				<textarea id="description" name="description" rows="3"></textarea>
+				<label for="pain_point">Pain point</label>
+				<textarea id="pain_point" name="pain_point" rows="2" placeholder="What problem does this solve, for whom?"></textarea>
 
-				<div class="popup-row">
-					<div>
-						<label for="start_date">Start date</label>
-						<input id="start_date" name="start_date" type="date" />
-					</div>
-					<div>
-						<label for="target_end_date">Target end date</label>
-						<input id="target_end_date" name="target_end_date" type="date" />
-					</div>
-				</div>
+				<label for="target_market">Target market</label>
+				<textarea id="target_market" name="target_market" rows="2" placeholder="Who would pay for this?"></textarea>
+
+				<label for="validation">Validation</label>
+				<textarea id="validation" name="validation" rows="2" placeholder="What have you done to test this so far?"></textarea>
 
 				<div class="popup-actions">
 					<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
-					<button type="submit" class="btn">Create challenge</button>
+					<button type="submit" class="btn">Register idea</button>
 				</div>
 			</form>
 		</div>
@@ -104,8 +95,8 @@ const error = Astro.url.searchParams.get('error');
 </Layout>
 
 <style>
-	.challenges {
-		max-width: 1040px;
+	.ideas {
+		max-width: 1080px;
 	}
 
 	.page-head {
@@ -133,9 +124,11 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.lede {
+		max-width: 54ch;
 		margin: 18px 0 0;
 		color: var(--muted);
 		font-size: 16px;
+		line-height: 1.6;
 	}
 
 	.page-head .btn {
@@ -164,7 +157,6 @@ const error = Astro.url.searchParams.get('error');
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 14px;
-		white-space: nowrap;
 	}
 
 	.data-table th {
@@ -177,10 +169,11 @@ const error = Astro.url.searchParams.get('error');
 		color: var(--muted);
 		border-bottom: 1px solid var(--line);
 		background: var(--canvas);
+		white-space: nowrap;
 	}
 
 	.data-table td {
-		padding: 14px 16px;
+		padding: 12px 16px;
 		border-bottom: 1px solid var(--line);
 		vertical-align: middle;
 	}
@@ -189,13 +182,8 @@ const error = Astro.url.searchParams.get('error');
 		border-bottom: none;
 	}
 
-	.row-link {
-		cursor: pointer;
-		transition: background 0.1s ease;
-	}
-
-	.row-link:hover {
-		background: var(--canvas);
+	.cell-title {
+		white-space: nowrap;
 	}
 
 	.cell-title a {
@@ -210,7 +198,7 @@ const error = Astro.url.searchParams.get('error');
 
 	.cell-muted {
 		color: var(--muted);
-		max-width: 320px;
+		max-width: 260px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -219,6 +207,7 @@ const error = Astro.url.searchParams.get('error');
 	.cell-date {
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 
 	.empty-cell {
@@ -227,41 +216,13 @@ const error = Astro.url.searchParams.get('error');
 		color: var(--muted);
 	}
 
-	.pill {
-		flex-shrink: 0;
-		padding: 4px 12px;
-		border-radius: 999px;
-		font-size: 12px;
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	.pill-not_started {
-		background: var(--canvas);
-		color: var(--muted);
-		border: 1px solid var(--line);
-	}
-
-	.pill-active {
-		background: #eef4ff;
-		color: #1d4ed8;
-	}
-
-	.pill-done {
-		background: #eafaf0;
-		color: #1f7a3d;
-	}
-
 	@media (max-width: 720px) {
 		.page-head {
 			flex-direction: column;
 			align-items: stretch;
 		}
-		.page-head .btn {
-			align-self: flex-start;
-		}
 		.cell-muted {
-			max-width: 160px;
+			max-width: 140px;
 		}
 	}
 </style>
