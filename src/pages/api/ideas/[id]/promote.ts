@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	const { data: idea } = await supabase.from('ideas').select('*').eq('id', ideaId).maybeSingle();
 
 	if (!idea) {
-		return redirect('/brainstorm?error=Idea not found.');
+		return redirect('/pain-points?error=Idea not found.');
 	}
 
 	const { data: businessIdea, error } = await supabase
@@ -27,10 +27,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 		.single();
 
 	if (error) {
-		return redirect(`/brainstorm?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/pain-points?error=${encodeURIComponent(error.message)}`);
 	}
 
 	await supabase.from('ideas').update({ business_idea_id: businessIdea.id }).eq('id', ideaId);
 
-	return redirect('/brainstorm');
+	return redirect('/pain-points');
 };

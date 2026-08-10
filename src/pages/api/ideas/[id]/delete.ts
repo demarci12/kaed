@@ -11,8 +11,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	const { error } = await supabase.from('ideas').delete().eq('id', params.id);
 
 	if (error) {
-		return redirect(`/brainstorm?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/pain-points?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect('/brainstorm');
+	return redirect('/pain-points');
 };

@@ -20,14 +20,17 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="brainstorm">
+	<section class="pain-points">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
-				<h1>Brainstorm.</h1>
-				<p class="lede">Freeform notes before an idea is worth anything more formal. Click a title or note to write.</p>
+				<h1>Pain points.</h1>
+				<p class="lede">
+					Capture what's actually annoying or broken. Once one is worth solving, turn it into a business
+					idea → then a project → then activities you actually work through. Click a title or note to write.
+				</p>
 			</div>
-			<button type="button" class="btn" id="new-idea-btn">+ New note</button>
+			<button type="button" class="btn" id="new-idea-btn">+ New pain point</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -73,7 +76,7 @@ const error = Astro.url.searchParams.get('error');
 					</article>
 				))
 			) : (
-				<p class="empty">Nothing here yet. Click "+ New note" to start writing.</p>
+				<p class="empty">Nothing here yet. Click "+ New pain point" to start writing.</p>
 			)}
 		</div>
 	</section>
@@ -115,7 +118,7 @@ const error = Astro.url.searchParams.get('error');
 </script>
 
 <style>
-	.brainstorm {
+	.pain-points {
 		max-width: 760px;
 	}
 
