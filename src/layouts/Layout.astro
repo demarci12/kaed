@@ -1,6 +1,7 @@
 ---
 import { createSupabaseServerClient } from '../lib/supabase';
 import { isMember } from '../lib/auth';
+import { ClientRouter } from 'astro:transitions';
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 const {
@@ -17,6 +18,7 @@ const memberOnly = user ? isMember(user) : false;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>KAED</title>
+		<ClientRouter />
 		<style>
 			:root {
 				--paper: #ffffff;
