@@ -160,7 +160,7 @@ function json(body: unknown, status = 200) {
 	});
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, url }) => {
 	if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 		return json({ error: 'Supabase is not configured.' }, 500);
 	}
@@ -169,7 +169,9 @@ export const POST: APIRoute = async ({ request }) => {
 	}
 
 	const authHeader = request.headers.get('Authorization') ?? '';
-	const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+	const headerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+	const queryToken = url.searchParams.get('token') ?? '';
+	const token = headerToken || queryToken;
 	if (token !== MCP_AUTH_TOKEN) {
 		return json({ error: 'Unauthorized' }, 401);
 	}
