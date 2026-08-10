@@ -72,9 +72,13 @@ const spentToday = typedTransactions
 const spentThisWeek = typedTransactions
 	.filter((t) => t.type === 'expense' && t.occurred_on >= mondayStr && t.occurred_on <= todayStr)
 	.reduce((sum, t) => sum + Number(t.amount), 0);
+const spentThisMonth = typedTransactions
+	.filter((t) => t.type === 'expense' && t.occurred_on >= currentMonth && t.occurred_on <= todayStr)
+	.reduce((sum, t) => sum + Number(t.amount), 0);
 
 const dailyRemaining = dailyLimit != null ? dailyLimit - spentToday : null;
 const weeklyRemaining = weeklyLimit != null ? weeklyLimit - spentThisWeek : null;
+const monthlyRemaining = plannedExpenseThisMonth > 0 ? plannedExpenseThisMonth - spentThisMonth : null;
 
 function formatAmount(n: number) {
 	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -136,6 +140,16 @@ const error = Astro.url.searchParams.get('error');
 			<div class="summary-card">
 				<span class="summary-label">Savings balance</span>
 				<span class="summary-value saving">{formatAmount(totalSaving)}</span>
+			</div>
+			<div class="summary-card">
+				<span class="summary-label">Remaining this month</span>
+				{monthlyRemaining != null ? (
+					<span class={`summary-value ${monthlyRemaining < 0 ? 'negative' : 'positive'}`}>
+						{formatAmount(monthlyRemaining)}
+					</span>
+				) : (
+					<span class="summary-value muted">No expense budget planned</span>
+				)}
 			</div>
 		</div>
 
@@ -275,16 +289,23 @@ const error = Astro.url.searchParams.get('error');
 </Layout>
 
 <script>
-	const quickAddForm = document.getElementById('quick-add-form') as HTMLFormElement | null;
 	const quickAddCategory = document.getElementById('quick-add-category') as HTMLSelectElement | null;
 	const quickAddType = document.getElementById('quick-add-type') as HTMLInputElement | null;
 
-	quickAddForm?.addEventListener('submit', () => {
+	// Sync the hidden `type` field the moment the category changes (and once
+	// on load for whatever's selected by default), rather than waiting for
+	// submit -- a submit-time update can race with the ClientRouter's own
+	// submit interception and go out with the stale default type, creating
+	// a transaction whose type doesn't match the category that was picked.
+	function syncQuickAddType() {
 		if (!quickAddCategory || !quickAddType) return;
 		const selected = quickAddCategory.selectedOptions[0];
 		const type = selected?.getAttribute('data-type');
 		if (type) quickAddType.value = type;
-	});
+	}
+
+	quickAddCategory?.addEventListener('change', syncQuickAddType);
+	syncQuickAddType();
 </script>
 
 <style>
@@ -380,6 +401,13 @@ const error = Astro.url.searchParams.get('error');
 
 	.summary-value.saving {
 		color: #1d4ed8;
+	}
+
+	.summary-value.muted {
+		font-family: var(--sans);
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--muted);
 	}
 
 	.limits-panel {
