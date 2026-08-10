@@ -11,8 +11,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	const { error } = await supabase.from('finance_categories').delete().eq('id', params.id);
 
 	if (error) {
-		return redirect(`/finance?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/finance/settings?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect('/finance');
+	return redirect('/finance/settings');
 };

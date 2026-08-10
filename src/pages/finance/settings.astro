@@ -21,6 +21,10 @@ const incomeCategories = typedCategories.filter((c) => c.type === 'income');
 const expenseCategories = typedCategories.filter((c) => c.type === 'expense');
 const savingCategories = typedCategories.filter((c) => c.type === 'saving');
 
+function formatAmount(n: number) {
+	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 const error = Astro.url.searchParams.get('error');
 ---
 
@@ -94,54 +98,164 @@ const error = Astro.url.searchParams.get('error');
 			<div class="category-groups">
 				<div>
 					<h3>Income</h3>
-					<ul class="category-list">
-						{incomeCategories.length ? (
-							incomeCategories.map((c) => (
-								<li>
-									<span>{c.name}</span>
-									<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
-										<button type="submit" class="row-delete" aria-label="Delete category">×</button>
-									</form>
-								</li>
-							))
-						) : (
-							<li class="category-empty">None yet.</li>
-						)}
-					</ul>
+					<div class="table-wrap">
+						<table class="data-table category-table">
+							<thead>
+								<tr>
+									<th>Name</th>
+									<th>Default / month</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								{incomeCategories.length ? (
+									incomeCategories.map((c) => (
+										<tr>
+											<td
+												data-editable="text"
+												data-field="name"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.name}
+											>
+												{c.name}
+											</td>
+											<td
+												class="cell-amount"
+												data-editable="number"
+												data-field="default_amount"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.default_amount}
+											>
+												{formatAmount(c.default_amount)}
+											</td>
+											<td class="cell-actions">
+												<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
+													<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+												</form>
+											</td>
+										</tr>
+									))
+								) : (
+									<tr>
+										<td colspan="3" class="empty-cell">None yet.</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
 				</div>
 				<div>
 					<h3>Expense</h3>
-					<ul class="category-list">
-						{expenseCategories.length ? (
-							expenseCategories.map((c) => (
-								<li>
-									<span>{c.name}</span>
-									<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
-										<button type="submit" class="row-delete" aria-label="Delete category">×</button>
-									</form>
-								</li>
-							))
-						) : (
-							<li class="category-empty">None yet.</li>
-						)}
-					</ul>
+					<div class="table-wrap">
+						<table class="data-table category-table">
+							<thead>
+								<tr>
+									<th>Name</th>
+									<th>Default / month</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								{expenseCategories.length ? (
+									expenseCategories.map((c) => (
+										<tr>
+											<td
+												data-editable="text"
+												data-field="name"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.name}
+											>
+												{c.name}
+											</td>
+											<td
+												class="cell-amount"
+												data-editable="number"
+												data-field="default_amount"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.default_amount}
+											>
+												{formatAmount(c.default_amount)}
+											</td>
+											<td class="cell-actions">
+												<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
+													<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+												</form>
+											</td>
+										</tr>
+									))
+								) : (
+									<tr>
+										<td colspan="3" class="empty-cell">None yet.</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
 				</div>
 				<div>
 					<h3>Saving</h3>
-					<ul class="category-list">
-						{savingCategories.length ? (
-							savingCategories.map((c) => (
-								<li>
-									<span>{c.name}</span>
-									<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
-										<button type="submit" class="row-delete" aria-label="Delete category">×</button>
-									</form>
-								</li>
-							))
-						) : (
-							<li class="category-empty">None yet.</li>
-						)}
-					</ul>
+					<div class="table-wrap">
+						<table class="data-table category-table">
+							<thead>
+								<tr>
+									<th>Name</th>
+									<th>Default / month</th>
+									<th>Interest %/mo</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								{savingCategories.length ? (
+									savingCategories.map((c) => (
+										<tr>
+											<td
+												data-editable="text"
+												data-field="name"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.name}
+											>
+												{c.name}
+											</td>
+											<td
+												class="cell-amount"
+												data-editable="number"
+												data-field="default_amount"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.default_amount}
+											>
+												{formatAmount(c.default_amount)}
+											</td>
+											<td
+												class="cell-amount"
+												data-editable="number"
+												data-field="interest_rate"
+												data-id={c.id}
+												data-endpoint="/api/finance/categories"
+												data-value={c.interest_rate ?? ''}
+											>
+												{c.interest_rate != null ? c.interest_rate : '—'}
+											</td>
+											<td class="cell-actions">
+												<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
+													<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+												</form>
+											</td>
+										</tr>
+									))
+								) : (
+									<tr>
+										<td colspan="4" class="empty-cell">None yet.</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
 
@@ -158,6 +272,14 @@ const error = Astro.url.searchParams.get('error');
 							<option value="income">Income</option>
 							<option value="saving">Saving</option>
 						</select>
+					</div>
+					<div>
+						<label for="cat-default-amount">Default amount / month</label>
+						<input id="cat-default-amount" name="default_amount" type="number" step="0.01" min="0" placeholder="0.00" />
+					</div>
+					<div>
+						<label for="cat-interest-rate">Interest %/mo (saving only)</label>
+						<input id="cat-interest-rate" name="interest_rate" type="number" step="0.001" placeholder="Optional" />
 					</div>
 				</div>
 				<div class="settings-actions">
@@ -303,31 +425,56 @@ const error = Astro.url.searchParams.get('error');
 		color: var(--muted);
 	}
 
-	.category-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.category-list li {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 8px 10px;
+	.table-wrap {
+		overflow-x: auto;
 		border: 1px solid var(--line);
-		border-radius: 8px;
-		font-size: 14px;
+		border-radius: 10px;
 		background: var(--canvas);
 	}
 
-	.category-empty {
+	.data-table.category-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 13px;
+	}
+
+	.category-table th {
+		text-align: left;
+		padding: 8px 10px;
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--muted);
+		border-bottom: 1px solid var(--line);
+		white-space: nowrap;
+	}
+
+	.category-table td {
+		padding: 8px 10px;
+		border-bottom: 1px solid var(--line);
+		vertical-align: middle;
+	}
+
+	.category-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.cell-amount {
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.cell-actions {
+		width: 1%;
+		text-align: right;
+	}
+
+	.empty-cell {
+		padding: 16px 10px;
+		text-align: center;
 		color: var(--muted);
 		font-size: 13px;
-		border-style: dashed;
-		background: transparent;
 	}
 
 	.row-delete {

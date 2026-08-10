@@ -7,6 +7,12 @@ export interface FinanceCategory {
 	user_id: string;
 	name: string;
 	type: FinanceType;
+	// Default planned monthly amount, used to seed a month's budget planning
+	// view when no month-specific finance_budgets row exists yet.
+	default_amount: number;
+	// Monthly interest rate as a percent (e.g. 0.5 = 0.5%/month), only
+	// meaningful for type === 'saving'. Null/0 means no interest.
+	interest_rate: number | null;
 	created_at: string;
 }
 

@@ -54,9 +54,18 @@ for (const t of typedTransactions) {
 	actualByCategoryId.set(t.category_id, (actualByCategoryId.get(t.category_id) ?? 0) + Number(t.amount));
 }
 
+// A category's planned amount for this month: the saved finance_budgets
+// row if one exists, otherwise the category's configured default -- so a
+// fresh month shows the default plan pre-filled, editable, and only
+// persisted once the user hits Save.
+function budgetedFor(cat: FinanceCategory): number {
+	const saved = budgetByCategoryId.get(cat.id)?.amount;
+	return saved != null ? Number(saved) : Number(cat.default_amount ?? 0);
+}
+
 function totals(type: FinanceType) {
 	const cats = categoriesByType[type];
-	const budgeted = cats.reduce((sum, c) => sum + Number(budgetByCategoryId.get(c.id)?.amount ?? 0), 0);
+	const budgeted = cats.reduce((sum, c) => sum + budgetedFor(c), 0);
 	const actual = typedTransactions.filter((t) => t.type === type).reduce((sum, t) => sum + Number(t.amount), 0);
 	return { budgeted, actual };
 }
@@ -85,12 +94,29 @@ const sectionLabel: Record<FinanceType, string> = { income: 'Income', expense: '
 const error = Astro.url.searchParams.get('error');
 
 // Projected savings balance if this month's planned saving amount is kept
-// up every month going forward, starting from today's global balance.
+// up every month going forward, starting from today's global balance,
+// compounding at a blended monthly interest rate across saving categories
+// (weighted by each category's planned monthly amount).
+const savingCategories = categoriesByType.saving;
+const savingWeightedRateSum = savingCategories.reduce(
+	(sum, c) => sum + budgetedFor(c) * Number(c.interest_rate ?? 0),
+	0,
+);
+const savingContributionSum = savingCategories.reduce((sum, c) => sum + budgetedFor(c), 0);
+const blendedMonthlyRatePct = savingContributionSum > 0 ? savingWeightedRateSum / savingContributionSum : 0;
+const blendedMonthlyRate = blendedMonthlyRatePct / 100;
+
 const projectionMonths = [1, 3, 6, 12, 24];
-const projections = projectionMonths.map((months) => ({
-	months,
-	balance: globalSavingsBalance + savingTotals.budgeted * months,
-}));
+const projections = projectionMonths.map((months) => {
+	const P = globalSavingsBalance;
+	const C = savingTotals.budgeted;
+	const r = blendedMonthlyRate;
+	const balance =
+		r === 0
+			? P + C * months
+			: P * Math.pow(1 + r, months) + C * ((Math.pow(1 + r, months) - 1) / r);
+	return { months, balance };
+});
 ---
 
 <Layout user={auth.user}>
@@ -174,7 +200,8 @@ const projections = projectionMonths.map((months) => ({
 			)}
 			<p class="projection-note">
 				Starting from today's balance of {formatAmount(globalSavingsBalance)}, assuming you keep saving{' '}
-				{formatAmount(savingTotals.budgeted)} every month.
+				{formatAmount(savingTotals.budgeted)} every month
+				{blendedMonthlyRate > 0 ? ` at a blended ${blendedMonthlyRatePct.toFixed(2)}%/mo return.` : '.'}
 			</p>
 		</div>
 
@@ -196,7 +223,7 @@ const projections = projectionMonths.map((months) => ({
 							</thead>
 							<tbody>
 								{categoriesByType[type].map((cat) => {
-									const budgeted = Number(budgetByCategoryId.get(cat.id)?.amount ?? 0);
+									const budgeted = budgetedFor(cat);
 									const actual = actualByCategoryId.get(cat.id) ?? 0;
 									const remaining = type === 'expense' ? budgeted - actual : actual - budgeted;
 									const pct = budgeted > 0 ? Math.min(100, Math.round((actual / budgeted) * 100)) : 0;
