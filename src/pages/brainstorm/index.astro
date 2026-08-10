@@ -19,7 +19,7 @@ const typedIdeas = (ideas ?? []) as Idea[];
 const error = Astro.url.searchParams.get('error');
 ---
 
-<Layout>
+<Layout user={auth.user}>
 	<section class="brainstorm">
 		<div class="page-head">
 			<div>

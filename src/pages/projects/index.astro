@@ -24,7 +24,7 @@ const statusLabel: Record<string, string> = {
 const error = Astro.url.searchParams.get('error');
 ---
 
-<Layout>
+<Layout user={auth.user}>
 	<section class="projects">
 		<div class="page-head">
 			<div>

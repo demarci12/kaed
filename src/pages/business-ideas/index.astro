@@ -48,7 +48,7 @@ if (ideaIds.length) {
 const error = Astro.url.searchParams.get('error');
 ---
 
-<Layout>
+<Layout user={auth.user}>
 	<section class="ideas">
 		<div class="page-head">
 			<div>

@@ -81,7 +81,7 @@ const proofStatusLabel: Record<string, string> = {
 const error = Astro.url.searchParams.get('error');
 ---
 
-<Layout>
+<Layout user={auth.user}>
 	<section class="detail">
 		<a class="back" href="/projects">← Projects</a>
 

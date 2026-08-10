@@ -81,7 +81,7 @@ function formatAmount(n: number) {
 const error = Astro.url.searchParams.get('error');
 ---
 
-<Layout>
+<Layout user={auth.user}>
 	<section class="finance">
 		<div class="page-head">
 			<div>

@@ -89,7 +89,7 @@ const projections = projectionMonths.map((months) => ({
 }));
 ---
 
-<Layout>
+<Layout user={auth.user}>
 	<section class="budget">
 		<a class="back" href="/finance">← Finance</a>
 
