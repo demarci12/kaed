@@ -1,0 +1,292 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser, type Challenge } from '../../lib/challenges';
+import type { Project } from '../../lib/projects';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const [{ data: challenges }, { data: projects }] = await Promise.all([
+	supabase.from('challenges').select('*').order('is_done', { ascending: true }).order('created_at', { ascending: false }),
+	supabase.from('projects').select('id, title').order('title', { ascending: true }),
+]);
+
+const typedChallenges = (challenges ?? []) as Challenge[];
+const typedProjects = (projects ?? []) as Pick<Project, 'id' | 'title'>[];
+const projectById = new Map(typedProjects.map((p) => [p.id, p]));
+
+const doneCount = typedChallenges.filter((c) => c.is_done).length;
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout user={auth.user}>
+	<section class="activities">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Delivery</p>
+				<h1>Activities.</h1>
+				<p class="lede">
+					Every broken-down step across every project, in one place — the last stop in pain point →
+					business idea → project → activity, so you can stop procrastinating and just do the next one.
+				</p>
+			</div>
+			<button type="button" class="btn" data-open-popup="new-activity">+ Add activity</button>
+		</div>
+
+		{error && <p class="form-error">{error}</p>}
+
+		{typedChallenges.length > 0 && (
+			<div class="progress-row">
+				<span class="progress-count">{doneCount}/{typedChallenges.length} done</span>
+				<div class="progress-bar">
+					<div class="progress-bar-fill" style={`width: ${(doneCount / typedChallenges.length) * 100}%`} />
+				</div>
+			</div>
+		)}
+
+		<div class="table-wrap">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Done</th>
+						<th>Activity</th>
+						<th>Project</th>
+						<th>Added</th>
+					</tr>
+				</thead>
+				<tbody>
+					{typedChallenges.length ? (
+						typedChallenges.map((challenge) => {
+							const project = projectById.get(challenge.project_id);
+							return (
+								<tr>
+									<td>
+										<form
+											method="post"
+											action={`/api/projects/${challenge.project_id}/challenges/${challenge.id}/toggle`}
+											class="challenge-form"
+										>
+											<input type="hidden" name="is_done" value={String(challenge.is_done)} />
+											<input type="hidden" name="return_to" value="/activities" />
+											<button type="submit" class={`challenge-check ${challenge.is_done ? 'checked' : ''}`} aria-label="Toggle done">
+												{challenge.is_done && '✓'}
+											</button>
+										</form>
+									</td>
+									<td class={challenge.is_done ? 'challenge-title done' : 'challenge-title'}>{challenge.title}</td>
+									<td class="cell-muted">
+										{project ? <a href={`/projects/${project.id}`}>{project.title}</a> : '—'}
+									</td>
+									<td class="cell-date">{new Date(challenge.created_at).toLocaleDateString()}</td>
+								</tr>
+							);
+						})
+					) : (
+						<tr>
+							<td colspan="4" class="empty-cell">
+								No activities yet. Break a project down into steps from here or from the project page.
+							</td>
+						</tr>
+					)}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<dialog id="new-activity" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add activity</h2>
+		<form method="post" action="/api/activities/create">
+			<label for="activity-project">Project</label>
+			<select id="activity-project" name="project_id" required disabled={typedProjects.length === 0}>
+				{typedProjects.length ? (
+					typedProjects.map((p) => <option value={p.id}>{p.title}</option>)
+				) : (
+					<option value="">No projects yet</option>
+				)}
+			</select>
+			<label for="activity-title">Title</label>
+			<input id="activity-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn" disabled={typedProjects.length === 0}>Add</button>
+			</div>
+		</form>
+	</dialog>
+</Layout>
+
+<style>
+	.activities {
+		max-width: 900px;
+	}
+
+	.page-head {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 24px;
+		flex-wrap: wrap;
+	}
+
+	.eyebrow {
+		margin: 0 0 16px;
+		font-size: 13px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	h1 {
+		margin: 0;
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2.2rem, 5vw, 3.2rem);
+		letter-spacing: -0.02em;
+	}
+
+	.lede {
+		max-width: 60ch;
+		margin: 18px 0 0;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	.page-head .btn {
+		flex-shrink: 0;
+	}
+
+	.form-error {
+		margin: 20px 0 0;
+		padding: 12px 16px;
+		border: 1px solid #e7c3c1;
+		background: #fbf0ef;
+		border-radius: 10px;
+		color: #b4231f;
+		font-size: 14px;
+	}
+
+	.progress-row {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		margin-top: 32px;
+	}
+
+	.progress-count {
+		font-size: 13px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.progress-bar {
+		flex: 1;
+		height: 6px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--ink);
+		transition: width 0.2s ease;
+	}
+
+	.table-wrap {
+		margin-top: 20px;
+		overflow-x: auto;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
+	}
+
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 14px;
+	}
+
+	.data-table th {
+		text-align: left;
+		padding: 12px 16px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
+		border-bottom: 1px solid var(--line);
+		background: var(--canvas);
+		white-space: nowrap;
+	}
+
+	.data-table td {
+		padding: 10px 16px;
+		border-bottom: 1px solid var(--line);
+		vertical-align: middle;
+	}
+
+	.data-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.empty-cell {
+		padding: 28px 16px;
+		text-align: center;
+		color: var(--muted);
+	}
+
+	.cell-muted a {
+		color: var(--muted);
+		text-decoration: none;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.cell-muted a:hover {
+		color: var(--ink);
+		border-color: var(--ink);
+	}
+
+	.cell-date {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.challenge-form {
+		margin: 0;
+	}
+
+	.challenge-check {
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		border: 1px solid var(--line);
+		background: var(--paper);
+		color: #fff;
+		font-size: 13px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.challenge-check.checked {
+		background: var(--ink);
+		border-color: var(--ink);
+	}
+
+	.challenge-title.done {
+		color: var(--muted);
+		text-decoration: line-through;
+	}
+</style>
