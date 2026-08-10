@@ -9,19 +9,17 @@ if ('redirect' in auth) {
 }
 const { supabase } = auth;
 
-const { data: transactions } = await supabase
-	.from('finance_transactions')
-	.select('*')
-	.order('occurred_on', { ascending: false })
-	.order('created_at', { ascending: false });
-
-const { data: categories } = await supabase
-	.from('finance_categories')
-	.select('*')
-	.order('name', { ascending: true });
-
 const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
-const { data: currentBudgets } = await supabase.from('finance_budgets').select('*').eq('month', currentMonth);
+
+const [{ data: transactions }, { data: categories }, { data: currentBudgets }] = await Promise.all([
+	supabase
+		.from('finance_transactions')
+		.select('*')
+		.order('occurred_on', { ascending: false })
+		.order('created_at', { ascending: false }),
+	supabase.from('finance_categories').select('*').order('name', { ascending: true }),
+	supabase.from('finance_budgets').select('*').eq('month', currentMonth),
+]);
 
 const typedTransactions = (transactions ?? []) as FinanceTransaction[];
 const typedCategories = (categories ?? []) as FinanceCategory[];
