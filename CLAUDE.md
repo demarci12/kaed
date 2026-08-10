@@ -11,7 +11,11 @@ Astro app (SSR, `output: 'server'`, Vercel adapter) backed by Supabase, deployed
 ## Finance module
 
 - `finance_limits` is a single shared row: `daily_limit`, `weekly_limit` (optional overrides), and `starting_savings_balance` (added on top of the sum of `saving`-type transactions everywhere a savings balance is computed — see `/finance` and `/finance/budget`).
-- `/finance/settings` manages starting balance, limit overrides, and categories (add/delete) in one place.
+- `finance_categories.default_amount` is the category's default planned monthly amount. `/finance/budget`'s `budgetedFor(cat)` helper falls back to it whenever no month-specific `finance_budgets` row exists yet — so a fresh month shows the default plan pre-filled and editable, only persisted once Save is hit for that category+month. Keep using that helper everywhere a "planned amount for this category this month" is needed; don't recompute the fallback inline.
+- `finance_categories.interest_rate` (nullable, percent per month, e.g. `0.5`) is only meaningful for `type = 'saving'`. `/finance/budget`'s forecast panel computes a contribution-weighted blended monthly rate across saving categories and compounds it (future-value-of-ordinary-annuity formula) instead of flat linear growth — see the `projections` block in that file.
+- `/finance/settings` is the **only** place categories are managed (add/delete/edit name, default amount, interest rate via inline `[data-editable]` cells) — there is no separate "Manage categories" popup on `/finance` anymore; don't re-add one.
+- `/finance` has a quick-add bar (category + amount, posts to `/api/finance/transactions/create`, dated today) for fast logging without opening the full "+ Add transaction" popup.
+- A "Statistics" nav entry exists on `/finance` as a disabled placeholder ("Soon" badge) — intentionally not built yet, on hold per the user.
 - Daily/weekly spending limits shown on `/finance` derive from the current month's planned expense budget by default (`/finance/budget`), overridden by `finance_limits` if set.
 
 ## Supabase schema changes

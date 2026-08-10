@@ -194,6 +194,12 @@ create table if not exists public.finance_categories (
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
   type text not null check (type in ('income', 'expense', 'saving')),
+  -- Default planned monthly amount; seeds budget planning until a
+  -- month-specific finance_budgets row is saved.
+  default_amount numeric(12, 2) not null default 0,
+  -- Monthly interest rate as a percent (0.5 = 0.5%/month). Only meaningful
+  -- for type = 'saving'; drives the compounding forecast on /finance/budget.
+  interest_rate numeric(6, 3),
   created_at timestamptz not null default now()
 );
 
