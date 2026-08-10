@@ -82,6 +82,14 @@ function formatAmount(n: number) {
 
 const sectionLabel: Record<FinanceType, string> = { income: 'Income', expense: 'Expense', saving: 'Saving' };
 const error = Astro.url.searchParams.get('error');
+
+// Projected savings balance if this month's planned saving amount is kept
+// up every month going forward, starting from today's global balance.
+const projectionMonths = [1, 3, 6, 12, 24];
+const projections = projectionMonths.map((months) => ({
+	months,
+	balance: globalSavingsBalance + savingTotals.budgeted * months,
+}));
 ---
 
 <Layout>
@@ -137,6 +145,36 @@ const error = Astro.url.searchParams.get('error');
 				<span class="sub-summary-label">Global savings balance</span>
 				<span class="sub-summary-value saving">{formatAmount(globalSavingsBalance)}</span>
 			</div>
+		</div>
+
+		<div class="type-section">
+			<h2>If you keep this plan</h2>
+			{savingTotals.budgeted > 0 ? (
+				<div class="table-wrap">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>In</th>
+								<th>Projected savings balance</th>
+							</tr>
+						</thead>
+						<tbody>
+							{projections.map((p) => (
+								<tr>
+									<td class="cell-title">{p.months === 1 ? 'End of this month' : `${p.months} months`}</td>
+									<td class="cell-amount">{formatAmount(p.balance)}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			) : (
+				<div class="empty-state">Set a planned saving amount above to see a projection.</div>
+			)}
+			<p class="projection-note">
+				Starting from today's balance of {formatAmount(globalSavingsBalance)}, assuming you keep saving{' '}
+				{formatAmount(savingTotals.budgeted)} every month.
+			</p>
 		</div>
 
 		{(['income', 'expense', 'saving'] as FinanceType[]).map((type) => (
@@ -488,6 +526,12 @@ const error = Astro.url.searchParams.get('error');
 
 	.progress-bar-fill.over {
 		background: #b4231f;
+	}
+
+	.projection-note {
+		margin: 14px 4px 0;
+		font-size: 13px;
+		color: var(--muted);
 	}
 
 	.empty-state {
