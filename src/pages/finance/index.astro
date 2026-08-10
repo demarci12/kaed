@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/finance';
-import type { FinanceBudget, FinanceCategory, FinanceTransaction } from '../../lib/finance';
+import type { FinanceBudget, FinanceCategory, FinanceLimits, FinanceTransaction } from '../../lib/finance';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -11,7 +11,7 @@ const { supabase } = auth;
 
 const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
 
-const [{ data: transactions }, { data: categories }, { data: currentBudgets }] = await Promise.all([
+const [{ data: transactions }, { data: categories }, { data: currentBudgets }, { data: limits }] = await Promise.all([
 	supabase
 		.from('finance_transactions')
 		.select('*')
@@ -19,11 +19,13 @@ const [{ data: transactions }, { data: categories }, { data: currentBudgets }] =
 		.order('created_at', { ascending: false }),
 	supabase.from('finance_categories').select('*').order('name', { ascending: true }),
 	supabase.from('finance_budgets').select('*').eq('month', currentMonth),
+	supabase.from('finance_limits').select('*').limit(1).maybeSingle(),
 ]);
 
 const typedTransactions = (transactions ?? []) as FinanceTransaction[];
 const typedCategories = (categories ?? []) as FinanceCategory[];
 const typedBudgets = (currentBudgets ?? []) as FinanceBudget[];
+const startingSavingsBalance = Number((limits as FinanceLimits | null)?.starting_savings_balance ?? 0);
 
 const categoryById = new Map(typedCategories.map((c) => [c.id, c]));
 const incomeCategories = typedCategories.filter((c) => c.type === 'income');
@@ -50,9 +52,9 @@ const totalIncome = typedTransactions
 const totalExpense = typedTransactions
 	.filter((t) => t.type === 'expense')
 	.reduce((sum, t) => sum + Number(t.amount), 0);
-const totalSaving = typedTransactions
-	.filter((t) => t.type === 'saving')
-	.reduce((sum, t) => sum + Number(t.amount), 0);
+const totalSaving =
+	startingSavingsBalance +
+	typedTransactions.filter((t) => t.type === 'saving').reduce((sum, t) => sum + Number(t.amount), 0);
 const balance = totalIncome - totalExpense;
 
 // Today (local date) and this ISO week (Monday..Sunday) spend, for the
@@ -91,6 +93,7 @@ const error = Astro.url.searchParams.get('error');
 			</div>
 			<div class="page-head-actions">
 				<a href="/finance/budget" class="btn ghost">Budget planning →</a>
+				<a href="/finance/settings" class="btn ghost">Settings</a>
 				<button type="button" class="btn ghost" data-open-popup="manage-categories">Manage categories</button>
 				<button type="button" class="btn" data-open-popup="new-transaction">+ Add transaction</button>
 			</div>

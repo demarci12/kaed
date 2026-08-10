@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/finance';
-import type { FinanceBudget, FinanceCategory, FinanceTransaction, FinanceType } from '../../lib/finance';
+import type { FinanceBudget, FinanceCategory, FinanceLimits, FinanceTransaction, FinanceType } from '../../lib/finance';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -25,13 +25,17 @@ const monthLabel = monthDate.toLocaleDateString(undefined, { year: 'numeric', mo
 // Savings balance is a global, all-time running total (matches the card on
 // the Finance page) -- not something that resets or gets "planned" per
 // month the way income/expense do. Shown here for context only.
-const [{ data: categories }, { data: budgets }, { data: transactions }, { data: allSavingTx }] = await Promise.all([
-	supabase.from('finance_categories').select('*').order('name', { ascending: true }),
-	supabase.from('finance_budgets').select('*').eq('month', month),
-	supabase.from('finance_transactions').select('*').gte('occurred_on', month).lt('occurred_on', nextMonth),
-	supabase.from('finance_transactions').select('amount').eq('type', 'saving'),
-]);
-const globalSavingsBalance = (allSavingTx ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
+const [{ data: categories }, { data: budgets }, { data: transactions }, { data: allSavingTx }, { data: limits }] =
+	await Promise.all([
+		supabase.from('finance_categories').select('*').order('name', { ascending: true }),
+		supabase.from('finance_budgets').select('*').eq('month', month),
+		supabase.from('finance_transactions').select('*').gte('occurred_on', month).lt('occurred_on', nextMonth),
+		supabase.from('finance_transactions').select('amount').eq('type', 'saving'),
+		supabase.from('finance_limits').select('*').limit(1).maybeSingle(),
+	]);
+const startingSavingsBalance = Number((limits as FinanceLimits | null)?.starting_savings_balance ?? 0);
+const globalSavingsBalance =
+	startingSavingsBalance + (allSavingTx ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
 
 const typedCategories = (categories ?? []) as FinanceCategory[];
 const typedBudgets = (budgets ?? []) as FinanceBudget[];

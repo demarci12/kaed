@@ -21,6 +21,15 @@ export interface FinanceTransaction {
 	created_at: string;
 }
 
+export interface FinanceLimits {
+	id: string;
+	user_id: string;
+	daily_limit: number | null;
+	weekly_limit: number | null;
+	starting_savings_balance: number;
+	updated_at: string;
+}
+
 export interface FinanceBudget {
 	id: string;
 	user_id: string;
