@@ -31,20 +31,25 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-	const form = document.getElementById('signup-form');
-	const emailInput = document.getElementById('email') as HTMLInputElement;
-	const status = document.getElementById('signup-status');
-	const submitButton = form?.querySelector('button[type="submit"]');
-
+	// Delegated from `document` so it survives ClientRouter soft navigations
+	// -- a listener bound straight to #signup-form goes stale as soon as the
+	// user navigates away and back (e.g. via /login), leaving a submit button
+	// that silently does nothing. Elements are looked up per-event instead.
 	const setStatus = (message: string, tone = 'idle') => {
+		const status = document.getElementById('signup-status');
 		if (!status) return;
 		status.textContent = message;
 		status.className = `status ${tone}`;
 	};
 
-	form?.addEventListener('submit', async (event) => {
+	document.addEventListener('submit', async (event) => {
+		const form = event.target as HTMLElement;
+		if (!(form instanceof HTMLFormElement) || form.id !== 'signup-form') return;
+
 		event.preventDefault();
 
+		const emailInput = document.getElementById('email') as HTMLInputElement | null;
+		const submitButton = form.querySelector('button[type="submit"]');
 		const email = emailInput?.value.trim();
 
 		if (!email) {
@@ -69,7 +74,7 @@ import Layout from '../layouts/Layout.astro';
 				throw new Error(payload?.error || 'Unable to save your signup right now.');
 			}
 
-			if (form instanceof HTMLFormElement) form.reset();
+			form.reset();
 			setStatus('You are on the list. Thanks.', 'success');
 		} catch (error) {
 			setStatus(error instanceof Error ? error.message : 'Signup failed. Try again.', 'error');
