@@ -289,23 +289,35 @@ const error = Astro.url.searchParams.get('error');
 </Layout>
 
 <script>
-	const quickAddCategory = document.getElementById('quick-add-category') as HTMLSelectElement | null;
-	const quickAddType = document.getElementById('quick-add-type') as HTMLInputElement | null;
-
-	// Sync the hidden `type` field the moment the category changes (and once
-	// on load for whatever's selected by default), rather than waiting for
-	// submit -- a submit-time update can race with the ClientRouter's own
-	// submit interception and go out with the stale default type, creating
-	// a transaction whose type doesn't match the category that was picked.
-	function syncQuickAddType() {
-		if (!quickAddCategory || !quickAddType) return;
-		const selected = quickAddCategory.selectedOptions[0];
-		const type = selected?.getAttribute('data-type');
-		if (type) quickAddType.value = type;
+	// Delegated from `document` (which survives ClientRouter soft
+	// navigations) rather than bound directly to the <select> -- a plain
+	// script only runs once per module load, so a listener attached
+	// directly to the element goes stale and silently stops firing after
+	// the very first soft navigation swaps in a fresh DOM. Same pattern
+	// Layout.astro's [data-editable] handling already uses for this reason.
+	function syncQuickAddType(select: HTMLSelectElement) {
+		const type = select.selectedOptions[0]?.getAttribute('data-type');
+		const hidden = document.getElementById('quick-add-type') as HTMLInputElement | null;
+		if (type && hidden) hidden.value = type;
 	}
 
-	quickAddCategory?.addEventListener('change', syncQuickAddType);
-	syncQuickAddType();
+	document.addEventListener('change', (event) => {
+		const target = event.target as HTMLElement;
+		if (target instanceof HTMLSelectElement && target.id === 'quick-add-category') {
+			syncQuickAddType(target);
+		}
+	});
+
+	// Also sync on submit as a last-resort safety net (covers the case
+	// where a category was already selected before any 'change' fired,
+	// e.g. right after a fresh page load).
+	document.addEventListener('submit', (event) => {
+		const form = event.target as HTMLElement;
+		if (form instanceof HTMLFormElement && form.id === 'quick-add-form') {
+			const select = document.getElementById('quick-add-category');
+			if (select instanceof HTMLSelectElement) syncQuickAddType(select);
+		}
+	});
 </script>
 
 <style>
