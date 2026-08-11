@@ -264,3 +264,22 @@ alter table public.finance_limits enable row level security;
 
 create policy "household finance limits" on public.finance_limits
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- Specific knowledge: personal self-knowledge cards (what you're obsessed
+-- with, unusually good at, or have lived through). Personal-to-one-account,
+-- so RLS is scoped to auth.uid() unlike the shared finance tables.
+create table if not exists public.knowledge_cards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  body text,
+  evidence text,
+  kind text check (kind is null or kind in ('obsession', 'skill', 'experience', 'strength')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.knowledge_cards enable row level security;
+
+create policy "own knowledge cards" on public.knowledge_cards
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

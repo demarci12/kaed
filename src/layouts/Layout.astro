@@ -553,6 +553,27 @@ const memberOnly = user ? isMember(user) : false;
 				border: 1px solid var(--line);
 			}
 
+			/* Specific knowledge kinds (see /specific-knowledge). */
+			.pill-obsession {
+				background: #f4eefe;
+				color: #6b21a8;
+			}
+
+			.pill-skill {
+				background: #eef4ff;
+				color: #1d4ed8;
+			}
+
+			.pill-experience {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			.pill-strength {
+				background: #eafaf0;
+				color: #1f7a3d;
+			}
+
 			/* Inline editable table cells. Locked by default; click unlocks into an
 			   input, blur/Enter saves and locks it back in. */
 			[data-editable] {
@@ -675,6 +696,12 @@ const memberOnly = user ? isMember(user) : false;
 												<a href="/business-ideas">Business ideas</a>
 												<a href="/projects">Projects</a>
 												<a href="/activities">Activities</a>
+											</div>
+										</details>
+										<details class="nav-group">
+											<summary>Personal</summary>
+											<div class="nav-dropdown">
+												<a href="/specific-knowledge">Specific knowledge</a>
 											</div>
 										</details>
 										<details class="nav-group">
