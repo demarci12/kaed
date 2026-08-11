@@ -68,24 +68,24 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="ideas-grid">
+		<div class="card-grid">
 			{typedIdeas.length ? (
 				typedIdeas.map((idea) => {
 					const linkedProject = linkedProjectByIdeaId.get(idea.id);
 					const signalCount = signalCountByIdeaId.get(idea.id) ?? 0;
 					return (
-						<article class="idea-card">
-							<div class="idea-card-head">
-								<a class="idea-title" href={`/business-ideas/${idea.id}`}>{idea.title}</a>
-								<form method="post" action={`/api/business-ideas/${idea.id}/delete`} class="idea-delete-form">
-									<button type="submit" class="idea-delete" aria-label="Delete business idea">×</button>
+						<article class="card">
+							<div class="card-head">
+								<a class="card-title" href={`/business-ideas/${idea.id}`}>{idea.title}</a>
+								<form method="post" action={`/api/business-ideas/${idea.id}/delete`}>
+									<button type="submit" class="card-delete" aria-label="Delete business idea">×</button>
 								</form>
 							</div>
 
-							<div class="idea-field">
-								<span class="idea-field-label">Pain point</span>
+							<div class="card-field">
+								<span class="card-field-label">Pain point</span>
 								<p
-									class="idea-field-value"
+									class="card-field-value"
 									data-editable="textarea"
 									data-field="pain_point"
 									data-id={idea.id}
@@ -96,10 +96,10 @@ const error = Astro.url.searchParams.get('error');
 								</p>
 							</div>
 
-							<div class="idea-field">
-								<span class="idea-field-label">Target market</span>
+							<div class="card-field">
+								<span class="card-field-label">Target market</span>
 								<p
-									class="idea-field-value"
+									class="card-field-value"
 									data-editable="textarea"
 									data-field="target_market"
 									data-id={idea.id}
@@ -110,10 +110,10 @@ const error = Astro.url.searchParams.get('error');
 								</p>
 							</div>
 
-							<div class="idea-field">
-								<span class="idea-field-label">Validation</span>
+							<div class="card-field">
+								<span class="card-field-label">Validation</span>
 								<p
-									class="idea-field-value"
+									class="card-field-value"
 									data-editable="textarea"
 									data-field="validation"
 									data-id={idea.id}
@@ -124,15 +124,15 @@ const error = Astro.url.searchParams.get('error');
 								</p>
 							</div>
 
-							<div class="idea-card-foot">
+							<div class="card-foot">
 								{linkedProject ? (
-									<a class="idea-chip" href={`/projects/${linkedProject.id}`}>
+									<a class="chip" href={`/projects/${linkedProject.id}`}>
 										→ {linkedProject.title} · {signalCount} signal{signalCount === 1 ? '' : 's'}
 									</a>
 								) : (
-									<span class="idea-chip idea-chip-muted">Not started as a project</span>
+									<span class="chip chip-muted">Not started as a project</span>
 								)}
-								<span class="idea-date">{new Date(idea.created_at).toLocaleDateString()}</span>
+								<span class="card-date">{new Date(idea.created_at).toLocaleDateString()}</span>
 							</div>
 						</article>
 					);
@@ -172,227 +172,9 @@ const error = Astro.url.searchParams.get('error');
 		max-width: 1080px;
 	}
 
-	.page-head {
-		display: flex;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 24px;
-		flex-wrap: wrap;
-	}
-
-	.eyebrow {
-		margin: 0 0 16px;
-		font-size: 13px;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	h1 {
-		margin: 0;
-		font-family: var(--serif);
-		font-weight: 600;
-		font-size: clamp(2.2rem, 5vw, 3.2rem);
-		letter-spacing: -0.02em;
-	}
-
-	.lede {
-		max-width: 54ch;
-		margin: 18px 0 0;
-		color: var(--muted);
-		font-size: 16px;
-		line-height: 1.6;
-	}
-
-	.page-head .btn {
+	/* The delete form wraps a single icon button; keep it from being
+	   squeezed by a long title in the card head. */
+	.card-head form {
 		flex-shrink: 0;
-	}
-
-	.form-error {
-		margin: 20px 0 0;
-		padding: 12px 16px;
-		border: 1px solid #e7c3c1;
-		background: #fbf0ef;
-		border-radius: 10px;
-		color: #b4231f;
-		font-size: 14px;
-	}
-
-	/* Cards, not a table: six columns of free text truncated every field to
-	   an unreadable ellipsis. A card can show all three fields in full. */
-	.ideas-grid {
-		margin-top: 40px;
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 18px;
-	}
-
-	.idea-card {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding: 22px;
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
-	}
-
-	.idea-card-head {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.idea-title {
-		font-family: var(--serif);
-		font-size: 19px;
-		font-weight: 600;
-		line-height: 1.3;
-		color: var(--ink);
-		text-decoration: none;
-	}
-
-	.idea-title:hover {
-		text-decoration: underline;
-	}
-
-	.idea-delete-form {
-		margin: 0;
-		flex-shrink: 0;
-	}
-
-	.idea-delete {
-		width: 26px;
-		height: 26px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		border: 1px solid transparent;
-		background: transparent;
-		color: var(--muted);
-		font-size: 16px;
-		line-height: 1;
-		cursor: pointer;
-		transition:
-			border-color 0.15s ease,
-			color 0.15s ease;
-	}
-
-	.idea-delete:hover {
-		border-color: #e7c3c1;
-		color: #b4231f;
-	}
-
-	.idea-field {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-	}
-
-	.idea-field-label {
-		font-size: 11px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	.idea-field-value {
-		margin: 0;
-		padding: 8px 10px;
-		border: 1px solid transparent;
-		border-radius: 8px;
-		font-size: 14px;
-		line-height: 1.6;
-		color: var(--ink);
-		white-space: pre-wrap;
-		cursor: text;
-		transition:
-			border-color 0.15s ease,
-			background 0.15s ease;
-	}
-
-	.idea-field-value:hover {
-		border-color: var(--line);
-		background: var(--canvas);
-	}
-
-	.idea-field-value[data-value=''] {
-		color: var(--muted);
-	}
-
-	.idea-card-foot {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-		margin-top: auto;
-		padding-top: 14px;
-		border-top: 1px solid var(--line);
-	}
-
-	.idea-chip {
-		font-size: 12px;
-		padding: 4px 10px;
-		border-radius: 999px;
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		color: var(--ink);
-		text-decoration: none;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 100%;
-	}
-
-	.idea-chip:hover {
-		border-color: var(--ink);
-	}
-
-	.idea-chip-muted {
-		background: transparent;
-		border-style: dashed;
-		color: var(--muted);
-	}
-
-	.idea-chip-muted:hover {
-		border-color: var(--line);
-	}
-
-	.idea-date {
-		font-size: 12px;
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-	}
-
-	.empty {
-		/* Span the whole grid rather than sitting in one narrow column. */
-		grid-column: 1 / -1;
-		margin: 0;
-		padding: 32px 16px;
-		text-align: center;
-		color: var(--muted);
-		border: 1px dashed var(--line);
-		border-radius: 14px;
-	}
-
-	@media (max-width: 720px) {
-		.page-head {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
-		.ideas-grid {
-			grid-template-columns: 1fr;
-			margin-top: 28px;
-		}
-
-		.idea-card {
-			padding: 18px;
-		}
 	}
 </style>

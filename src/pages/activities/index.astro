@@ -48,13 +48,13 @@ const error = Astro.url.searchParams.get('error');
 			</div>
 		)}
 
-		<div class="activities-grid">
+		<div class="card-grid">
 			{typedChallenges.length ? (
 				typedChallenges.map((challenge) => {
 					const project = projectById.get(challenge.project_id);
 					return (
-						<article class="activity-card">
-							<div class="activity-card-head">
+						<article class="card">
+							<div class="card-head">
 								<form
 									method="post"
 									action={`/api/projects/${challenge.project_id}/challenges/${challenge.id}/toggle`}
@@ -66,16 +66,16 @@ const error = Astro.url.searchParams.get('error');
 										{challenge.is_done && '✓'}
 									</button>
 								</form>
-								<span class={challenge.is_done ? 'activity-title done' : 'activity-title'}>{challenge.title}</span>
+								<span class={challenge.is_done ? 'card-title activity-title done' : 'card-title activity-title'}>{challenge.title}</span>
 							</div>
 
-							<div class="activity-card-foot">
+							<div class="card-foot">
 								{project ? (
-									<a class="activity-chip" href={`/projects/${project.id}`}>{project.title}</a>
+									<a class="chip" href={`/projects/${project.id}`}>{project.title}</a>
 								) : (
-									<span class="activity-chip activity-chip-muted">No project</span>
+									<span class="chip chip-muted">No project</span>
 								)}
-								<span class="activity-date">{new Date(challenge.created_at).toLocaleDateString()}</span>
+								<span class="card-date">{new Date(challenge.created_at).toLocaleDateString()}</span>
 							</div>
 						</article>
 					);
@@ -115,51 +115,6 @@ const error = Astro.url.searchParams.get('error');
 		max-width: 900px;
 	}
 
-	.page-head {
-		display: flex;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 24px;
-		flex-wrap: wrap;
-	}
-
-	.eyebrow {
-		margin: 0 0 16px;
-		font-size: 13px;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	h1 {
-		margin: 0;
-		font-family: var(--serif);
-		font-weight: 600;
-		font-size: clamp(2.2rem, 5vw, 3.2rem);
-		letter-spacing: -0.02em;
-	}
-
-	.lede {
-		max-width: 60ch;
-		margin: 18px 0 0;
-		color: var(--muted);
-		font-size: 16px;
-	}
-
-	.page-head .btn {
-		flex-shrink: 0;
-	}
-
-	.form-error {
-		margin: 20px 0 0;
-		padding: 12px 16px;
-		border: 1px solid #e7c3c1;
-		background: #fbf0ef;
-		border-radius: 10px;
-		color: #b4231f;
-		font-size: 14px;
-	}
-
 	.progress-row {
 		display: flex;
 		align-items: center;
@@ -189,27 +144,10 @@ const error = Astro.url.searchParams.get('error');
 		transition: width 0.2s ease;
 	}
 
-	.activities-grid {
+	/* Sits directly under the progress row, so it needs less air than the
+	   default card grid. */
+	.card-grid {
 		margin-top: 20px;
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 18px;
-	}
-
-	.activity-card {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding: 22px;
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
-	}
-
-	.activity-card-head {
-		display: flex;
-		align-items: flex-start;
-		gap: 12px;
 	}
 
 	.activity-check-form {
@@ -217,69 +155,15 @@ const error = Astro.url.searchParams.get('error');
 		flex-shrink: 0;
 	}
 
+	/* Activity titles are a step smaller than the shared card title. */
 	.activity-title {
-		font-family: var(--serif);
 		font-size: 17px;
-		font-weight: 600;
 		line-height: 1.35;
-		color: var(--ink);
 	}
 
-	.activity-card-foot {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-		margin-top: auto;
-		padding-top: 14px;
-		border-top: 1px solid var(--line);
-	}
-
-	.activity-chip {
-		font-size: 12px;
-		padding: 4px 10px;
-		border-radius: 999px;
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		color: var(--ink);
-		text-decoration: none;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 100%;
-	}
-
-	.activity-chip:hover {
-		border-color: var(--ink);
-	}
-
-	.activity-chip-muted {
-		background: transparent;
-		border-style: dashed;
+	.activity-title.done {
 		color: var(--muted);
-	}
-
-	.activity-chip-muted:hover {
-		border-color: var(--line);
-	}
-
-	.activity-date {
-		font-size: 12px;
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-	}
-
-	.empty {
-		/* Span the whole grid rather than sitting in one narrow column. */
-		grid-column: 1 / -1;
-		margin: 0;
-		padding: 32px 16px;
-		text-align: center;
-		color: var(--muted);
-		border: 1px dashed var(--line);
-		border-radius: 14px;
+		text-decoration: line-through;
 	}
 
 	.activity-check {
@@ -305,17 +189,7 @@ const error = Astro.url.searchParams.get('error');
 		border-color: var(--ink);
 	}
 
-	.activity-title.done {
-		color: var(--muted);
-		text-decoration: line-through;
-	}
-
 	@media (max-width: 720px) {
-		.page-head {
-			align-items: flex-start;
-			gap: 16px;
-		}
-
 		.page-head .btn {
 			width: 100%;
 			justify-content: center;
@@ -328,14 +202,6 @@ const error = Astro.url.searchParams.get('error');
 
 		.progress-bar {
 			flex-basis: 100%;
-		}
-
-		.activities-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.activity-card {
-			padding: 18px;
 		}
 	}
 </style>

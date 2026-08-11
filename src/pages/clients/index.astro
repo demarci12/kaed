@@ -174,86 +174,13 @@ const error = Astro.url.searchParams.get('error');
 		max-width: 1120px;
 	}
 
-	.page-head {
-		display: flex;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 24px;
-		flex-wrap: wrap;
-	}
-
-	.eyebrow {
-		margin: 0 0 16px;
-		font-size: 13px;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	h1 {
-		margin: 0;
-		font-family: var(--serif);
-		font-weight: 600;
-		font-size: clamp(2.2rem, 5vw, 3.2rem);
-		letter-spacing: -0.02em;
-	}
-
-	.lede {
-		margin: 18px 0 0;
-		color: var(--muted);
-		font-size: 16px;
-	}
-
-	.page-head .btn {
-		flex-shrink: 0;
-	}
-
-	.form-error {
-		margin: 20px 0 0;
-		padding: 12px 16px;
-		border: 1px solid #e7c3c1;
-		background: #fbf0ef;
-		border-radius: 10px;
-		color: #b4231f;
-		font-size: 14px;
-	}
-
 	.table-wrap {
 		margin-top: 40px;
-		overflow-x: auto;
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
 	}
 
-	.data-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 14px;
-	}
-
-	.data-table th {
-		text-align: left;
-		padding: 12px 16px;
-		font-size: 11px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-		border-bottom: 1px solid var(--line);
-		background: var(--canvas);
-		white-space: nowrap;
-	}
-
+	/* Pipeline rows stay on one line; the wrapper scrolls horizontally. */
 	.data-table td {
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--line);
-		vertical-align: middle;
 		white-space: nowrap;
-	}
-
-	.data-table tr:last-child td {
-		border-bottom: none;
 	}
 
 	.cell-title a {
@@ -266,26 +193,7 @@ const error = Astro.url.searchParams.get('error');
 		text-decoration: underline;
 	}
 
-	.cell-muted {
-		color: var(--muted);
-	}
-
-	.cell-date {
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-	}
-
 	.empty-cell {
-		padding: 32px 16px;
-		text-align: center;
-		color: var(--muted);
 		white-space: normal;
-	}
-
-	@media (max-width: 720px) {
-		.page-head {
-			flex-direction: column;
-			align-items: stretch;
-		}
 	}
 </style>

@@ -101,25 +101,12 @@ const error = Astro.url.searchParams.get('error');
 		border-color: var(--ink);
 	}
 
+	/* Deltas only -- everything else comes from the global .btn. This is the
+	   page's single primary CTA, so it's deliberately taller and full width. */
 	.btn {
+		width: 100%;
+		min-height: 48px;
 		margin-top: 24px;
-		height: 48px;
-		padding: 0 24px;
-		font-family: var(--sans);
 		font-size: 15px;
-		font-weight: 500;
-		color: #fff;
-		background: var(--ink);
-		border: 1px solid var(--ink);
-		border-radius: 999px;
-		cursor: pointer;
-		transition:
-			background 0.15s ease,
-			color 0.15s ease;
-	}
-
-	.btn:hover {
-		background: transparent;
-		color: var(--ink);
 	}
 </style>
