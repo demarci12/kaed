@@ -51,7 +51,9 @@ const error = Astro.url.searchParams.get('error');
 					idea → then a project → then activities you actually work through. Click a title or note to write.
 				</p>
 			</div>
-			<button type="button" class="btn" id="new-idea-btn">+ New pain point</button>
+			<form method="post" action="/api/ideas/create-inline" class="new-idea-form">
+				<button type="submit" class="btn">+ New pain point</button>
+			</form>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
@@ -118,39 +120,6 @@ const error = Astro.url.searchParams.get('error');
 	</section>
 </Layout>
 
-<script define:vars={{ categoryOptions }}>
-	function buildNote(idea) {
-		const article = document.createElement('article');
-		article.className = 'note';
-		article.dataset.id = idea.id;
-		article.innerHTML = `
-			<div class="note-body">
-				<div class="note-title" data-editable="text" data-field="title" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="">Untitled</div>
-				<div class="note-category" data-editable="select" data-field="category" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="" data-options="${categoryOptions}"><span class="pill pill-empty">Pick category</span></div>
-				<div class="note-text" data-editable="textarea" data-field="body" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="">Write something…</div>
-			</div>
-			<div class="note-actions">
-				<form method="post" action="/api/ideas/${idea.id}/promote"><button type="submit" class="note-link note-link-btn">Generate business idea →</button></form>
-				<form method="post" action="/api/ideas/${idea.id}/delete"><button type="submit" class="note-delete" aria-label="Delete note">×</button></form>
-			</div>
-		`;
-		return article;
-	}
-
-	newIdeaBtn?.addEventListener('click', async () => {
-		const empty = notes?.querySelector('.empty');
-		empty?.remove();
-
-		const res = await fetch('/api/ideas/create-inline', { method: 'POST' });
-		const idea = await res.json().catch(() => null);
-		if (!idea?.id || !notes) return;
-
-		const note = buildNote(idea);
-		notes.prepend(note);
-		note.querySelector<HTMLElement>('.note-title')?.click();
-	});
-</script>
-
 <style>
 	.pain-points {
 		max-width: 760px;
@@ -200,14 +169,12 @@ const error = Astro.url.searchParams.get('error');
 		color: #b4231f;
 		font-size: 14px;
 	}
-</style>
 
-<!-- Global: the "+ New pain point" script builds notes via innerHTML at
-     runtime, and Astro's scoped <style> only stamps its hash attribute onto
-     elements it compiles into the page at build time -- a JS-injected note
-     never gets that attribute, so scoped rules for .note* below would
-     silently not apply to it. Same reasoning as Layout.astro's global .btn. -->
-<style is:global>
+	.new-idea-form {
+		margin: 0;
+		flex-shrink: 0;
+	}
+
 	.notes {
 		margin-top: 40px;
 		display: flex;
@@ -415,6 +382,7 @@ const error = Astro.url.searchParams.get('error');
 			gap: 16px;
 		}
 
+		.new-idea-form,
 		.page-head .btn {
 			width: 100%;
 			justify-content: center;
