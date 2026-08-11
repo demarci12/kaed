@@ -3,6 +3,10 @@ import type { User } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '../lib/supabase';
 import { isMember } from '../lib/auth';
 import { ClientRouter } from 'astro:transitions';
+// Tailwind + design tokens. This is a real global stylesheet, so its reset
+// actually applies to markup rendered by pages and by JS -- unlike a scoped
+// <style>, which Astro rewrites to match only this component's own elements.
+import '../styles/global.css';
 
 interface Props {
 	// Pages that already resolved the user via requireUser/requireOwner
@@ -35,30 +39,10 @@ const memberOnly = user ? isMember(user) : false;
 		<title>KAED</title>
 		<ClientRouter />
 		<style>
-			:root {
-				--paper: #ffffff;
-				--canvas: #f7f6f3;
-				--ink: #14110f;
-				--muted: #6b655d;
-				--line: #e4e0d8;
-				--accent: #14110f;
-				--serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
-					'Times New Roman', serif;
-				--sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
-					Arial, sans-serif;
-			}
-
-			body {
-				font-family: var(--sans);
-				font-size: 16px;
-				line-height: 1.6;
-				color: var(--ink);
-				background: var(--canvas);
-				margin: 0;
-				padding: 0;
-				-webkit-font-smoothing: antialiased;
-			}
-
+			/* Design tokens, the reset and `body` now live in
+			   src/styles/global.css -- a real stylesheet, so they apply to
+			   every element on the page rather than only the ones this
+			   component renders. Do not move them back here. */
 			.shell {
 				width: min(1120px, calc(100% - 48px));
 				margin: 0 auto;
