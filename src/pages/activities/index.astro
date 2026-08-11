@@ -48,52 +48,43 @@ const error = Astro.url.searchParams.get('error');
 			</div>
 		)}
 
-		<div class="table-wrap">
-			<table class="data-table">
-				<thead>
-					<tr>
-						<th>Done</th>
-						<th>Activity</th>
-						<th>Project</th>
-						<th>Added</th>
-					</tr>
-				</thead>
-				<tbody>
-					{typedChallenges.length ? (
-						typedChallenges.map((challenge) => {
-							const project = projectById.get(challenge.project_id);
-							return (
-								<tr>
-									<td>
-										<form
-											method="post"
-											action={`/api/projects/${challenge.project_id}/challenges/${challenge.id}/toggle`}
-											class="challenge-form"
-										>
-											<input type="hidden" name="is_done" value={String(challenge.is_done)} />
-											<input type="hidden" name="return_to" value="/activities" />
-											<button type="submit" class={`challenge-check ${challenge.is_done ? 'checked' : ''}`} aria-label="Toggle done">
-												{challenge.is_done && '✓'}
-											</button>
-										</form>
-									</td>
-									<td class={challenge.is_done ? 'challenge-title done' : 'challenge-title'}>{challenge.title}</td>
-									<td class="cell-muted">
-										{project ? <a href={`/projects/${project.id}`}>{project.title}</a> : '—'}
-									</td>
-									<td class="cell-date">{new Date(challenge.created_at).toLocaleDateString()}</td>
-								</tr>
-							);
-						})
-					) : (
-						<tr>
-							<td colspan="4" class="empty-cell">
-								No activities yet. Break a project down into steps from here or from the project page.
-							</td>
-						</tr>
-					)}
-				</tbody>
-			</table>
+		<div class="activities-grid">
+			{typedChallenges.length ? (
+				typedChallenges.map((challenge) => {
+					const project = projectById.get(challenge.project_id);
+					return (
+						<article class="activity-card">
+							<div class="activity-card-head">
+								<form
+									method="post"
+									action={`/api/projects/${challenge.project_id}/challenges/${challenge.id}/toggle`}
+									class="activity-check-form"
+								>
+									<input type="hidden" name="is_done" value={String(challenge.is_done)} />
+									<input type="hidden" name="return_to" value="/activities" />
+									<button type="submit" class={`activity-check ${challenge.is_done ? 'checked' : ''}`} aria-label="Toggle done">
+										{challenge.is_done && '✓'}
+									</button>
+								</form>
+								<span class={challenge.is_done ? 'activity-title done' : 'activity-title'}>{challenge.title}</span>
+							</div>
+
+							<div class="activity-card-foot">
+								{project ? (
+									<a class="activity-chip" href={`/projects/${project.id}`}>{project.title}</a>
+								) : (
+									<span class="activity-chip activity-chip-muted">No project</span>
+								)}
+								<span class="activity-date">{new Date(challenge.created_at).toLocaleDateString()}</span>
+							</div>
+						</article>
+					);
+				})
+			) : (
+				<p class="empty">
+					No activities yet. Break a project down into steps from here or from the project page.
+				</p>
+			)}
 		</div>
 	</section>
 
@@ -198,71 +189,100 @@ const error = Astro.url.searchParams.get('error');
 		transition: width 0.2s ease;
 	}
 
-	.table-wrap {
+	.activities-grid {
 		margin-top: 20px;
-		overflow-x: auto;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 18px;
+	}
+
+	.activity-card {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 22px;
 		border: 1px solid var(--line);
 		border-radius: 14px;
 		background: var(--paper);
 	}
 
-	.data-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 14px;
+	.activity-card-head {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
 	}
 
-	.data-table th {
-		text-align: left;
-		padding: 12px 16px;
-		font-size: 11px;
+	.activity-check-form {
+		margin: 0;
+		flex-shrink: 0;
+	}
+
+	.activity-title {
+		font-family: var(--serif);
+		font-size: 17px;
 		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-		border-bottom: 1px solid var(--line);
-		background: var(--canvas);
-		white-space: nowrap;
-	}
-
-	.data-table td {
-		padding: 10px 16px;
-		border-bottom: 1px solid var(--line);
-		vertical-align: middle;
-	}
-
-	.data-table tr:last-child td {
-		border-bottom: none;
-	}
-
-	.empty-cell {
-		padding: 28px 16px;
-		text-align: center;
-		color: var(--muted);
-	}
-
-	.cell-muted a {
-		color: var(--muted);
-		text-decoration: none;
-		border-bottom: 1px solid var(--line);
-	}
-
-	.cell-muted a:hover {
+		line-height: 1.35;
 		color: var(--ink);
+	}
+
+	.activity-card-foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+		margin-top: auto;
+		padding-top: 14px;
+		border-top: 1px solid var(--line);
+	}
+
+	.activity-chip {
+		font-size: 12px;
+		padding: 4px 10px;
+		border-radius: 999px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		color: var(--ink);
+		text-decoration: none;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
+	}
+
+	.activity-chip:hover {
 		border-color: var(--ink);
 	}
 
-	.cell-date {
+	.activity-chip-muted {
+		background: transparent;
+		border-style: dashed;
+		color: var(--muted);
+	}
+
+	.activity-chip-muted:hover {
+		border-color: var(--line);
+	}
+
+	.activity-date {
+		font-size: 12px;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 	}
 
-	.challenge-form {
+	.empty {
+		/* Span the whole grid rather than sitting in one narrow column. */
+		grid-column: 1 / -1;
 		margin: 0;
+		padding: 32px 16px;
+		text-align: center;
+		color: var(--muted);
+		border: 1px dashed var(--line);
+		border-radius: 14px;
 	}
 
-	.challenge-check {
+	.activity-check {
 		width: 24px;
 		height: 24px;
 		flex-shrink: 0;
@@ -280,12 +300,12 @@ const error = Astro.url.searchParams.get('error');
 			border-color 0.15s ease;
 	}
 
-	.challenge-check.checked {
+	.activity-check.checked {
 		background: var(--ink);
 		border-color: var(--ink);
 	}
 
-	.challenge-title.done {
+	.activity-title.done {
 		color: var(--muted);
 		text-decoration: line-through;
 	}
@@ -310,9 +330,12 @@ const error = Astro.url.searchParams.get('error');
 			flex-basis: 100%;
 		}
 
-		.data-table th,
-		.data-table td {
-			padding: 10px 12px;
+		.activities-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.activity-card {
+			padding: 18px;
 		}
 	}
 </style>

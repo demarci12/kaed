@@ -37,75 +37,79 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="table-wrap">
-			<table class="data-table">
-				<thead>
-					<tr>
-						<th>Title</th>
-						<th>Description</th>
-						<th>Status</th>
-						<th>Start</th>
-						<th>Target end</th>
-						<th>Created</th>
-					</tr>
-				</thead>
-				<tbody>
-					{typedProjects.length ? (
-						typedProjects.map((project) => (
-							<tr class="row-link">
-								<td class="cell-title">
-									<a href={`/projects/${project.id}`}>{project.title}</a>
-								</td>
-								<td
-									class="cell-muted"
-									data-editable="textarea"
-									data-field="description"
-									data-id={project.id}
-									data-endpoint="/api/projects"
-									data-value={project.description ?? ''}
-								>
-									{project.description ?? '—'}
-								</td>
-								<td
-									data-editable="select"
-									data-field="status"
-									data-id={project.id}
-									data-endpoint="/api/projects"
-									data-value={project.status}
-									data-options="not_started:Not started,active:Active,done:Done"
-								>
-									<span class={`pill pill-${project.status}`}>{statusLabel[project.status]}</span>
-								</td>
-								<td
-									class="cell-date"
+		<div class="projects-grid">
+			{typedProjects.length ? (
+				typedProjects.map((project) => (
+					<article class="project-card">
+						<div class="project-card-head">
+							<a class="project-title" href={`/projects/${project.id}`}>{project.title}</a>
+							<form method="post" action={`/api/projects/${project.id}/delete`} class="project-delete-form">
+								<button type="submit" class="project-delete" aria-label="Delete project">×</button>
+							</form>
+						</div>
+
+						<div class="project-field">
+							<span class="project-field-label">Description</span>
+							<p
+								class="project-field-value"
+								data-editable="textarea"
+								data-field="description"
+								data-id={project.id}
+								data-endpoint="/api/projects"
+								data-value={project.description ?? ''}
+							>
+								{project.description || 'Not set.'}
+							</p>
+						</div>
+
+						<div class="project-dates">
+							<div class="project-field">
+								<span class="project-field-label">Start</span>
+								<p
+									class="project-field-value"
 									data-editable="date"
 									data-field="start_date"
 									data-id={project.id}
 									data-endpoint="/api/projects"
 									data-value={project.start_date ?? ''}
 								>
-									{project.start_date ?? '—'}
-								</td>
-								<td
-									class="cell-date"
+									{project.start_date || 'Not set.'}
+								</p>
+							</div>
+							<div class="project-field">
+								<span class="project-field-label">Target end</span>
+								<p
+									class="project-field-value"
 									data-editable="date"
 									data-field="target_end_date"
 									data-id={project.id}
 									data-endpoint="/api/projects"
 									data-value={project.target_end_date ?? ''}
 								>
-									{project.target_end_date ?? '—'}
-								</td>
-								<td class="cell-date">{new Date(project.created_at).toLocaleDateString()}</td>
-							</tr>
-						))
-					) : (
-						<tr>
-							<td colspan="6" class="empty-cell">No projects yet. Create your first one.</td>
-						</tr>
-					)}
-				</tbody>
-			</table>
+									{project.target_end_date || 'Not set.'}
+								</p>
+							</div>
+						</div>
+
+						<div class="project-card-foot">
+							<span
+								class="project-status"
+								data-editable="select"
+								data-field="status"
+								data-id={project.id}
+								data-endpoint="/api/projects"
+								data-value={project.status}
+								data-options="not_started:Not started,active:Active,done:Done"
+							>
+								<span class={`pill pill-${project.status}`}>{statusLabel[project.status]}</span>
+							</span>
+							<span class="project-date">{new Date(project.created_at).toLocaleDateString()}</span>
+						</div>
+					</article>
+				))
+			) : (
+				<p class="empty">No projects yet. Create your first one.</p>
+			)}
 		</div>
 	</section>
 
@@ -187,79 +191,153 @@ const error = Astro.url.searchParams.get('error');
 		font-size: 14px;
 	}
 
-	.table-wrap {
+	/* Cards, not a table: description and dates were all truncated to an
+	   ellipsis in a six-column row. A card shows every field in full. */
+	.projects-grid {
 		margin-top: 40px;
-		overflow-x: auto;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 18px;
+	}
+
+	.project-card {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 22px;
 		border: 1px solid var(--line);
 		border-radius: 14px;
 		background: var(--paper);
 	}
 
-	.data-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 14px;
-		white-space: nowrap;
+	.project-card-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
 	}
 
-	.data-table th {
-		text-align: left;
-		padding: 12px 16px;
+	.project-title {
+		font-family: var(--serif);
+		font-size: 19px;
+		font-weight: 600;
+		line-height: 1.3;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	.project-title:hover {
+		text-decoration: underline;
+	}
+
+	.project-delete-form {
+		margin: 0;
+		flex-shrink: 0;
+	}
+
+	.project-delete {
+		width: 26px;
+		height: 26px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--muted);
+		font-size: 16px;
+		line-height: 1;
+		cursor: pointer;
+		transition:
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.project-delete:hover {
+		border-color: #e7c3c1;
+		color: #b4231f;
+	}
+
+	.project-field {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		min-width: 0;
+	}
+
+	.project-field-label {
 		font-size: 11px;
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--muted);
-		border-bottom: 1px solid var(--line);
-		background: var(--canvas);
 	}
 
-	.data-table td {
-		padding: 14px 16px;
-		border-bottom: 1px solid var(--line);
-		vertical-align: middle;
-	}
-
-	.data-table tr:last-child td {
-		border-bottom: none;
-	}
-
-	.row-link {
-		cursor: pointer;
-		transition: background 0.1s ease;
-	}
-
-	.row-link:hover {
-		background: var(--canvas);
-	}
-
-	.cell-title a {
+	.project-field-value {
+		margin: 0;
+		padding: 8px 10px;
+		border: 1px solid transparent;
+		border-radius: 8px;
+		font-size: 14px;
+		line-height: 1.6;
 		color: var(--ink);
-		text-decoration: none;
-		font-weight: 500;
+		white-space: pre-wrap;
+		cursor: text;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
 	}
 
-	.cell-title a:hover {
-		text-decoration: underline;
+	.project-field-value:hover {
+		border-color: var(--line);
+		background: var(--canvas);
 	}
 
-	.cell-muted {
+	.project-field-value[data-value=''] {
 		color: var(--muted);
-		max-width: 320px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.cell-date {
-		color: var(--muted);
+	.project-dates {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+	}
+
+	.project-dates .project-field-value {
 		font-variant-numeric: tabular-nums;
 	}
 
-	.empty-cell {
+	.project-card-foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+		margin-top: auto;
+		padding-top: 14px;
+		border-top: 1px solid var(--line);
+	}
+
+	.project-status {
+		cursor: pointer;
+	}
+
+	.project-date {
+		font-size: 12px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.empty {
+		/* Span the whole grid rather than sitting in one narrow column. */
+		grid-column: 1 / -1;
+		margin: 0;
 		padding: 32px 16px;
 		text-align: center;
 		color: var(--muted);
+		border: 1px dashed var(--line);
+		border-radius: 14px;
 	}
 
 	@media (max-width: 720px) {
@@ -267,11 +345,18 @@ const error = Astro.url.searchParams.get('error');
 			flex-direction: column;
 			align-items: stretch;
 		}
+
 		.page-head .btn {
 			align-self: flex-start;
 		}
-		.cell-muted {
-			max-width: 160px;
+
+		.projects-grid {
+			grid-template-columns: 1fr;
+			margin-top: 28px;
+		}
+
+		.project-card {
+			padding: 18px;
 		}
 	}
 </style>
