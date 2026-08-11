@@ -48,7 +48,7 @@ const error = Astro.url.searchParams.get('error');
 				<h1>Pain points.</h1>
 				<p class="lede">
 					Capture what's actually annoying or broken. Once one is worth solving, turn it into a business
-					idea → then a project → then activities you actually work through. Click a title or note to write.
+					idea → then a project → then activities you actually work through. Click a field to write.
 				</p>
 			</div>
 			<form method="post" action="/api/ideas/create-inline" class="new-idea-form">
@@ -58,57 +58,58 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="notes" id="notes">
+		<div class="pain-grid" id="notes">
 			{typedIdeas.length ? (
 				typedIdeas.map((idea) => (
-					<article class="note" data-id={idea.id}>
-						<div class="note-body">
-							<div
-								class="note-title"
-								data-editable="text"
-								data-field="title"
-								data-id={idea.id}
-								data-endpoint="/api/ideas"
-								data-value={idea.title}
-							>
-								{idea.title || 'Untitled'}
-							</div>
-							<div
-								class="note-category"
-								data-editable="select"
-								data-field="category"
-								data-id={idea.id}
-								data-endpoint="/api/ideas"
-								data-value={idea.category ?? ''}
-								data-options={categoryOptions}
-							>
-								{idea.category ? (
-									<span class={`pill pill-${idea.category}`}>{categoryPillLabel[idea.category]}</span>
-								) : (
-									<span class="pill pill-empty">Pick category</span>
-								)}
-							</div>
-							<div
-								class="note-text"
-								data-editable="textarea"
-								data-field="body"
-								data-id={idea.id}
-								data-endpoint="/api/ideas"
-								data-value={idea.body ?? ''}
-							>
-								{idea.body || 'Write something…'}
-							</div>
+					<article class="pain-card" data-id={idea.id}>
+						<div
+							class="pain-title"
+							data-editable="text"
+							data-field="title"
+							data-id={idea.id}
+							data-endpoint="/api/ideas"
+							data-value={idea.title}
+						>
+							{idea.title || 'Untitled'}
 						</div>
-						<div class="note-actions">
-							{idea.business_idea_id ? (
-								<a class="note-link" href={`/business-ideas/${idea.business_idea_id}`}>→ View business idea</a>
+
+						<div
+							class="pain-category"
+							data-editable="select"
+							data-field="category"
+							data-id={idea.id}
+							data-endpoint="/api/ideas"
+							data-value={idea.category ?? ''}
+							data-options={categoryOptions}
+						>
+							{idea.category ? (
+								<span class={`pill pill-${idea.category}`}>{categoryPillLabel[idea.category]}</span>
 							) : (
-								<form method="post" action={`/api/ideas/${idea.id}/promote`}>
-									<button type="submit" class="note-link note-link-btn">Generate business idea →</button>
+								<span class="pill pill-empty">Pick category</span>
+							)}
+						</div>
+
+						<p
+							class="pain-text"
+							data-editable="textarea"
+							data-field="body"
+							data-id={idea.id}
+							data-endpoint="/api/ideas"
+							data-value={idea.body ?? ''}
+						>
+							{idea.body || 'Write something…'}
+						</p>
+
+						<div class="pain-card-foot">
+							{idea.business_idea_id ? (
+								<a class="pain-chip" href={`/business-ideas/${idea.business_idea_id}`}>→ View business idea</a>
+							) : (
+								<form method="post" action={`/api/ideas/${idea.id}/promote`} class="pain-promote-form">
+									<button type="submit" class="pain-chip pain-chip-btn">Generate business idea →</button>
 								</form>
 							)}
-							<form method="post" action={`/api/ideas/${idea.id}/delete`}>
-								<button type="submit" class="note-delete" aria-label="Delete note">×</button>
+							<form method="post" action={`/api/ideas/${idea.id}/delete`} class="pain-delete-form">
+								<button type="submit" class="pain-delete" aria-label="Delete pain point">×</button>
 							</form>
 						</div>
 					</article>
@@ -122,7 +123,7 @@ const error = Astro.url.searchParams.get('error');
 
 <style>
 	.pain-points {
-		max-width: 760px;
+		max-width: 1080px;
 	}
 
 	.page-head {
@@ -150,7 +151,7 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.lede {
-		max-width: 54ch;
+		max-width: 60ch;
 		margin: 18px 0 0;
 		color: var(--muted);
 		font-size: 16px;
@@ -175,75 +176,79 @@ const error = Astro.url.searchParams.get('error');
 		flex-shrink: 0;
 	}
 
-	.notes {
+	.pain-grid {
 		margin-top: 40px;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 18px;
+	}
+
+	.pain-card {
 		display: flex;
 		flex-direction: column;
+		gap: 12px;
+		padding: 22px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
 	}
 
-	.note {
-		padding: 20px 0;
-		border-bottom: 1px solid var(--line);
-	}
-
-	.note:first-child {
-		padding-top: 0;
-	}
-
-	.note-body {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	/* Both fields share the same box treatment (padding, border, radius,
+	/* Title and body share the same box treatment (padding, border, radius,
 	   background) so they read as a matching pair of input fields -- only
-	   typography (serif/bold title vs sans/regular body) tells them apart,
-	   not wildly different sizing or one having chrome and the other not. */
-	.note-title,
-	.note-text {
-		padding: 12px 14px;
+	   typography (serif/bold title vs sans/regular body) tells them apart. */
+	.pain-title,
+	.pain-text {
+		margin: 0;
+		padding: 10px 12px;
 		border: 1px solid var(--line);
 		border-radius: 10px;
-		background: var(--paper);
+		background: var(--canvas);
 		cursor: text;
 		transition: border-color 0.15s ease;
 	}
 
-	.note-title:hover,
-	.note-text:hover {
+	.pain-title:hover,
+	.pain-text:hover {
 		border-color: var(--muted);
 	}
 
-	.note-title {
+	.pain-title {
 		font-family: var(--serif);
-		font-size: 19px;
+		font-size: 18px;
 		font-weight: 600;
-		line-height: 1.4;
+		line-height: 1.35;
 	}
 
-	.note-text {
-		font-size: 16px;
+	.pain-text {
+		flex: 1;
+		font-size: 15px;
 		line-height: 1.6;
 		color: var(--ink);
 		white-space: pre-wrap;
 	}
 
-	.note-text:not(.editing) {
+	.pain-text:not(.editing) {
 		color: var(--muted);
 	}
 
-	.note-title[data-value]:not([data-value=""]),
-	.note-text[data-value]:not([data-value=""]) {
+	.pain-title[data-value]:not([data-value=""]),
+	.pain-text[data-value]:not([data-value=""]) {
 		color: var(--ink);
 	}
 
-	.note-category {
+	.pain-title.editing,
+	.pain-text.editing {
+		border-color: var(--ink);
+		background: var(--paper);
+	}
+
+	.pain-category {
 		display: inline-block;
+		align-self: flex-start;
 		cursor: pointer;
 	}
 
-	.note-category select.cell-input {
+	.pain-category select.cell-input {
 		font-size: 14px;
 		padding: 4px 6px;
 		border: 1px solid var(--line);
@@ -251,48 +256,48 @@ const error = Astro.url.searchParams.get('error');
 		background: var(--paper);
 	}
 
-	.note-title.editing,
-	.note-text.editing {
-		border-color: var(--ink);
-		background: var(--canvas);
-	}
-
-	.note-actions {
+	.pain-card-foot {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		margin-top: 16px;
+		margin-top: auto;
+		padding-top: 12px;
+		border-top: 1px solid var(--line);
 	}
 
-	.note-actions form {
+	.pain-promote-form,
+	.pain-delete-form {
 		margin: 0;
 	}
 
-	.note-link {
-		font-size: 13px;
-		color: var(--muted);
+	.pain-chip {
+		font-size: 12px;
+		padding: 4px 10px;
+		border-radius: 999px;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		color: var(--ink);
 		text-decoration: none;
-		border-bottom: 1px solid var(--line);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
 	}
 
-	.note-link:hover {
-		color: var(--ink);
+	.pain-chip:hover {
 		border-color: var(--ink);
 	}
 
-	.note-link-btn {
-		background: none;
-		border: none;
-		border-bottom: 1px solid var(--line);
-		padding: 0;
+	.pain-chip-btn {
 		font-family: var(--sans);
 		cursor: pointer;
 	}
 
-	.note-delete {
-		width: 22px;
-		height: 22px;
+	.pain-delete {
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -305,15 +310,19 @@ const error = Astro.url.searchParams.get('error');
 		cursor: pointer;
 	}
 
-	.note-delete:hover {
+	.pain-delete:hover {
 		border-color: var(--line);
 		color: #b4231f;
 	}
 
 	.empty {
-		margin-top: 40px;
+		grid-column: 1 / -1;
+		margin: 0;
+		padding: 32px 16px;
+		text-align: center;
 		color: var(--muted);
-		font-size: 15px;
+		border: 1px dashed var(--line);
+		border-radius: 14px;
 	}
 
 	.cell-input {
@@ -324,8 +333,8 @@ const error = Astro.url.searchParams.get('error');
 		font-weight: inherit;
 	}
 
-	.note-text .cell-input {
-		min-height: 120px;
+	.pain-text .cell-input {
+		min-height: 100px;
 		resize: vertical;
 	}
 
@@ -341,25 +350,21 @@ const error = Astro.url.searchParams.get('error');
 			justify-content: center;
 		}
 
-		.notes {
+		.pain-grid {
+			grid-template-columns: 1fr;
 			margin-top: 28px;
 		}
 
-		.note {
-			padding: 22px 0;
-		}
-
-		.note-actions {
-			flex-wrap: wrap;
-			gap: 14px 12px;
+		.pain-card {
+			padding: 18px;
 		}
 
 		/* Bigger tap target on touch without changing the visual size. */
-		.note-delete {
+		.pain-delete {
 			position: relative;
 		}
 
-		.note-delete::after {
+		.pain-delete::after {
 			content: '';
 			position: absolute;
 			inset: -11px;
