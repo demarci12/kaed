@@ -48,10 +48,6 @@ const memberOnly = user ? isMember(user) : false;
 					Arial, sans-serif;
 			}
 
-			* {
-				box-sizing: border-box;
-			}
-
 			body {
 				font-family: var(--sans);
 				font-size: 16px;
@@ -248,6 +244,30 @@ const memberOnly = user ? isMember(user) : false;
 			   matched the old scoped rule and silently fell back to unstyled
 			   browser-default buttons. Anything meant to be used across pages
 			   belongs here, not in the scoped block above. */
+			/* The box-sizing reset MUST be global. It used to live in this
+			   file's scoped <style>, where Astro rewrites `*` to match only
+			   the elements Layout itself renders -- so every input, select
+			   and textarea rendered by a *page* was still content-box, and
+			   its padding was added on top of any height we set. That is why
+			   a field styled `height: 44px; padding: 10px 14px` rendered ~66px
+			   tall, and why fields never lined up with each other. */
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+			}
+
+			/* Form controls don't inherit typography by default; without this
+			   a page-rendered input silently falls back to the browser's
+			   13px system font instead of the app's. */
+			input,
+			select,
+			textarea,
+			button {
+				font-family: inherit;
+				font-size: inherit;
+			}
+
 			/* =====================================================================
 			   SHARED DESIGN SYSTEM
 			   Everything below is the single definition of a primitive used on
