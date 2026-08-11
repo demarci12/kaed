@@ -53,7 +53,7 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="ideas">
+	<section class="ideas max-w-[1080px]">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
@@ -77,7 +77,7 @@ const error = Astro.url.searchParams.get('error');
 						<article class="card">
 							<div class="card-head">
 								<a class="card-title" href={`/business-ideas/${idea.id}`}>{idea.title}</a>
-								<form method="post" action={`/api/business-ideas/${idea.id}/delete`}>
+								<form class="shrink-0" method="post" action={`/api/business-ideas/${idea.id}/delete`}>
 									<button type="submit" class="card-delete" aria-label="Delete business idea">×</button>
 								</form>
 							</div>
@@ -166,15 +166,3 @@ const error = Astro.url.searchParams.get('error');
 		</form>
 	</dialog>
 </Layout>
-
-<style>
-	.ideas {
-		max-width: 1080px;
-	}
-
-	/* The delete form wraps a single icon button; keep it from being
-	   squeezed by a long title in the card head. */
-	.card-head form {
-		flex-shrink: 0;
-	}
-</style>

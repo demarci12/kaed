@@ -24,7 +24,7 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="activities">
+	<section class="activities max-w-[900px]">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Delivery</p>
@@ -34,21 +34,21 @@ const error = Astro.url.searchParams.get('error');
 					business idea → project → activity, so you can stop procrastinating and just do the next one.
 				</p>
 			</div>
-			<button type="button" class="btn" data-open-popup="new-activity">+ Add activity</button>
+			<button type="button" class="btn w-full md:w-auto" data-open-popup="new-activity">+ Add activity</button>
 		</div>
 
 		{error && <p class="form-error">{error}</p>}
 
 		{typedChallenges.length > 0 && (
-			<div class="progress-row">
-				<span class="progress-count">{doneCount}/{typedChallenges.length} done</span>
-				<div class="progress-bar">
+			<div class="progress-row flex items-center gap-3.5 mt-8 flex-wrap md:flex-nowrap gap-2.5 md:gap-3.5">
+				<span class="progress-count text-[13px] text-muted tabular-nums whitespace-nowrap">{doneCount}/{typedChallenges.length} done</span>
+				<div class="progress-bar flex-1 basis-full md:basis-auto h-1.5 bg-canvas border border-line rounded-full overflow-hidden">
 					<div class="progress-bar-fill" style={`width: ${(doneCount / typedChallenges.length) * 100}%`} />
 				</div>
 			</div>
 		)}
 
-		<div class="card-grid">
+		<div class="card-grid mt-5">
 			{typedChallenges.length ? (
 				typedChallenges.map((challenge) => {
 					const project = projectById.get(challenge.project_id);
@@ -58,15 +58,19 @@ const error = Astro.url.searchParams.get('error');
 								<form
 									method="post"
 									action={`/api/projects/${challenge.project_id}/challenges/${challenge.id}/toggle`}
-									class="activity-check-form"
+									class="activity-check-form m-0 shrink-0"
 								>
 									<input type="hidden" name="is_done" value={String(challenge.is_done)} />
 									<input type="hidden" name="return_to" value="/activities" />
-									<button type="submit" class={`activity-check ${challenge.is_done ? 'checked' : ''}`} aria-label="Toggle done">
+									<button
+										type="submit"
+										class={`activity-check w-6 h-6 shrink-0 flex items-center justify-center rounded-full border text-white text-[13px] cursor-pointer transition-colors duration-150 ${challenge.is_done ? 'bg-ink border-ink' : 'bg-paper border-line'}`}
+										aria-label="Toggle done"
+									>
 										{challenge.is_done && '✓'}
 									</button>
 								</form>
-								<span class={challenge.is_done ? 'card-title activity-title done' : 'card-title activity-title'}>{challenge.title}</span>
+								<span class={`card-title activity-title text-[17px] leading-[1.35] ${challenge.is_done ? 'text-muted line-through' : ''}`}>{challenge.title}</span>
 							</div>
 
 							<div class="card-foot">
@@ -110,98 +114,3 @@ const error = Astro.url.searchParams.get('error');
 	</dialog>
 </Layout>
 
-<style>
-	.activities {
-		max-width: 900px;
-	}
-
-	.progress-row {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		margin-top: 32px;
-	}
-
-	.progress-count {
-		font-size: 13px;
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-	}
-
-	.progress-bar {
-		flex: 1;
-		height: 6px;
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		overflow: hidden;
-	}
-
-	.progress-bar-fill {
-		height: 100%;
-		background: var(--ink);
-		transition: width 0.2s ease;
-	}
-
-	/* Sits directly under the progress row, so it needs less air than the
-	   default card grid. */
-	.card-grid {
-		margin-top: 20px;
-	}
-
-	.activity-check-form {
-		margin: 0;
-		flex-shrink: 0;
-	}
-
-	/* Activity titles are a step smaller than the shared card title. */
-	.activity-title {
-		font-size: 17px;
-		line-height: 1.35;
-	}
-
-	.activity-title.done {
-		color: var(--muted);
-		text-decoration: line-through;
-	}
-
-	.activity-check {
-		width: 24px;
-		height: 24px;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		border: 1px solid var(--line);
-		background: var(--paper);
-		color: #fff;
-		font-size: 13px;
-		cursor: pointer;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease;
-	}
-
-	.activity-check.checked {
-		background: var(--ink);
-		border-color: var(--ink);
-	}
-
-	@media (max-width: 720px) {
-		.page-head .btn {
-			width: 100%;
-			justify-content: center;
-		}
-
-		.progress-row {
-			flex-wrap: wrap;
-			gap: 10px;
-		}
-
-		.progress-bar {
-			flex-basis: 100%;
-		}
-	}
-</style>

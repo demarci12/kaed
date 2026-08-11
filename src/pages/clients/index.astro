@@ -28,7 +28,7 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="clients">
+	<section class="clients max-w-[1120px]">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
@@ -40,7 +40,7 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="table-wrap">
+		<div class="table-wrap mt-10">
 			<table class="data-table">
 				<thead>
 					<tr>
@@ -56,9 +56,9 @@ const error = Astro.url.searchParams.get('error');
 				<tbody>
 					{typedClients.length ? (
 						typedClients.map((client) => (
-							<tr>
+							<tr class="[&>td]:whitespace-nowrap">
 								<td class="cell-title">
-									<a href={`/clients/${client.id}`}>{client.name}</a>
+									<a class="text-ink no-underline font-medium hover:underline" href={`/clients/${client.id}`}>{client.name}</a>
 								</td>
 								<td
 									class="cell-muted"
@@ -115,7 +115,7 @@ const error = Astro.url.searchParams.get('error');
 						))
 					) : (
 						<tr>
-							<td colspan="7" class="empty-cell">No clients yet. Add your first one.</td>
+							<td colspan="7" class="empty-cell whitespace-normal">No clients yet. Add your first one.</td>
 						</tr>
 					)}
 				</tbody>
@@ -169,31 +169,3 @@ const error = Astro.url.searchParams.get('error');
 	</dialog>
 </Layout>
 
-<style>
-	.clients {
-		max-width: 1120px;
-	}
-
-	.table-wrap {
-		margin-top: 40px;
-	}
-
-	/* Pipeline rows stay on one line; the wrapper scrolls horizontally. */
-	.data-table td {
-		white-space: nowrap;
-	}
-
-	.cell-title a {
-		color: var(--ink);
-		text-decoration: none;
-		font-weight: 500;
-	}
-
-	.cell-title a:hover {
-		text-decoration: underline;
-	}
-
-	.empty-cell {
-		white-space: normal;
-	}
-</style>

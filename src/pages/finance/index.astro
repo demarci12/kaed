@@ -88,18 +88,18 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="finance">
-		<div class="page-head">
+	<section class="finance max-w-[1080px]">
+		<div class="page-head flex-col items-stretch md:flex-row md:items-center">
 			<div>
 				<p class="eyebrow">Household</p>
 				<h1>Finance.</h1>
 				<p class="lede">Shared income and spending — every transaction visible to both of you.</p>
 			</div>
-			<div class="page-head-actions">
+			<div class="page-head-actions shrink-0">
 				<a href="/finance/budget" class="btn ghost">Budget planning →</a>
 				<a href="/finance/settings" class="btn ghost">Settings</a>
-				<button type="button" class="btn ghost disabled" disabled aria-disabled="true">
-					Statistics <span class="soon-badge">Soon</span>
+				<button type="button" class="btn ghost disabled opacity-45 cursor-not-allowed pointer-events-none" disabled aria-disabled="true">
+					Statistics <span class="soon-badge ml-1.5 px-[7px] py-px rounded-full bg-canvas border border-line text-[10px] font-semibold tracking-[0.04em] uppercase text-muted">Soon</span>
 				</button>
 				<button type="button" class="btn" data-open-popup="new-transaction">+ Add transaction</button>
 			</div>
@@ -107,9 +107,9 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<form method="post" action="/api/finance/transactions/create" class="quick-add-bar" id="quick-add-form">
+		<form method="post" action="/api/finance/transactions/create" class="quick-add-bar flex flex-wrap md:flex-nowrap items-center gap-2.5 mt-6 px-4 py-3 border border-line rounded-xl bg-paper" id="quick-add-form">
 			<input type="hidden" name="type" id="quick-add-type" value="expense" />
-			<select id="quick-add-category" name="category_id" required>
+			<select id="quick-add-category" name="category_id" required class="flex-[2] min-w-0 font-sans text-base text-ink bg-canvas border border-line rounded-lg px-2.5 py-2 outline-none focus:border-ink">
 				<optgroup label="Income">
 					{incomeCategories.map((c) => <option value={c.id} data-type="income">{c.name}</option>)}
 				</optgroup>
@@ -120,87 +120,87 @@ const error = Astro.url.searchParams.get('error');
 					{savingCategories.map((c) => <option value={c.id} data-type="saving">{c.name}</option>)}
 				</optgroup>
 			</select>
-			<input type="number" name="amount" step="0.01" min="0.01" required placeholder="Amount" />
+			<input type="number" name="amount" step="0.01" min="0.01" required placeholder="Amount" class="flex-1 min-w-0 font-sans text-base text-ink bg-canvas border border-line rounded-lg px-2.5 py-2 outline-none focus:border-ink" />
 			<button type="submit" class="btn">Add</button>
 		</form>
 
-		<div class="summary-cards">
-			<div class="summary-card">
-				<span class="summary-label">Balance</span>
-				<span class={`summary-value ${balance >= 0 ? '' : 'negative'}`}>{formatAmount(balance)}</span>
+		<div class="summary-cards grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+			<div class="summary-card flex flex-col gap-2 p-5 border border-line rounded-[14px] bg-paper">
+				<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">Balance</span>
+				<span class={`summary-value font-serif text-[28px] font-semibold ${balance >= 0 ? '' : 'text-negative'}`}>{formatAmount(balance)}</span>
 			</div>
-			<div class="summary-card">
-				<span class="summary-label">Total income</span>
-				<span class="summary-value positive">{formatAmount(totalIncome)}</span>
+			<div class="summary-card flex flex-col gap-2 p-5 border border-line rounded-[14px] bg-paper">
+				<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">Total income</span>
+				<span class="summary-value font-serif text-[28px] font-semibold text-positive">{formatAmount(totalIncome)}</span>
 			</div>
-			<div class="summary-card">
-				<span class="summary-label">Total spending</span>
-				<span class="summary-value negative">{formatAmount(totalExpense)}</span>
+			<div class="summary-card flex flex-col gap-2 p-5 border border-line rounded-[14px] bg-paper">
+				<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">Total spending</span>
+				<span class="summary-value font-serif text-[28px] font-semibold text-negative">{formatAmount(totalExpense)}</span>
 			</div>
-			<div class="summary-card">
-				<span class="summary-label">Savings balance</span>
-				<span class="summary-value saving">{formatAmount(totalSaving)}</span>
+			<div class="summary-card flex flex-col gap-2 p-5 border border-line rounded-[14px] bg-paper">
+				<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">Savings balance</span>
+				<span class="summary-value font-serif text-[28px] font-semibold text-info">{formatAmount(totalSaving)}</span>
 			</div>
-			<div class="summary-card">
-				<span class="summary-label">Remaining this month</span>
+			<div class="summary-card flex flex-col gap-2 p-5 border border-line rounded-[14px] bg-paper">
+				<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">Remaining this month</span>
 				{monthlyRemaining != null ? (
-					<span class={`summary-value ${monthlyRemaining < 0 ? 'negative' : 'positive'}`}>
+					<span class={`summary-value font-serif text-[28px] font-semibold ${monthlyRemaining < 0 ? 'text-negative' : 'text-positive'}`}>
 						{formatAmount(monthlyRemaining)}
 					</span>
 				) : (
-					<span class="summary-value muted">No expense budget planned</span>
+					<span class="summary-value font-sans text-sm font-medium text-muted">No expense budget planned</span>
 				)}
 			</div>
 		</div>
 
-		<div class="limits-panel">
-			<div class="limits-head">
-				<h2>Spending limits</h2>
-				<a href="/finance/budget" class="link-btn">From budget plan →</a>
+		<div class="limits-panel mt-6 p-5 border border-line rounded-[14px] bg-paper">
+			<div class="limits-head flex items-center justify-between">
+				<h2 class="m-0 font-serif text-base font-semibold">Spending limits</h2>
+				<a href="/finance/budget" class="link-btn bg-transparent border-0 border-b border-line p-0 font-sans text-[13px] text-muted cursor-pointer hover:text-ink hover:border-ink">From budget plan →</a>
 			</div>
-			<div class="limits-cards">
-				<div class="limit-card">
-					<span class="summary-label">Today</span>
+			<div class="limits-cards grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+				<div class="limit-card flex flex-col gap-1.5">
+					<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">Today</span>
 					{dailyLimit != null ? (
 						<>
-							<span class={`summary-value ${dailyRemaining! < 0 ? 'negative' : 'positive'}`}>
+							<span class={`summary-value font-serif text-[28px] font-semibold ${dailyRemaining! < 0 ? 'text-negative' : 'text-positive'}`}>
 								{formatAmount(dailyRemaining!)} left
 							</span>
-							<span class="limit-sub">{formatAmount(spentToday)} of {formatAmount(dailyLimit)}</span>
-							<div class="progress-bar">
+							<span class="limit-sub text-[13px] text-muted">{formatAmount(spentToday)} of {formatAmount(dailyLimit)}</span>
+							<div class="progress-bar h-[5px] bg-canvas border border-line rounded-full overflow-hidden mt-0.5">
 								<div
-									class={`progress-bar-fill ${spentToday > dailyLimit ? 'over' : ''}`}
+									class={`progress-bar-fill h-full ${spentToday > dailyLimit ? 'bg-negative' : 'bg-ink'}`}
 									style={`width: ${Math.min(100, Math.round((spentToday / dailyLimit) * 100))}%`}
 								/>
 							</div>
 						</>
 					) : (
-						<span class="limit-sub">No expense budget planned this month yet. {formatAmount(spentToday)} spent today.</span>
+						<span class="limit-sub text-[13px] text-muted">No expense budget planned this month yet. {formatAmount(spentToday)} spent today.</span>
 					)}
 				</div>
-				<div class="limit-card">
-					<span class="summary-label">This week</span>
+				<div class="limit-card flex flex-col gap-1.5">
+					<span class="summary-label text-xs font-semibold tracking-[0.06em] uppercase text-muted">This week</span>
 					{weeklyLimit != null ? (
 						<>
-							<span class={`summary-value ${weeklyRemaining! < 0 ? 'negative' : 'positive'}`}>
+							<span class={`summary-value font-serif text-[28px] font-semibold ${weeklyRemaining! < 0 ? 'text-negative' : 'text-positive'}`}>
 								{formatAmount(weeklyRemaining!)} left
 							</span>
-							<span class="limit-sub">{formatAmount(spentThisWeek)} of {formatAmount(weeklyLimit)}</span>
-							<div class="progress-bar">
+							<span class="limit-sub text-[13px] text-muted">{formatAmount(spentThisWeek)} of {formatAmount(weeklyLimit)}</span>
+							<div class="progress-bar h-[5px] bg-canvas border border-line rounded-full overflow-hidden mt-0.5">
 								<div
-									class={`progress-bar-fill ${spentThisWeek > weeklyLimit ? 'over' : ''}`}
+									class={`progress-bar-fill h-full ${spentThisWeek > weeklyLimit ? 'bg-negative' : 'bg-ink'}`}
 									style={`width: ${Math.min(100, Math.round((spentThisWeek / weeklyLimit) * 100))}%`}
 								/>
 							</div>
 						</>
 					) : (
-						<span class="limit-sub">No expense budget planned this month yet. {formatAmount(spentThisWeek)} spent this week.</span>
+						<span class="limit-sub text-[13px] text-muted">No expense budget planned this month yet. {formatAmount(spentThisWeek)} spent this week.</span>
 					)}
 				</div>
 			</div>
 		</div>
 
-		<div class="table-wrap">
+		<div class="table-wrap mt-8">
 			<table class="data-table">
 				<thead>
 					<tr>
@@ -216,28 +216,28 @@ const error = Astro.url.searchParams.get('error');
 					{typedTransactions.length ? (
 						typedTransactions.map((t) => (
 							<tr>
-								<td class="cell-date">{t.occurred_on}</td>
-								<td>
+								<td class="cell-date whitespace-nowrap">{t.occurred_on}</td>
+								<td class="whitespace-nowrap">
 									<span class={`pill pill-${t.type}`}>
 									{t.type === 'income' ? 'Income' : t.type === 'saving' ? 'Saving' : 'Expense'}
 								</span>
 								</td>
-								<td class="cell-muted">{t.category_id ? categoryById.get(t.category_id)?.name ?? '—' : '—'}</td>
-								<td class="cell-muted">{t.note ?? '—'}</td>
-								<td class={`cell-amount ${t.type === 'income' ? 'positive' : t.type === 'saving' ? 'saving' : 'negative'}`}>
+								<td class="cell-muted whitespace-nowrap">{t.category_id ? categoryById.get(t.category_id)?.name ?? '—' : '—'}</td>
+								<td class="cell-muted whitespace-nowrap">{t.note ?? '—'}</td>
+								<td class={`cell-amount whitespace-nowrap font-medium text-right ${t.type === 'income' ? 'text-positive' : t.type === 'saving' ? 'text-info' : 'text-negative'}`}>
 									{t.type === 'expense' ? '−' : '+'}
 									{formatAmount(Number(t.amount))}
 								</td>
-								<td class="cell-actions">
-									<form method="post" action={`/api/finance/transactions/${t.id}/delete`}>
-										<button type="submit" class="row-delete" aria-label="Delete transaction">×</button>
+								<td class="cell-actions whitespace-nowrap text-right">
+									<form method="post" action={`/api/finance/transactions/${t.id}/delete`} class="m-0 inline-block">
+										<button type="submit" class="row-delete w-[22px] h-[22px] inline-flex items-center justify-center rounded-full border border-transparent bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:border-line hover:text-negative" aria-label="Delete transaction">×</button>
 									</form>
 								</td>
 							</tr>
 						))
 					) : (
 						<tr>
-							<td colspan="6" class="empty-cell">No transactions yet. Add your first one.</td>
+							<td colspan="6" class="empty-cell whitespace-normal">No transactions yet. Add your first one.</td>
 						</tr>
 					)}
 				</tbody>
@@ -320,268 +320,3 @@ const error = Astro.url.searchParams.get('error');
 	});
 </script>
 
-<style>
-	.finance {
-		max-width: 1080px;
-	}
-
-	/* Only the delta from the global .page-head-actions. */
-	.page-head-actions {
-		flex-shrink: 0;
-	}
-
-
-	.summary-cards {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 16px;
-		margin-top: 32px;
-	}
-
-	.summary-card {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 20px;
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
-	}
-
-	.summary-label {
-		font-size: 12px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	.summary-value {
-		font-family: var(--serif);
-		font-size: 28px;
-		font-weight: 600;
-	}
-
-	.summary-value.positive {
-		color: #1f7a3d;
-	}
-
-	.summary-value.negative {
-		color: #b4231f;
-	}
-
-	.summary-value.saving {
-		color: #1d4ed8;
-	}
-
-	.summary-value.muted {
-		font-family: var(--sans);
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--muted);
-	}
-
-	.limits-panel {
-		margin-top: 24px;
-		padding: 20px;
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
-	}
-
-	.limits-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.limits-head h2 {
-		margin: 0;
-		font-family: var(--serif);
-		font-size: 16px;
-		font-weight: 600;
-	}
-
-	.link-btn {
-		background: none;
-		border: none;
-		padding: 0;
-		font-family: var(--sans);
-		font-size: 13px;
-		color: var(--muted);
-		border-bottom: 1px solid var(--line);
-		cursor: pointer;
-	}
-
-	.link-btn:hover {
-		color: var(--ink);
-		border-color: var(--ink);
-	}
-
-	.limits-cards {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 20px;
-		margin-top: 16px;
-	}
-
-	.limit-card {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.limit-sub {
-		font-size: 13px;
-		color: var(--muted);
-	}
-
-	.limit-card .progress-bar {
-		height: 5px;
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		overflow: hidden;
-		margin-top: 2px;
-	}
-
-	.limit-card .progress-bar-fill {
-		height: 100%;
-		background: var(--ink);
-	}
-
-	.limit-card .progress-bar-fill.over {
-		background: #b4231f;
-	}
-
-	/* Deltas from the global table primitives only. */
-	.table-wrap {
-		margin-top: 32px;
-	}
-
-	.data-table td {
-		white-space: nowrap;
-	}
-
-	.cell-amount {
-		font-weight: 500;
-		text-align: right;
-	}
-
-	.cell-amount.positive {
-		color: #1f7a3d;
-	}
-
-	.cell-amount.negative {
-		color: #b4231f;
-	}
-
-	.cell-amount.saving {
-		color: #1d4ed8;
-	}
-
-	.cell-actions {
-		text-align: right;
-	}
-
-	.cell-actions form {
-		margin: 0;
-		display: inline-block;
-	}
-
-	.row-delete {
-		width: 22px;
-		height: 22px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		border: 1px solid transparent;
-		background: transparent;
-		color: var(--muted);
-		font-size: 15px;
-		line-height: 1;
-		cursor: pointer;
-	}
-
-	.row-delete:hover {
-		border-color: var(--line);
-		color: #b4231f;
-	}
-
-	/* Overrides the nowrap inherited from .data-table td above. */
-	.empty-cell {
-		white-space: normal;
-	}
-
-	.btn.ghost.disabled,
-	.btn.ghost:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
-		pointer-events: none;
-	}
-
-	.soon-badge {
-		margin-left: 6px;
-		padding: 1px 7px;
-		border-radius: 999px;
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		font-size: 10px;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	.quick-add-bar {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		margin-top: 24px;
-		padding: 12px 16px;
-		border: 1px solid var(--line);
-		border-radius: 12px;
-		background: var(--paper);
-	}
-
-	.quick-add-bar select,
-	.quick-add-bar input[type='number'] {
-		font-family: var(--sans);
-		font-size: 16px;
-		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 8px;
-		padding: 8px 10px;
-		outline: none;
-	}
-
-	.quick-add-bar select {
-		flex: 2;
-		min-width: 0;
-	}
-
-	.quick-add-bar input[type='number'] {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.quick-add-bar select:focus,
-	.quick-add-bar input[type='number']:focus {
-		border-color: var(--ink);
-	}
-
-	@media (max-width: 720px) {
-		.page-head {
-			flex-direction: column;
-			align-items: stretch;
-		}
-		.summary-cards {
-			grid-template-columns: 1fr;
-		}
-		.quick-add-bar {
-			flex-wrap: wrap;
-		}
-	}
-</style>

@@ -29,7 +29,7 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="settings">
+	<section class="settings max-w-[900px]">
 		<a class="back" href="/finance">← Finance</a>
 
 		<div class="page-head">
@@ -42,26 +42,27 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="panel">
-			<h2>Starting balance &amp; limits</h2>
-			<p class="panel-sub">
+		<div class="panel mt-8 p-7 border border-line rounded-[14px] bg-paper">
+			<h2 class="m-0 font-serif text-xl font-semibold">Starting balance &amp; limits</h2>
+			<p class="panel-sub mt-2 mb-0 text-sm text-muted max-w-[60ch]">
 				Starting balance is added on top of every saving transaction when computing your savings balance —
 				set it once to whatever you already have saved.
 			</p>
-			<form method="post" action="/api/finance/settings/update" class="settings-form">
-				<div class="settings-row">
-					<div>
-						<label for="starting-balance">Starting savings balance</label>
+			<form method="post" action="/api/finance/settings/update" class="settings-form mt-5">
+				<div class="settings-row flex gap-4 flex-wrap">
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="starting-balance" class="text-[13px] font-medium text-muted">Starting savings balance</label>
 						<input
 							id="starting-balance"
 							name="starting_savings_balance"
 							type="number"
 							step="0.01"
 							value={typedLimits?.starting_savings_balance ?? 0}
+							class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink"
 						/>
 					</div>
-					<div>
-						<label for="daily-limit">Daily spending limit override</label>
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="daily-limit" class="text-[13px] font-medium text-muted">Daily spending limit override</label>
 						<input
 							id="daily-limit"
 							name="daily_limit"
@@ -70,10 +71,11 @@ const error = Astro.url.searchParams.get('error');
 							min="0"
 							placeholder="From budget plan"
 							value={typedLimits?.daily_limit ?? ''}
+							class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink"
 						/>
 					</div>
-					<div>
-						<label for="weekly-limit">Weekly spending limit override</label>
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="weekly-limit" class="text-[13px] font-medium text-muted">Weekly spending limit override</label>
 						<input
 							id="weekly-limit"
 							name="weekly_limit"
@@ -82,24 +84,25 @@ const error = Astro.url.searchParams.get('error');
 							min="0"
 							placeholder="From budget plan"
 							value={typedLimits?.weekly_limit ?? ''}
+							class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink"
 						/>
 					</div>
 				</div>
-				<div class="settings-actions">
+				<div class="settings-actions flex justify-end mt-[18px]">
 					<button type="submit" class="btn">Save</button>
 				</div>
 			</form>
 		</div>
 
-		<div class="panel">
-			<h2>Categories</h2>
-			<p class="panel-sub">Used across transactions and budget planning.</p>
+		<div class="panel mt-8 p-7 border border-line rounded-[14px] bg-paper">
+			<h2 class="m-0 font-serif text-xl font-semibold">Categories</h2>
+			<p class="panel-sub mt-2 mb-0 text-sm text-muted max-w-[60ch]">Used across transactions and budget planning.</p>
 
-			<div class="category-groups">
+			<div class="category-groups grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
 				<div>
-					<h3>Income</h3>
-					<div class="table-wrap">
-						<table class="data-table category-table">
+					<h3 class="m-0 mb-2.5 text-[13px] font-semibold tracking-[0.04em] uppercase text-muted">Income</h3>
+					<div class="table-wrap rounded-[10px] bg-canvas">
+						<table class="data-table category-table text-[13px]">
 							<thead>
 								<tr>
 									<th>Name</th>
@@ -130,16 +133,16 @@ const error = Astro.url.searchParams.get('error');
 											>
 												{formatAmount(c.default_amount)}
 											</td>
-											<td class="cell-actions">
+											<td class="cell-actions w-[1%] text-right">
 												<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
-													<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+													<button type="submit" class="row-delete flex items-center justify-center w-[22px] h-[22px] border-0 rounded-full bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:bg-paper hover:text-negative" aria-label="Delete category">×</button>
 												</form>
 											</td>
 										</tr>
 									))
 								) : (
 									<tr>
-										<td colspan="3" class="empty-cell">None yet.</td>
+										<td colspan="3" class="empty-cell py-4 px-2.5 text-[13px]">None yet.</td>
 									</tr>
 								)}
 							</tbody>
@@ -147,9 +150,9 @@ const error = Astro.url.searchParams.get('error');
 					</div>
 				</div>
 				<div>
-					<h3>Expense</h3>
-					<div class="table-wrap">
-						<table class="data-table category-table">
+					<h3 class="m-0 mb-2.5 text-[13px] font-semibold tracking-[0.04em] uppercase text-muted">Expense</h3>
+					<div class="table-wrap rounded-[10px] bg-canvas">
+						<table class="data-table category-table text-[13px]">
 							<thead>
 								<tr>
 									<th>Name</th>
@@ -180,16 +183,16 @@ const error = Astro.url.searchParams.get('error');
 											>
 												{formatAmount(c.default_amount)}
 											</td>
-											<td class="cell-actions">
+											<td class="cell-actions w-[1%] text-right">
 												<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
-													<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+													<button type="submit" class="row-delete flex items-center justify-center w-[22px] h-[22px] border-0 rounded-full bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:bg-paper hover:text-negative" aria-label="Delete category">×</button>
 												</form>
 											</td>
 										</tr>
 									))
 								) : (
 									<tr>
-										<td colspan="3" class="empty-cell">None yet.</td>
+										<td colspan="3" class="empty-cell py-4 px-2.5 text-[13px]">None yet.</td>
 									</tr>
 								)}
 							</tbody>
@@ -197,9 +200,9 @@ const error = Astro.url.searchParams.get('error');
 					</div>
 				</div>
 				<div>
-					<h3>Saving</h3>
-					<div class="table-wrap">
-						<table class="data-table category-table">
+					<h3 class="m-0 mb-2.5 text-[13px] font-semibold tracking-[0.04em] uppercase text-muted">Saving</h3>
+					<div class="table-wrap rounded-[10px] bg-canvas">
+						<table class="data-table category-table text-[13px]">
 							<thead>
 								<tr>
 									<th>Name</th>
@@ -241,16 +244,16 @@ const error = Astro.url.searchParams.get('error');
 											>
 												{c.interest_rate != null ? c.interest_rate : '—'}
 											</td>
-											<td class="cell-actions">
+											<td class="cell-actions w-[1%] text-right">
 												<form method="post" action={`/api/finance/categories/${c.id}/delete`}>
-													<button type="submit" class="row-delete" aria-label="Delete category">×</button>
+													<button type="submit" class="row-delete flex items-center justify-center w-[22px] h-[22px] border-0 rounded-full bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:bg-paper hover:text-negative" aria-label="Delete category">×</button>
 												</form>
 											</td>
 										</tr>
 									))
 								) : (
 									<tr>
-										<td colspan="4" class="empty-cell">None yet.</td>
+										<td colspan="4" class="empty-cell py-4 px-2.5 text-[13px]">None yet.</td>
 									</tr>
 								)}
 							</tbody>
@@ -259,30 +262,30 @@ const error = Astro.url.searchParams.get('error');
 				</div>
 			</div>
 
-			<form method="post" action="/api/finance/categories/create" class="new-category-form">
-				<div class="settings-row">
-					<div>
-						<label for="cat-name">New category</label>
-						<input id="cat-name" name="name" type="text" required maxlength="80" />
+			<form method="post" action="/api/finance/categories/create" class="new-category-form mt-5">
+				<div class="settings-row flex gap-4 flex-wrap">
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="cat-name" class="text-[13px] font-medium text-muted">New category</label>
+						<input id="cat-name" name="name" type="text" required maxlength="80" class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink" />
 					</div>
-					<div>
-						<label for="cat-type">Type</label>
-						<select id="cat-type" name="type">
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="cat-type" class="text-[13px] font-medium text-muted">Type</label>
+						<select id="cat-type" name="type" class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink">
 							<option value="expense">Expense</option>
 							<option value="income">Income</option>
 							<option value="saving">Saving</option>
 						</select>
 					</div>
-					<div>
-						<label for="cat-default-amount">Default amount / month</label>
-						<input id="cat-default-amount" name="default_amount" type="number" step="0.01" min="0" placeholder="0.00" />
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="cat-default-amount" class="text-[13px] font-medium text-muted">Default amount / month</label>
+						<input id="cat-default-amount" name="default_amount" type="number" step="0.01" min="0" placeholder="0.00" class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink" />
 					</div>
-					<div>
-						<label for="cat-interest-rate">Interest %/mo (saving only)</label>
-						<input id="cat-interest-rate" name="interest_rate" type="number" step="0.001" placeholder="Optional" />
+					<div class="flex-[1_1_200px] flex flex-col gap-1.5">
+						<label for="cat-interest-rate" class="text-[13px] font-medium text-muted">Interest %/mo (saving only)</label>
+						<input id="cat-interest-rate" name="interest_rate" type="number" step="0.001" placeholder="Optional" class="font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink" />
 					</div>
 				</div>
-				<div class="settings-actions">
+				<div class="settings-actions flex justify-end mt-[18px]">
 					<button type="submit" class="btn">Add category</button>
 				</div>
 			</form>
@@ -291,106 +294,9 @@ const error = Astro.url.searchParams.get('error');
 </Layout>
 
 <style>
-	.settings {
-		max-width: 900px;
-	}
-
-	.panel {
-		margin-top: 32px;
-		padding: 28px;
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		background: var(--paper);
-	}
-
-	.panel h2 {
-		margin: 0;
-		font-family: var(--serif);
-		font-size: 20px;
-		font-weight: 600;
-	}
-
-	.panel-sub {
-		margin: 8px 0 0;
-		font-size: 14px;
-		color: var(--muted);
-		max-width: 60ch;
-	}
-
-	.settings-form,
-	.new-category-form {
-		margin-top: 20px;
-	}
-
-	.settings-row {
-		display: flex;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	.settings-row > div {
-		flex: 1 1 200px;
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.settings-row label {
-		font-size: 13px;
-		font-weight: 500;
-		color: var(--muted);
-	}
-
-	.settings-row input,
-	.settings-row select {
-		font-family: var(--sans);
-		font-size: 16px;
-		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		padding: 10px 14px;
-		outline: none;
-	}
-
-	.settings-row input:focus,
-	.settings-row select:focus {
-		border-color: var(--ink);
-	}
-
-	.settings-actions {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 18px;
-	}
-
-	.category-groups {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 20px;
-		margin-top: 20px;
-	}
-
-	.category-groups h3 {
-		margin: 0 0 10px;
-		font-size: 13px;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	/* Tighter, quieter variant of the global table primitives for the
-	   three side-by-side category lists. */
-	.table-wrap {
-		border-radius: 10px;
-		background: var(--canvas);
-	}
-
-	.data-table.category-table {
-		font-size: 13px;
-	}
-
+	/* Descendant-selector rules for cells within the three side-by-side
+	   category tables -- kept as scoped CSS rather than repeating utility
+	   classes on every <th>/<td> across three tables. */
 	.category-table th {
 		text-align: left;
 		padding: 8px 10px;
@@ -407,42 +313,5 @@ const error = Astro.url.searchParams.get('error');
 		padding: 8px 10px;
 		border-bottom: 1px solid var(--line);
 		vertical-align: middle;
-	}
-
-	.cell-actions {
-		width: 1%;
-		text-align: right;
-	}
-
-	/* Tighter than the global .empty-cell to match the compact tables. */
-	.empty-cell {
-		padding: 16px 10px;
-		font-size: 13px;
-	}
-
-	.row-delete {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 22px;
-		height: 22px;
-		border: none;
-		border-radius: 50%;
-		background: transparent;
-		color: var(--muted);
-		font-size: 15px;
-		line-height: 1;
-		cursor: pointer;
-	}
-
-	.row-delete:hover {
-		background: var(--paper);
-		color: #b4231f;
-	}
-
-	@media (max-width: 720px) {
-		.category-groups {
-			grid-template-columns: 1fr;
-		}
 	}
 </style>

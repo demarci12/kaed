@@ -24,7 +24,7 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="knowledge">
+	<section class="knowledge max-w-[1080px]">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
@@ -46,7 +46,7 @@ const error = Astro.url.searchParams.get('error');
 					<article class="card">
 						<div class="card-head">
 							<div
-								class="card-title"
+								class="card-title cursor-text"
 								data-editable="text"
 								data-field="title"
 								data-id={card.id}
@@ -55,13 +55,13 @@ const error = Astro.url.searchParams.get('error');
 							>
 								{card.title}
 							</div>
-							<form method="post" action={`/api/knowledge-cards/${card.id}/delete`}>
+							<form class="shrink-0" method="post" action={`/api/knowledge-cards/${card.id}/delete`}>
 								<button type="submit" class="card-delete" aria-label="Delete card">×</button>
 							</form>
 						</div>
 
 						<div
-							class="knowledge-kind"
+							class="knowledge-kind inline-block self-start cursor-pointer"
 							data-editable="select"
 							data-field="kind"
 							data-id={card.id}
@@ -104,7 +104,7 @@ const error = Astro.url.searchParams.get('error');
 							</p>
 						</div>
 
-						<div class="card-foot">
+						<div class="card-foot justify-end">
 							<span class="card-date">{new Date(card.created_at).toLocaleDateString()}</span>
 						</div>
 					</article>
@@ -145,32 +145,10 @@ const error = Astro.url.searchParams.get('error');
 </Layout>
 
 <style>
-	.knowledge {
-		max-width: 1080px;
-	}
-
-	/* The title is an inline-editable div, not a link. */
-	.card-title {
-		cursor: text;
-	}
-
-	/* The delete form wraps a single icon button; keep it from being
-	   squeezed by a long title in the card head. */
-	.card-head form {
-		flex-shrink: 0;
-	}
-
-	/* Only the date sits in this foot, so keep it right-aligned. */
-	.card-foot {
-		justify-content: flex-end;
-	}
-
-	.knowledge-kind {
-		display: inline-block;
-		align-self: flex-start;
-		cursor: pointer;
-	}
-
+	/* This dynamically-rendered <select> (from Layout's inline-edit JS,
+	   startCellEdit) is stamped in via innerHTML, so page-scoped styles
+	   never actually reach it -- kept here unconverted rather than risk a
+	   silent no-op with a Tailwind utility class in markup. */
 	.knowledge-kind select.cell-input {
 		font-size: 14px;
 		padding: 4px 6px;

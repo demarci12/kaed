@@ -25,7 +25,7 @@ const error = Astro.url.searchParams.get('error');
 ---
 
 <Layout user={auth.user}>
-	<section class="projects">
+	<section class="projects max-w-[1040px]">
 		<div class="page-head">
 			<div>
 				<p class="eyebrow">Personal</p>
@@ -43,12 +43,12 @@ const error = Astro.url.searchParams.get('error');
 					<article class="card">
 						<div class="card-head">
 							<a class="card-title" href={`/projects/${project.id}`}>{project.title}</a>
-							<form method="post" action={`/api/projects/${project.id}/delete`} class="project-delete-form">
+							<form method="post" action={`/api/projects/${project.id}/delete`} class="project-delete-form m-0 shrink-0">
 								<button type="submit" class="card-delete" aria-label="Delete project">×</button>
 							</form>
 						</div>
 
-						<div class="card-field">
+						<div class="card-field min-w-0">
 							<span class="card-field-label">Description</span>
 							<p
 								class="card-field-value"
@@ -62,11 +62,11 @@ const error = Astro.url.searchParams.get('error');
 							</p>
 						</div>
 
-						<div class="project-dates">
-							<div class="card-field">
+						<div class="project-dates grid grid-cols-2 gap-3">
+							<div class="card-field min-w-0">
 								<span class="card-field-label">Start</span>
 								<p
-									class="card-field-value"
+									class="card-field-value tabular-nums"
 									data-editable="date"
 									data-field="start_date"
 									data-id={project.id}
@@ -76,10 +76,10 @@ const error = Astro.url.searchParams.get('error');
 									{project.start_date || 'Not set.'}
 								</p>
 							</div>
-							<div class="card-field">
+							<div class="card-field min-w-0">
 								<span class="card-field-label">Target end</span>
 								<p
-									class="card-field-value"
+									class="card-field-value tabular-nums"
 									data-editable="date"
 									data-field="target_end_date"
 									data-id={project.id}
@@ -93,7 +93,7 @@ const error = Astro.url.searchParams.get('error');
 
 						<div class="card-foot">
 							<span
-								class="project-status"
+								class="project-status cursor-pointer"
 								data-editable="select"
 								data-field="status"
 								data-id={project.id}
@@ -141,34 +141,3 @@ const error = Astro.url.searchParams.get('error');
 		</form>
 	</dialog>
 </Layout>
-
-<style>
-	.projects {
-		max-width: 1040px;
-	}
-
-	/* Cards, not a table: description and dates were all truncated to an
-	   ellipsis in a six-column row. A card shows every field in full. */
-	.card-field {
-		min-width: 0;
-	}
-
-	.project-delete-form {
-		margin: 0;
-		flex-shrink: 0;
-	}
-
-	.project-dates {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 12px;
-	}
-
-	.project-dates .card-field-value {
-		font-variant-numeric: tabular-nums;
-	}
-
-	.project-status {
-		cursor: pointer;
-	}
-</style>

@@ -39,11 +39,11 @@ if (linkedProject) {
 ---
 
 <Layout user={auth.user}>
-	<section class="detail">
+	<section class="detail max-w-[760px]">
 		<a class="back" href="/business-ideas">← Business ideas</a>
 
 		<h1>{typed.title}</h1>
-		<p class="dates">
+		<p class="mt-[10px] text-[13px] text-muted">
 			Registered {new Date(typed.created_at).toLocaleDateString()}
 			{typed.updated_at !== typed.created_at &&
 				` · updated ${new Date(typed.updated_at).toLocaleDateString()}`}
@@ -51,160 +51,52 @@ if (linkedProject) {
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="promote">
+		<div class="mt-6 flex items-center gap-3 flex-wrap md:flex-nowrap">
 			{linkedProject ? (
 				<>
-					<a class="btn ghost" href={`/projects/${linkedProject.id}`}>→ {linkedProject.title}</a>
-					<span class="signals-inline">
+					<a class="btn ghost w-full md:w-auto justify-center md:justify-normal" href={`/projects/${linkedProject.id}`}>→ {linkedProject.title}</a>
+					<span class="text-[13px] text-muted">
 						{headlineSignalCount} signal{headlineSignalCount === 1 ? '' : 's'}
 					</span>
 				</>
 			) : (
-				<form method="post" action="/api/projects/create">
+				<form method="post" action="/api/projects/create" class="m-0">
 					<input type="hidden" name="title" value={typed.title} />
 					<input type="hidden" name="description" value={typed.pain_point ?? ''} />
 					<input type="hidden" name="business_idea_id" value={typed.id} />
 					<input type="hidden" name="return_to" value={`/business-ideas/${typed.id}`} />
-					<button type="submit" class="btn">Start working on this →</button>
+					<button type="submit" class="btn w-full md:w-auto justify-center md:justify-normal">Start working on this →</button>
 				</form>
 			)}
 		</div>
 
-		<form method="post" action={`/api/business-ideas/${typed.id}/update`} class="edit-form">
-			<div class="field">
-				<label for="title">Title</label>
-				<input id="title" name="title" type="text" required maxlength="160" value={typed.title} />
+		<form method="post" action={`/api/business-ideas/${typed.id}/update`} class="flex flex-col gap-7 mt-10 w-full">
+			<div class="flex flex-col gap-2">
+				<label for="title" class="text-xs font-semibold tracking-[0.06em] uppercase text-muted">Title</label>
+				<input id="title" name="title" type="text" required maxlength="160" value={typed.title} class="w-full font-serif text-xl font-semibold text-ink bg-canvas border border-line rounded-[10px] px-[14px] py-[10px] outline-none resize-y transition-colors duration-150 focus:border-ink focus:shadow-[0_0_0_3px_rgba(20,17,15,0.08)]" />
 			</div>
 
-			<div class="field">
-				<label for="pain_point">Pain point</label>
-				<textarea id="pain_point" name="pain_point" rows="3">{typed.pain_point}</textarea>
+			<div class="flex flex-col gap-2">
+				<label for="pain_point" class="text-xs font-semibold tracking-[0.06em] uppercase text-muted">Pain point</label>
+				<textarea id="pain_point" name="pain_point" rows="3" class="w-full font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-[14px] py-[10px] outline-none resize-y transition-colors duration-150 focus:border-ink focus:shadow-[0_0_0_3px_rgba(20,17,15,0.08)]">{typed.pain_point}</textarea>
 			</div>
 
-			<div class="field">
-				<label for="target_market">Target market</label>
-				<textarea id="target_market" name="target_market" rows="3">{typed.target_market}</textarea>
+			<div class="flex flex-col gap-2">
+				<label for="target_market" class="text-xs font-semibold tracking-[0.06em] uppercase text-muted">Target market</label>
+				<textarea id="target_market" name="target_market" rows="3" class="w-full font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-[14px] py-[10px] outline-none resize-y transition-colors duration-150 focus:border-ink focus:shadow-[0_0_0_3px_rgba(20,17,15,0.08)]">{typed.target_market}</textarea>
 			</div>
 
-			<div class="field">
-				<label for="validation">Validation</label>
-				<textarea id="validation" name="validation" rows="3">{typed.validation}</textarea>
+			<div class="flex flex-col gap-2">
+				<label for="validation" class="text-xs font-semibold tracking-[0.06em] uppercase text-muted">Validation</label>
+				<textarea id="validation" name="validation" rows="3" class="w-full font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-[14px] py-[10px] outline-none resize-y transition-colors duration-150 focus:border-ink focus:shadow-[0_0_0_3px_rgba(20,17,15,0.08)]">{typed.validation}</textarea>
 			</div>
 
-			<div class="actions">
-				<button type="submit" class="btn">Save changes</button>
-				<button type="submit" form="delete-idea" class="btn danger">Delete idea</button>
+			<div class="flex items-center gap-[14px] mt-2 flex-wrap md:flex-nowrap">
+				<button type="submit" class="btn w-full md:w-auto justify-center md:justify-normal">Save changes</button>
+				<button type="submit" form="delete-idea" class="btn danger w-full md:w-auto justify-center md:justify-normal">Delete idea</button>
 			</div>
 		</form>
 
 		<form id="delete-idea" method="post" action={`/api/business-ideas/${typed.id}/delete`}></form>
 	</section>
 </Layout>
-
-<style>
-	.detail {
-		max-width: 760px;
-	}
-
-	.dates {
-		margin: 10px 0 0;
-		font-size: 13px;
-		color: var(--muted);
-	}
-
-	.promote {
-		margin-top: 24px;
-	}
-
-	.promote form {
-		margin: 0;
-	}
-
-	.promote {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.signals-inline {
-		font-size: 13px;
-		color: var(--muted);
-	}
-
-	.edit-form {
-		display: flex;
-		flex-direction: column;
-		gap: 28px;
-		margin-top: 40px;
-		width: 100%;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.field label {
-		font-size: 12px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	/* Same boxed-input treatment as the rest of the app (settings, popups)
-	   instead of a bare underline -- title and every textarea share
-	   identical padding/border/radius/background so they read as a
-	   consistent set of fields, not a mix of styles at different sizes. */
-	.field input,
-	.field textarea {
-		width: 100%;
-		font-family: var(--sans);
-		font-size: 16px;
-		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		padding: 10px 14px;
-		outline: none;
-		resize: vertical;
-		transition: border-color 0.15s ease;
-	}
-
-	.field input {
-		font-family: var(--serif);
-		font-size: 20px;
-		font-weight: 600;
-	}
-
-	.field input:focus,
-	.field textarea:focus {
-		border-color: var(--ink);
-		box-shadow: 0 0 0 3px rgba(20, 17, 15, 0.08);
-	}
-
-	.actions {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		margin-top: 8px;
-	}
-
-	@media (max-width: 720px) {
-		.promote,
-		.actions {
-			flex-wrap: wrap;
-		}
-
-		.promote .btn,
-		.actions .btn {
-			width: 100%;
-			justify-content: center;
-		}
-
-		.field input {
-			font-size: 20px;
-		}
-	}
-</style>
