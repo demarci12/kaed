@@ -1,7 +1,20 @@
 import type { APIRoute } from 'astro';
 import { requireOwner } from '../../../../lib/auth';
 
-const EDITABLE_FIELDS = new Set(['title', 'body']);
+const EDITABLE_FIELDS = new Set(['title', 'body', 'category']);
+const CATEGORIES = new Set([
+	'work-mine',
+	'work-others',
+	'life-mine',
+	'life-known',
+	'life-strangers',
+	'tech-app',
+	'clone-niche',
+	'clone-geo',
+	'clone-pricing',
+	'clone-usecase',
+	'clone-oss',
+]);
 
 export const POST: APIRoute = async ({ request, cookies, params }) => {
 	const auth = await requireOwner(request, cookies);
@@ -19,6 +32,9 @@ export const POST: APIRoute = async ({ request, cookies, params }) => {
 	}
 	if (field === 'title' && !value) {
 		return new Response(JSON.stringify({ error: 'Title cannot be empty.' }), { status: 400 });
+	}
+	if (field === 'category' && value && !CATEGORIES.has(value)) {
+		return new Response(JSON.stringify({ error: 'Invalid category.' }), { status: 400 });
 	}
 
 	const update: Record<string, string | null> = {};

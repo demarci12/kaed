@@ -413,8 +413,22 @@ const memberOnly = user ? isMember(user) : false;
 				border-radius: 10px;
 				padding: 10px 14px;
 				outline: none;
-				resize: vertical;
 				width: 100%;
+			}
+
+			/* Single-line fields get a fixed height so Type/Amount/Category/Date
+			   line up as a consistent stack -- date inputs in particular size
+			   themselves differently from text/number inputs otherwise. Only
+			   textareas are resizable; a resize grabber on an <input> is a
+			   browser quirk, not something we want. */
+			.popup input,
+			.popup select {
+				height: 44px;
+				resize: none;
+			}
+
+			.popup textarea {
+				resize: vertical;
 			}
 
 			.popup input:focus,

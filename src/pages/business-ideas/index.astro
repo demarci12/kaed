@@ -19,16 +19,20 @@ const typedIdeas = (ideas ?? []) as BusinessIdea[];
 
 const ideaIds = typedIdeas.map((idea) => idea.id);
 const signalCountByIdeaId = new Map<string, number>();
+const linkedProjectByIdeaId = new Map<string, { id: string; title: string }>();
 
 if (ideaIds.length) {
 	const { data: linkedProjects } = await supabase
 		.from('projects')
-		.select('id, business_idea_id')
+		.select('id, title, business_idea_id')
 		.in('business_idea_id', ideaIds);
 
-	const projectIdToIdeaId = new Map(
-		(linkedProjects ?? []).map((p) => [p.id, p.business_idea_id as string])
-	);
+	const projectIdToIdeaId = new Map<string, string>();
+	for (const p of linkedProjects ?? []) {
+		const ideaId = p.business_idea_id as string;
+		linkedProjectByIdeaId.set(ideaId, { id: p.id, title: p.title });
+		projectIdToIdeaId.set(p.id, ideaId);
+	}
 
 	if (projectIdToIdeaId.size) {
 		const { data: logs } = await supabase
@@ -64,66 +68,78 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="table-wrap">
-			<table class="data-table">
-				<thead>
-					<tr>
-						<th>Title</th>
-						<th>Pain point</th>
-						<th>Target market</th>
-						<th>Validation</th>
-						<th>Signals</th>
-						<th>Added</th>
-					</tr>
-				</thead>
-				<tbody>
-					{typedIdeas.length ? (
-						typedIdeas.map((idea) => (
-							<tr>
-								<td class="cell-title">
-									<a href={`/business-ideas/${idea.id}`}>{idea.title}</a>
-								</td>
-								<td
-									class="cell-muted"
+		<div class="ideas-grid">
+			{typedIdeas.length ? (
+				typedIdeas.map((idea) => {
+					const linkedProject = linkedProjectByIdeaId.get(idea.id);
+					const signalCount = signalCountByIdeaId.get(idea.id) ?? 0;
+					return (
+						<article class="idea-card">
+							<div class="idea-card-head">
+								<a class="idea-title" href={`/business-ideas/${idea.id}`}>{idea.title}</a>
+								<form method="post" action={`/api/business-ideas/${idea.id}/delete`} class="idea-delete-form">
+									<button type="submit" class="idea-delete" aria-label="Delete business idea">×</button>
+								</form>
+							</div>
+
+							<div class="idea-field">
+								<span class="idea-field-label">Pain point</span>
+								<p
+									class="idea-field-value"
 									data-editable="textarea"
 									data-field="pain_point"
 									data-id={idea.id}
 									data-endpoint="/api/business-ideas"
 									data-value={idea.pain_point ?? ''}
 								>
-									{idea.pain_point ?? '—'}
-								</td>
-								<td
-									class="cell-muted"
+									{idea.pain_point || 'Not set.'}
+								</p>
+							</div>
+
+							<div class="idea-field">
+								<span class="idea-field-label">Target market</span>
+								<p
+									class="idea-field-value"
 									data-editable="textarea"
 									data-field="target_market"
 									data-id={idea.id}
 									data-endpoint="/api/business-ideas"
 									data-value={idea.target_market ?? ''}
 								>
-									{idea.target_market ?? '—'}
-								</td>
-								<td
-									class="cell-muted"
+									{idea.target_market || 'Not set.'}
+								</p>
+							</div>
+
+							<div class="idea-field">
+								<span class="idea-field-label">Validation</span>
+								<p
+									class="idea-field-value"
 									data-editable="textarea"
 									data-field="validation"
 									data-id={idea.id}
 									data-endpoint="/api/business-ideas"
 									data-value={idea.validation ?? ''}
 								>
-									{idea.validation ?? '—'}
-								</td>
-								<td class="cell-date">{signalCountByIdeaId.get(idea.id) ?? '—'}</td>
-								<td class="cell-date">{new Date(idea.created_at).toLocaleDateString()}</td>
-							</tr>
-						))
-					) : (
-						<tr>
-							<td colspan="6" class="empty-cell">No business ideas registered yet.</td>
-						</tr>
-					)}
-				</tbody>
-			</table>
+									{idea.validation || 'Not set.'}
+								</p>
+							</div>
+
+							<div class="idea-card-foot">
+								{linkedProject ? (
+									<a class="idea-chip" href={`/projects/${linkedProject.id}`}>
+										→ {linkedProject.title} · {signalCount} signal{signalCount === 1 ? '' : 's'}
+									</a>
+								) : (
+									<span class="idea-chip idea-chip-muted">Not started as a project</span>
+								)}
+								<span class="idea-date">{new Date(idea.created_at).toLocaleDateString()}</span>
+							</div>
+						</article>
+					);
+				})
+			) : (
+				<p class="empty">No business ideas registered yet.</p>
+			)}
 		</div>
 	</section>
 

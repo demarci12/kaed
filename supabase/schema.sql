@@ -89,6 +89,15 @@ create table if not exists public.ideas (
   body text,
   position_x integer not null default (floor(random() * 300 + 40))::int,
   position_y integer not null default (floor(random() * 300 + 40))::int,
+  -- Idea-generation taxonomy (pain/technology/clone tree): which leaf bucket
+  -- this pain point falls into. Drives the colored category pill on
+  -- /pain-points; null until the user picks one.
+  category text check (category is null or category in (
+    'work-mine', 'work-others',
+    'life-mine', 'life-known', 'life-strangers',
+    'tech-app',
+    'clone-niche', 'clone-geo', 'clone-pricing', 'clone-usecase', 'clone-oss'
+  )),
   created_at timestamptz not null default now()
 );
 

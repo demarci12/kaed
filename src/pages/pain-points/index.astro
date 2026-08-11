@@ -16,6 +16,27 @@ const { data: ideas } = await supabase
 
 const typedIdeas = (ideas ?? []) as Idea[];
 
+// Grouped labels ("Pain · Work · Mine") kept short for the pill itself so
+// the row of pills reads at a glance; grouping still shows in the dropdown.
+const categoryPillLabel: Record<string, string> = {
+	'work-mine': 'Work · Mine',
+	'work-others': "Work · Others'",
+	'life-mine': 'Life · Mine',
+	'life-known': 'Life · Known',
+	'life-strangers': "Life · Strangers",
+	'tech-app': 'Tech · App',
+	'clone-niche': 'Clone · Niche',
+	'clone-geo': 'Clone · Geo',
+	'clone-pricing': 'Clone · Pricing',
+	'clone-usecase': 'Clone · Use case',
+	'clone-oss': 'Clone · OSS',
+};
+
+const categoryOptions = [
+	':Pick category',
+	...Object.entries(categoryPillLabel).map(([value, label]) => `${value}:${label}`),
+].join(',');
+
 const error = Astro.url.searchParams.get('error');
 ---
 
@@ -51,6 +72,21 @@ const error = Astro.url.searchParams.get('error');
 								{idea.title || 'Untitled'}
 							</div>
 							<div
+								class="note-category"
+								data-editable="select"
+								data-field="category"
+								data-id={idea.id}
+								data-endpoint="/api/ideas"
+								data-value={idea.category ?? ''}
+								data-options={categoryOptions}
+							>
+								{idea.category ? (
+									<span class={`pill pill-${idea.category}`}>{categoryPillLabel[idea.category]}</span>
+								) : (
+									<span class="pill pill-empty">Pick category</span>
+								)}
+							</div>
+							<div
 								class="note-text"
 								data-editable="textarea"
 								data-field="body"
@@ -82,17 +118,15 @@ const error = Astro.url.searchParams.get('error');
 	</section>
 </Layout>
 
-<script>
-	const notes = document.getElementById('notes');
-	const newIdeaBtn = document.getElementById('new-idea-btn');
-
-	function buildNote(idea: { id: string; title: string; body: string | null }) {
+<script define:vars={{ categoryOptions }}>
+	function buildNote(idea) {
 		const article = document.createElement('article');
 		article.className = 'note';
 		article.dataset.id = idea.id;
 		article.innerHTML = `
 			<div class="note-body">
 				<div class="note-title" data-editable="text" data-field="title" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="">Untitled</div>
+				<div class="note-category" data-editable="select" data-field="category" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="" data-options="${categoryOptions}"><span class="pill pill-empty">Pick category</span></div>
 				<div class="note-text" data-editable="textarea" data-field="body" data-id="${idea.id}" data-endpoint="/api/ideas" data-value="">Write something…</div>
 			</div>
 			<div class="note-actions">
@@ -166,7 +200,14 @@ const error = Astro.url.searchParams.get('error');
 		color: #b4231f;
 		font-size: 14px;
 	}
+</style>
 
+<!-- Global: the "+ New pain point" script builds notes via innerHTML at
+     runtime, and Astro's scoped <style> only stamps its hash attribute onto
+     elements it compiles into the page at build time -- a JS-injected note
+     never gets that attribute, so scoped rules for .note* below would
+     silently not apply to it. Same reasoning as Layout.astro's global .btn. -->
+<style is:global>
 	.notes {
 		margin-top: 40px;
 		display: flex;
@@ -228,6 +269,66 @@ const error = Astro.url.searchParams.get('error');
 	.note-title[data-value]:not([data-value=""]),
 	.note-text[data-value]:not([data-value=""]) {
 		color: var(--ink);
+	}
+
+	.note-category {
+		display: inline-block;
+		cursor: pointer;
+	}
+
+	.note-category select.cell-input {
+		font-size: 14px;
+		padding: 4px 6px;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		background: var(--paper);
+	}
+
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 4px 12px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.pill-empty {
+		background: transparent;
+		color: var(--muted);
+		border: 1px dashed var(--line);
+	}
+
+	/* Idea-generation taxonomy tiers: best (a pain you have yourself at
+	   work) > good (clone plays) > okay (secondhand pain) > bad (pain you
+	   have to go research, or building tech looking for a problem). */
+	.pill-work-mine {
+		background: #eafaf0;
+		color: #1f7a3d;
+	}
+
+	.pill-work-others,
+	.pill-life-mine {
+		background: #fff7e6;
+		color: #92620a;
+	}
+
+	.pill-life-known,
+	.pill-life-strangers,
+	.pill-tech-app {
+		background: #fbf0ef;
+		color: #b4231f;
+	}
+
+	.pill-clone-niche,
+	.pill-clone-geo,
+	.pill-clone-pricing,
+	.pill-clone-usecase,
+	.pill-clone-oss {
+		background: var(--canvas);
+		color: var(--ink);
+		border: 1px solid var(--line);
 	}
 
 	.note-title.editing,
