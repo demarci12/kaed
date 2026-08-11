@@ -174,7 +174,7 @@ const error = Astro.url.searchParams.get('error');
 	}
 
 	.note {
-		padding: 28px 0;
+		padding: 20px 0;
 		border-bottom: 1px solid var(--line);
 	}
 
@@ -182,20 +182,43 @@ const error = Astro.url.searchParams.get('error');
 		padding-top: 0;
 	}
 
+	.note-body {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	/* Both fields share the same box treatment (padding, border, radius,
+	   background) so they read as a matching pair of input fields -- only
+	   typography (serif/bold title vs sans/regular body) tells them apart,
+	   not wildly different sizing or one having chrome and the other not. */
+	.note-title,
+	.note-text {
+		padding: 12px 14px;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: var(--paper);
+		cursor: text;
+		transition: border-color 0.15s ease;
+	}
+
+	.note-title:hover,
+	.note-text:hover {
+		border-color: var(--muted);
+	}
+
 	.note-title {
 		font-family: var(--serif);
-		font-size: 22px;
+		font-size: 19px;
 		font-weight: 600;
-		cursor: text;
+		line-height: 1.4;
 	}
 
 	.note-text {
-		margin-top: 10px;
 		font-size: 16px;
-		line-height: 1.7;
+		line-height: 1.6;
 		color: var(--ink);
 		white-space: pre-wrap;
-		cursor: text;
 	}
 
 	.note-text:not(.editing) {
@@ -205,6 +228,12 @@ const error = Astro.url.searchParams.get('error');
 	.note-title[data-value]:not([data-value=""]),
 	.note-text[data-value]:not([data-value=""]) {
 		color: var(--ink);
+	}
+
+	.note-title.editing,
+	.note-text.editing {
+		border-color: var(--ink);
+		background: var(--canvas);
 	}
 
 	.note-actions {

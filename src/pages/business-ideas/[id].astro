@@ -190,16 +190,20 @@ if (linkedProject) {
 		color: var(--muted);
 	}
 
+	/* Same boxed-input treatment as the rest of the app (settings, popups)
+	   instead of a bare underline -- title and every textarea share
+	   identical padding/border/radius/background so they read as a
+	   consistent set of fields, not a mix of styles at different sizes. */
 	.field input,
 	.field textarea {
 		width: 100%;
 		font-family: var(--sans);
 		font-size: 16px;
 		color: var(--ink);
-		background: transparent;
-		border: none;
-		border-bottom: 1px solid var(--line);
-		padding: 8px 0;
+		background: var(--canvas);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		padding: 10px 14px;
 		outline: none;
 		resize: vertical;
 		transition: border-color 0.15s ease;
@@ -207,12 +211,14 @@ if (linkedProject) {
 
 	.field input {
 		font-family: var(--serif);
-		font-size: 22px;
+		font-size: 20px;
+		font-weight: 600;
 	}
 
 	.field input:focus,
 	.field textarea:focus {
 		border-color: var(--ink);
+		box-shadow: 0 0 0 3px rgba(20, 17, 15, 0.08);
 	}
 
 	.actions {
