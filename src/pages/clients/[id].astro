@@ -225,7 +225,7 @@ const error = Astro.url.searchParams.get('error');
 		height: 40px;
 		padding: 0 12px;
 		font-family: var(--sans);
-		font-size: 14px;
+		font-size: 16px;
 		background: var(--canvas);
 		border: 1px solid var(--line);
 		border-radius: 999px;
@@ -351,4 +351,27 @@ const error = Astro.url.searchParams.get('error');
 		line-height: 1.6;
 	}
 
+	@media (max-width: 720px) {
+		.update-form {
+			align-items: stretch;
+		}
+
+		.update-form > div {
+			flex: 1 1 160px;
+		}
+
+		.update-form select,
+		.update-form input {
+			width: 100%;
+		}
+
+		.update-form .btn {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.timeline-entry {
+			gap: 12px;
+		}
+	}
 </style>

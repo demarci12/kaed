@@ -224,6 +224,17 @@ const memberOnly = user ? isMember(user) : false;
 				.nav .who {
 					display: none;
 				}
+				.nav-dropdown {
+					/* Centered under its trigger instead of left-anchored -- a
+					   nav-group near either edge of the wrapped row would
+					   otherwise push a left:0 dropdown off-screen and cause
+					   horizontal overflow on narrow viewports. */
+					left: 50%;
+					right: auto;
+					transform: translateX(-50%);
+					min-width: 150px;
+					max-width: calc(100vw - 32px);
+				}
 				.site-footer {
 					flex-direction: column;
 					align-items: flex-start;
@@ -395,7 +406,7 @@ const memberOnly = user ? isMember(user) : false;
 			.popup select,
 			.popup textarea {
 				font-family: var(--sans);
-				font-size: 15px;
+				font-size: 16px;
 				color: var(--ink);
 				background: var(--canvas);
 				border: 1px solid var(--line);
@@ -484,7 +495,7 @@ const memberOnly = user ? isMember(user) : false;
 				width: 100%;
 				min-width: 120px;
 				font-family: var(--sans);
-				font-size: 14px;
+				font-size: 16px;
 				color: var(--ink);
 				background: transparent;
 				border: none;

@@ -191,7 +191,7 @@ const error = Astro.url.searchParams.get('error');
 
 	.note-text {
 		margin-top: 10px;
-		font-size: 15px;
+		font-size: 16px;
 		line-height: 1.7;
 		color: var(--ink);
 		white-space: pre-wrap;
@@ -277,5 +277,41 @@ const error = Astro.url.searchParams.get('error');
 	.note-text .cell-input {
 		min-height: 120px;
 		resize: vertical;
+	}
+
+	@media (max-width: 720px) {
+		.page-head {
+			align-items: flex-start;
+			gap: 16px;
+		}
+
+		.page-head .btn {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.notes {
+			margin-top: 28px;
+		}
+
+		.note {
+			padding: 22px 0;
+		}
+
+		.note-actions {
+			flex-wrap: wrap;
+			gap: 14px 12px;
+		}
+
+		/* Bigger tap target on touch without changing the visual size. */
+		.note-delete {
+			position: relative;
+		}
+
+		.note-delete::after {
+			content: '';
+			position: absolute;
+			inset: -11px;
+		}
 	}
 </style>

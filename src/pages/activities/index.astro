@@ -289,4 +289,30 @@ const error = Astro.url.searchParams.get('error');
 		color: var(--muted);
 		text-decoration: line-through;
 	}
+
+	@media (max-width: 720px) {
+		.page-head {
+			align-items: flex-start;
+			gap: 16px;
+		}
+
+		.page-head .btn {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.progress-row {
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+
+		.progress-bar {
+			flex-basis: 100%;
+		}
+
+		.data-table th,
+		.data-table td {
+			padding: 10px 12px;
+		}
+	}
 </style>
