@@ -385,21 +385,32 @@ const memberOnly = user ? isMember(user) : false;
 
 			.popup h2 + form,
 			.popup .popup-sub + form {
-				padding-top: 18px;
+				margin-top: 18px;
+				padding-top: 20px;
 				border-top: 1px solid var(--line);
 			}
 
+			/* Spacing is owned entirely by the label's margin so every
+			   label→field pair has the same rhythm; a flex `gap` here would
+			   stack on top of it and make the first pair (which also sits
+			   under the header's padding) taller than the rest. */
 			.popup form {
 				display: flex;
 				flex-direction: column;
-				gap: 6px;
+				gap: 0;
 			}
 
 			.popup label:not(.btn) {
-				margin-top: 14px;
-				font-size: 13px;
-				font-weight: 500;
+				margin: 18px 0 6px;
+				font-size: 11px;
+				font-weight: 600;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
 				color: var(--muted);
+			}
+
+			.popup label:not(.btn):first-of-type {
+				margin-top: 0;
 			}
 
 			.popup input,
@@ -445,9 +456,17 @@ const memberOnly = user ? isMember(user) : false;
 
 			.popup .popup-row > div {
 				flex: 1;
+				min-width: 0;
 				display: flex;
 				flex-direction: column;
-				gap: 6px;
+				gap: 0;
+			}
+
+			/* Inside a row each column restarts the rhythm, so its first label
+			   shouldn't inherit the 18px top margin used between stacked
+			   fields -- the row itself already provides that separation. */
+			.popup .popup-row > div > label:not(.btn) {
+				margin-top: 0;
 			}
 
 			.popup .popup-actions {
