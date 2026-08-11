@@ -461,6 +461,98 @@ const memberOnly = user ? isMember(user) : false;
 				margin-top: 0;
 			}
 
+			/* Status pills. Global (not per-page scoped) because startCellEdit
+			   below re-renders a saved select cell with
+			   `<span class="pill pill-${value}">` via innerHTML -- markup Astro
+			   never sees at build time, so it never receives a page's scoped
+			   style hash. Scoped copies of these rules silently stopped
+			   applying the moment a user changed a dropdown, leaving an
+			   unstyled pill until the next full page load. Keeping every
+			   variant here also stops six pages duplicating the same CSS. */
+			.pill {
+				display: inline-block;
+				flex-shrink: 0;
+				padding: 4px 12px;
+				border-radius: 999px;
+				font-size: 12px;
+				font-weight: 500;
+				white-space: nowrap;
+			}
+
+			/* Neutral / not-started */
+			.pill-lead,
+			.pill-not_started {
+				background: var(--canvas);
+				color: var(--muted);
+				border: 1px solid var(--line);
+			}
+
+			/* In progress */
+			.pill-contacted,
+			.pill-active,
+			.pill-saving {
+				background: #eef4ff;
+				color: #1d4ed8;
+			}
+
+			/* Attention / mid-stage */
+			.pill-negotiating {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			/* Positive */
+			.pill-won,
+			.pill-done,
+			.pill-income {
+				background: #eafaf0;
+				color: #1f7a3d;
+			}
+
+			/* Negative */
+			.pill-lost,
+			.pill-expense {
+				background: #fbf0ef;
+				color: #b4231f;
+			}
+
+			/* Idea-generation taxonomy (see /pain-points): best = a pain you
+			   have yourself at work, then clone plays, then secondhand pain,
+			   then tech looking for a problem. */
+			.pill-empty {
+				background: transparent;
+				color: var(--muted);
+				border: 1px dashed var(--line);
+			}
+
+			.pill-work-mine {
+				background: #eafaf0;
+				color: #1f7a3d;
+			}
+
+			.pill-work-others,
+			.pill-life-mine {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			.pill-life-known,
+			.pill-life-strangers,
+			.pill-tech-app {
+				background: #fbf0ef;
+				color: #b4231f;
+			}
+
+			.pill-clone-niche,
+			.pill-clone-geo,
+			.pill-clone-pricing,
+			.pill-clone-usecase,
+			.pill-clone-oss {
+				background: var(--canvas);
+				color: var(--ink);
+				border: 1px solid var(--line);
+			}
+
 			/* Inline editable table cells. Locked by default; click unlocks into an
 			   input, blur/Enter saves and locks it back in. */
 			[data-editable] {

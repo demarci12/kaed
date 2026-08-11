@@ -251,53 +251,6 @@ const error = Astro.url.searchParams.get('error');
 		background: var(--paper);
 	}
 
-	.pill {
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 12px;
-		border-radius: 999px;
-		font-size: 12px;
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	.pill-empty {
-		background: transparent;
-		color: var(--muted);
-		border: 1px dashed var(--line);
-	}
-
-	/* Idea-generation taxonomy tiers: best (a pain you have yourself at
-	   work) > good (clone plays) > okay (secondhand pain) > bad (pain you
-	   have to go research, or building tech looking for a problem). */
-	.pill-work-mine {
-		background: #eafaf0;
-		color: #1f7a3d;
-	}
-
-	.pill-work-others,
-	.pill-life-mine {
-		background: #fff7e6;
-		color: #92620a;
-	}
-
-	.pill-life-known,
-	.pill-life-strangers,
-	.pill-tech-app {
-		background: #fbf0ef;
-		color: #b4231f;
-	}
-
-	.pill-clone-niche,
-	.pill-clone-geo,
-	.pill-clone-pricing,
-	.pill-clone-usecase,
-	.pill-clone-oss {
-		background: var(--canvas);
-		color: var(--ink);
-		border: 1px solid var(--line);
-	}
-
 	.note-title.editing,
 	.note-text.editing {
 		border-color: var(--ink);
