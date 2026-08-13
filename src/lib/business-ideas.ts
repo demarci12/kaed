@@ -1,3 +1,5 @@
+import type { IdeaCategory } from './ideas';
+
 export interface BusinessIdea {
 	id: string;
 	user_id: string;
@@ -5,6 +7,7 @@ export interface BusinessIdea {
 	pain_point: string | null;
 	target_market: string | null;
 	validation: string | null;
+	category: IdeaCategory | null;
 	created_at: string;
 	updated_at: string;
 }

@@ -16,27 +16,6 @@ const { data: ideas } = await supabase
 
 const typedIdeas = (ideas ?? []) as Idea[];
 
-// Grouped labels ("Pain · Work · Mine") kept short for the pill itself so
-// the row of pills reads at a glance; grouping still shows in the dropdown.
-const categoryPillLabel: Record<string, string> = {
-	'work-mine': 'Work · Mine',
-	'work-others': "Work · Others'",
-	'life-mine': 'Life · Mine',
-	'life-known': 'Life · Known',
-	'life-strangers': "Life · Strangers",
-	'tech-app': 'Tech · App',
-	'clone-niche': 'Clone · Niche',
-	'clone-geo': 'Clone · Geo',
-	'clone-pricing': 'Clone · Pricing',
-	'clone-usecase': 'Clone · Use case',
-	'clone-oss': 'Clone · OSS',
-};
-
-const categoryOptions = [
-	':Pick category',
-	...Object.entries(categoryPillLabel).map(([value, label]) => `${value}:${label}`),
-].join(',');
-
 const error = Astro.url.searchParams.get('error');
 ---
 
@@ -62,6 +41,7 @@ const error = Astro.url.searchParams.get('error');
 			{typedIdeas.length ? (
 				typedIdeas.map((idea) => (
 					<article class="card" data-id={idea.id}>
+						<span class="card-field-label">Idea</span>
 						<div
 							class="pain-title font-serif text-lg font-semibold m-0 py-[10px] px-3 border border-line rounded-[10px] bg-canvas cursor-text transition-colors duration-150"
 							data-editable="text"
@@ -73,22 +53,7 @@ const error = Astro.url.searchParams.get('error');
 							{idea.title || 'Untitled'}
 						</div>
 
-						<div
-							class="pain-category inline-block self-start cursor-pointer"
-							data-editable="select"
-							data-field="category"
-							data-id={idea.id}
-							data-endpoint="/api/ideas"
-							data-value={idea.category ?? ''}
-							data-options={categoryOptions}
-						>
-							{idea.category ? (
-								<span class={`pill pill-${idea.category}`}>{categoryPillLabel[idea.category]}</span>
-							) : (
-								<span class="pill pill-empty">Pick category</span>
-							)}
-						</div>
-
+						<span class="card-field-label">Description</span>
 						<p
 							class="pain-text flex-1 text-[15px] m-0 py-[10px] px-3 border border-line rounded-[10px] bg-canvas cursor-text transition-colors duration-150"
 							data-editable="textarea"
@@ -157,14 +122,6 @@ const error = Astro.url.searchParams.get('error');
 	.pain-title.editing,
 	.pain-text.editing {
 		border-color: var(--ink);
-		background: var(--paper);
-	}
-
-	.pain-category select.cell-input {
-		font-size: 14px;
-		padding: 4px 6px;
-		border: 1px solid var(--line);
-		border-radius: 999px;
 		background: var(--paper);
 	}
 

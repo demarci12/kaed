@@ -26,6 +26,25 @@ export const IDEA_CATEGORY_LABELS: Record<IdeaCategory, string> = {
 	'clone-oss': 'Clone · OSS',
 };
 
+// Grouped short labels ("Pain · Work · Mine") for the pill UI itself, kept
+// terse so a row of pills reads at a glance -- grouping still shows via
+// IDEA_CATEGORY_LABELS wherever a fuller label is wanted (e.g. dropdowns).
+export const IDEA_CATEGORY_PILL_LABELS: Record<IdeaCategory, string> = {
+	'work-mine': 'Work · Mine',
+	'work-others': "Work · Others'",
+	'life-mine': 'Life · Mine',
+	'life-known': 'Life · Known',
+	'life-strangers': 'Life · Strangers',
+	'tech-app': 'Tech · App',
+	'clone-niche': 'Clone · Niche',
+	'clone-geo': 'Clone · Geo',
+	'clone-pricing': 'Clone · Pricing',
+	'clone-usecase': 'Clone · Use case',
+	'clone-oss': 'Clone · OSS',
+};
+
+export const IDEA_CATEGORIES = Object.keys(IDEA_CATEGORY_PILL_LABELS) as IdeaCategory[];
+
 export interface Idea {
 	id: string;
 	user_id: string;

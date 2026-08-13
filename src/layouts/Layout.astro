@@ -999,6 +999,34 @@ const memberOnly = user ? isMember(user) : false;
 				border: 1px solid var(--line);
 			}
 
+			/* Funding/progress stage (see /projects/[id] metadata panel). */
+			.pill-idea {
+				background: var(--canvas);
+				color: var(--ink);
+				border: 1px solid var(--line);
+			}
+
+			.pill-building {
+				background: #eef4ff;
+				color: #1d4ed8;
+			}
+
+			.pill-bootstrapped {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			.pill-funded,
+			.pill-profitable {
+				background: #eafaf0;
+				color: #1f7a3d;
+			}
+
+			.pill-paused {
+				background: #fbf0ef;
+				color: #b4231f;
+			}
+
 			/* Specific knowledge kinds (see /specific-knowledge). */
 			.pill-obsession {
 				background: #f4eefe;
@@ -1297,7 +1325,7 @@ const memberOnly = user ? isMember(user) : false;
 					input = textarea;
 				} else {
 					const el = document.createElement('input');
-					el.type = type === 'date' ? 'date' : 'text';
+					el.type = type === 'date' ? 'date' : type === 'number' ? 'number' : type === 'url' ? 'url' : 'text';
 					el.value = originalValue;
 					input = el;
 				}

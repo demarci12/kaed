@@ -22,6 +22,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 			user_id: user.id,
 			title: idea.title,
 			pain_point: idea.body || null,
+			category: idea.category || null,
 		})
 		.select('id')
 		.single();

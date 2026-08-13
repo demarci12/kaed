@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { HEADLINE_SIGNAL_TYPES, type Project, type ProjectLog, type SignalType } from '../../lib/projects';
+import { HEADLINE_SIGNAL_TYPES, FUNDING_STAGE_LABELS, type Project, type ProjectLog, type SignalType } from '../../lib/projects';
 import { requireUser, type Challenge } from '../../lib/challenges';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -84,6 +84,11 @@ const proofPillClass: Record<string, string> = {
 	rejected: 'bg-negative-bg text-negative',
 };
 
+const fundingStageOptions = [
+	':Pick stage',
+	...Object.entries(FUNDING_STAGE_LABELS).map(([value, label]) => `${value}:${label}`),
+].join(',');
+
 const timelineDotClass: Record<string, string> = {
 	pending: 'bg-warn',
 	verified: 'bg-positive',
@@ -126,6 +131,111 @@ const error = Astro.url.searchParams.get('error');
 		</form>
 
 		<form id="delete-project" method="post" action={`/api/projects/${typed.id}/delete`}></form>
+
+		<div class="section mt-10">
+			<h2 class="m-0 mb-5 font-serif text-[22px] font-semibold">Overview</h2>
+			<p
+				class="tagline text-lg leading-relaxed py-[10px] px-3 -mx-3 rounded-[10px] cursor-text transition-colors duration-150"
+				data-editable="text"
+				data-field="tagline"
+				data-id={typed.id}
+				data-endpoint="/api/projects"
+				data-value={typed.tagline ?? ''}
+			>
+				{typed.tagline || 'Add a one-line pitch…'}
+			</p>
+
+			<div class="metadata-grid grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-5 mt-2">
+				<div class="card-field">
+					<span class="card-field-label">Website</span>
+					<p
+						class="card-field-value"
+						data-editable="url"
+						data-field="website_url"
+						data-id={typed.id}
+						data-endpoint="/api/projects"
+						data-value={typed.website_url ?? ''}
+					>
+						{typed.website_url || 'Not set.'}
+					</p>
+				</div>
+
+				<div class="card-field">
+					<span class="card-field-label">Location</span>
+					<p
+						class="card-field-value"
+						data-editable="text"
+						data-field="location"
+						data-id={typed.id}
+						data-endpoint="/api/projects"
+						data-value={typed.location ?? ''}
+					>
+						{typed.location || 'Not set.'}
+					</p>
+				</div>
+
+				<div class="card-field">
+					<span class="card-field-label">Team size</span>
+					<p
+						class="card-field-value"
+						data-editable="number"
+						data-field="team_size"
+						data-id={typed.id}
+						data-endpoint="/api/projects"
+						data-value={typed.team_size ?? ''}
+					>
+						{typed.team_size ?? 'Not set.'}
+					</p>
+				</div>
+
+				<div class="card-field">
+					<span class="card-field-label">Industry</span>
+					<p
+						class="card-field-value"
+						data-editable="text"
+						data-field="industry"
+						data-id={typed.id}
+						data-endpoint="/api/projects"
+						data-value={typed.industry ?? ''}
+					>
+						{typed.industry || 'Not set.'}
+					</p>
+				</div>
+
+				<div class="card-field">
+					<span class="card-field-label">Founded</span>
+					<p
+						class="card-field-value"
+						data-editable="number"
+						data-field="founded_year"
+						data-id={typed.id}
+						data-endpoint="/api/projects"
+						data-value={typed.founded_year ?? ''}
+					>
+						{typed.founded_year ?? 'Not set.'}
+					</p>
+				</div>
+
+				<div class="card-field">
+					<span class="card-field-label">Stage</span>
+					<div
+						class="inline-block self-start cursor-pointer"
+						data-editable="select"
+						data-field="funding_stage"
+						data-id={typed.id}
+						data-endpoint="/api/projects"
+						data-value={typed.funding_stage ?? ''}
+						data-options={fundingStageOptions}
+					>
+						{typed.funding_stage ? (
+							<span class={`pill pill-${typed.funding_stage}`}>{FUNDING_STAGE_LABELS[typed.funding_stage]}</span>
+						) : (
+							<span class="pill pill-empty">Pick stage</span>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<div class="section mt-14">
 			<div class="section-head flex justify-between gap-3 flex-wrap items-start md:items-center">
@@ -305,5 +415,25 @@ const error = Astro.url.searchParams.get('error');
 	   express ":last-child, then target a specific descendant" here. */
 	.timeline-entry:last-child .timeline-line {
 		display: none;
+	}
+
+	/* Tagline: an inline-edit field like .pain-title/.pain-text, but
+	   presented as plain hero text rather than a boxed input -- only gets a
+	   background/border once hovered or actively being edited. */
+	.tagline {
+		color: var(--muted);
+	}
+
+	.tagline[data-value]:not([data-value='']) {
+		color: var(--ink);
+	}
+
+	.tagline:hover {
+		background: var(--canvas);
+	}
+
+	.tagline.editing {
+		background: var(--paper);
+		border: 1px solid var(--ink);
 	}
 </style>

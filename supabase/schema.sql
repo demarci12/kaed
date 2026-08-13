@@ -14,6 +14,15 @@ create table if not exists public.projects (
   status text not null default 'not_started' check (status in ('not_started', 'active', 'done')),
   start_date date,
   target_end_date date,
+  tagline text,
+  website_url text,
+  location text,
+  team_size integer,
+  industry text,
+  founded_year integer,
+  funding_stage text check (funding_stage is null or funding_stage in (
+    'idea', 'building', 'bootstrapped', 'funded', 'profitable', 'paused'
+  )),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -162,6 +171,12 @@ create table if not exists public.business_ideas (
   pain_point text,
   target_market text,
   validation text,
+  category text check (category is null or category in (
+    'work-mine', 'work-others',
+    'life-mine', 'life-known', 'life-strangers',
+    'tech-app',
+    'clone-niche', 'clone-geo', 'clone-pricing', 'clone-usecase', 'clone-oss'
+  )),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
