@@ -220,6 +220,69 @@ const memberOnly = user ? isMember(user) : false;
 					align-items: flex-start;
 				}
 			}
+
+			/* Mobile hamburger menu: hamburger morphs into an X while open. */
+			.mobile-nav[open] .hamburger-icon span:first-child {
+				transform: translateY(5.5px) rotate(45deg);
+			}
+
+			.mobile-nav[open] .hamburger-icon span:nth-child(2) {
+				opacity: 0;
+			}
+
+			.mobile-nav[open] .hamburger-icon span:last-child {
+				transform: translateY(-5.5px) rotate(-45deg);
+			}
+
+			.mobile-nav-heading {
+				margin: 10px 0 2px;
+				padding: 0 12px;
+				font-size: 11px;
+				font-weight: 600;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+
+			.mobile-nav-heading:first-child {
+				margin-top: 4px;
+			}
+
+			.mobile-nav-link {
+				display: flex;
+				align-items: center;
+				min-height: 44px;
+				padding: 0 12px;
+				border-radius: 8px;
+				font-size: 15px;
+				color: var(--ink);
+				text-decoration: none;
+			}
+
+			.mobile-nav-link:hover,
+			.mobile-nav-link:active {
+				background: var(--canvas);
+			}
+
+			/* Anchor the panel flush to the right edge of the hamburger instead
+			   of the shared .nav-dropdown's centered/left-anchored positioning
+			   -- plain CSS with !important, not Tailwind utilities, because the
+			   legacy .nav-dropdown rule sets `transform` as a direct property
+			   and beats Tailwind's !-prefixed utilities (which only mark the
+			   underlying --tw-translate-x custom property important, not the
+			   composed transform declaration that actually renders). */
+			.mobile-nav-panel {
+				left: auto !important;
+				right: 0 !important;
+				transform: none !important;
+			}
+
+			/* The hamburger trigger has its own icon and shouldn't also get
+			   .nav-group summary's decorative "▾" (it has no text for the
+			   arrow to sensibly follow). */
+			.mobile-nav-trigger::after {
+				content: none;
+			}
 		</style>
 		<style is:global>
 			/* .btn is global because Astro's scoped <style> only stamps its hash
@@ -1064,53 +1127,94 @@ const memberOnly = user ? isMember(user) : false;
 				<a href="/" class="brand">
 					<span class="brand-mark">KAED</span>
 				</a>
-				<nav class="nav">
-					{
-						user ? (
-							<>
+				{user ? (
+					<>
+						{/* Desktop: the original horizontal dropdown-group nav, unchanged. */}
+						<nav class="nav !hidden md:!flex">
+							{memberOnly ? (
+								<a href="/finance" class="who-link">Finance</a>
+							) : (
+								<>
+									<details class="nav-group">
+										<summary>Delivery</summary>
+										<div class="nav-dropdown">
+											<a href="/pain-points">Pain points</a>
+											<a href="/business-ideas">Business ideas</a>
+											<a href="/projects">Projects</a>
+											<a href="/activities">Activities</a>
+										</div>
+									</details>
+									<details class="nav-group">
+										<summary>Personal</summary>
+										<div class="nav-dropdown">
+											<a href="/specific-knowledge">Specific knowledge</a>
+										</div>
+									</details>
+									<details class="nav-group">
+										<summary>Sales &amp; Marketing</summary>
+										<div class="nav-dropdown">
+											<a href="/clients">CRM</a>
+										</div>
+									</details>
+									<details class="nav-group">
+										<summary>Finance</summary>
+										<div class="nav-dropdown">
+											<a href="/finance">Personal finance</a>
+										</div>
+									</details>
+								</>
+							)}
+							<span class="who">{user.email}</span>
+							<form method="post" action="/api/auth/signout">
+								<button type="submit" class="btn ghost">Sign out</button>
+							</form>
+						</nav>
+
+						{/* Mobile: a single hamburger opening one stacked, full-width
+						   panel of large tap targets -- not four inline dropdown
+						   triggers wrapped into cramped rows, which is what was here
+						   before and read as broken on a phone. */}
+						<details class="nav-group mobile-nav md:hidden relative">
+							<summary
+								class="mobile-nav-trigger flex items-center justify-center w-11 h-11 rounded-full border border-line text-ink cursor-pointer list-none"
+								aria-label="Menu"
+							>
+								<span class="hamburger-icon relative block w-[18px] h-[13px]">
+									<span class="absolute inset-x-0 top-0 h-[1.5px] bg-ink transition-transform duration-150"></span>
+									<span class="absolute inset-x-0 top-[5.5px] h-[1.5px] bg-ink transition-opacity duration-150"></span>
+									<span class="absolute inset-x-0 bottom-0 h-[1.5px] bg-ink transition-transform duration-150"></span>
+								</span>
+							</summary>
+							<div class="nav-dropdown mobile-nav-panel flex flex-col gap-1 w-[min(85vw,320px)] max-h-[75vh] overflow-y-auto p-2">
 								{memberOnly ? (
-									<a href="/finance" class="who-link">Finance</a>
+									<a href="/finance" class="mobile-nav-link">Finance</a>
 								) : (
 									<>
-										<details class="nav-group">
-											<summary>Delivery</summary>
-											<div class="nav-dropdown">
-												<a href="/pain-points">Pain points</a>
-												<a href="/business-ideas">Business ideas</a>
-												<a href="/projects">Projects</a>
-												<a href="/activities">Activities</a>
-											</div>
-										</details>
-										<details class="nav-group">
-											<summary>Personal</summary>
-											<div class="nav-dropdown">
-												<a href="/specific-knowledge">Specific knowledge</a>
-											</div>
-										</details>
-										<details class="nav-group">
-											<summary>Sales &amp; Marketing</summary>
-											<div class="nav-dropdown">
-												<a href="/clients">CRM</a>
-											</div>
-										</details>
-										<details class="nav-group">
-											<summary>Finance</summary>
-											<div class="nav-dropdown">
-												<a href="/finance">Personal finance</a>
-											</div>
-										</details>
+										<p class="mobile-nav-heading">Delivery</p>
+										<a href="/pain-points" class="mobile-nav-link">Pain points</a>
+										<a href="/business-ideas" class="mobile-nav-link">Business ideas</a>
+										<a href="/projects" class="mobile-nav-link">Projects</a>
+										<a href="/activities" class="mobile-nav-link">Activities</a>
+										<p class="mobile-nav-heading">Personal</p>
+										<a href="/specific-knowledge" class="mobile-nav-link">Specific knowledge</a>
+										<p class="mobile-nav-heading">Sales &amp; Marketing</p>
+										<a href="/clients" class="mobile-nav-link">CRM</a>
+										<p class="mobile-nav-heading">Finance</p>
+										<a href="/finance" class="mobile-nav-link">Personal finance</a>
 									</>
 								)}
-								<span class="who">{user.email}</span>
-								<form method="post" action="/api/auth/signout">
-									<button type="submit" class="btn ghost">Sign out</button>
-								</form>
-							</>
-						) : (
-							<a href="/login" class="btn ghost">Log in</a>
-						)
-					}
-				</nav>
+								<div class="mt-2 pt-3 border-t border-line flex flex-col gap-2.5">
+									<span class="px-3 text-[13px] text-muted break-all">{user.email}</span>
+									<form method="post" action="/api/auth/signout" class="px-1">
+										<button type="submit" class="btn ghost w-full justify-center">Sign out</button>
+									</form>
+								</div>
+							</div>
+						</details>
+					</>
+				) : (
+					<a href="/login" class="btn ghost">Log in</a>
+				)}
 			</header>
 
 			<main class="content">
