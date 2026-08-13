@@ -147,7 +147,12 @@ const error = Astro.url.searchParams.get('error');
 
 			<div class="metadata-grid grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-5 mt-2">
 				<div class="card-field">
-					<span class="card-field-label">Website</span>
+					<span class="card-field-label flex items-center justify-between gap-2">
+						Website
+						{typed.website_url && (
+							<a class="text-[11px] font-normal normal-case tracking-normal text-ink no-underline border-b border-line hover:border-ink" href={typed.website_url} target="_blank" rel="noopener noreferrer">Visit ↗</a>
+						)}
+					</span>
 					<p
 						class="card-field-value"
 						data-editable="url"
