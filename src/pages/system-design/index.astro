@@ -1,0 +1,79 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireUser } from '../../lib/system-design';
+import type { Project } from '../../lib/projects';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { data: projects } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+const typedProjects = (projects ?? []) as Project[];
+
+const projectIds = typedProjects.map((project) => project.id);
+const counts = new Map<string, number>();
+
+if (projectIds.length) {
+	const [{ data: actors }, { data: goals }, { data: useCases }, { data: requirements }] = await Promise.all([
+		supabase.from('system_actors').select('project_id').in('project_id', projectIds),
+		supabase.from('system_goals').select('project_id').in('project_id', projectIds),
+		supabase.from('system_use_cases').select('project_id').in('project_id', projectIds),
+		supabase.from('system_requirements').select('project_id').in('project_id', projectIds),
+	]);
+
+	for (const rows of [actors, goals, useCases, requirements]) {
+		for (const row of rows ?? []) {
+			counts.set(row.project_id, (counts.get(row.project_id) ?? 0) + 1);
+		}
+	}
+}
+---
+
+<Layout user={auth.user}>
+	<section class="system-design max-w-[1080px]">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Delivery</p>
+				<h1>System design.</h1>
+				<p class="lede">
+					Pick a project to work through its actors, use cases, system goals, and requirements.
+				</p>
+			</div>
+		</div>
+
+		<div class="card-grid">
+			{typedProjects.length ? (
+				typedProjects.map((project) => (
+					<a class="card" href={`/system-design/${project.id}`}>
+						<div class="card-head">
+							<span class="card-title">{project.title}</span>
+						</div>
+						<p class="card-field-value">{project.description || 'No description.'}</p>
+						<div class="card-foot justify-end">
+							<span class="chip">{counts.get(project.id) ?? 0} item{counts.get(project.id) === 1 ? '' : 's'}</span>
+						</div>
+					</a>
+				))
+			) : (
+				<p class="empty">No projects yet. <a href="/projects">Create one first</a>, then design its system here.</p>
+			)}
+		</div>
+	</section>
+</Layout>
+
+<style>
+	a.card {
+		text-decoration: none;
+		color: inherit;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		transition: border-color 0.15s ease;
+	}
+
+	a.card:hover {
+		border-color: var(--ink);
+	}
+</style>

@@ -1123,6 +1123,53 @@ const memberOnly = user ? isMember(user) : false;
 				color: #1f7a3d;
 			}
 
+			/* System design (see /system-design): actor kinds, requirement kinds
+			   and MoSCoW priority. */
+			.pill-primary {
+				background: #eef4ff;
+				color: #1d4ed8;
+			}
+
+			.pill-secondary {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			.pill-system {
+				background: #f4eefe;
+				color: #6b21a8;
+			}
+
+			.pill-functional {
+				background: #eef4ff;
+				color: #1d4ed8;
+			}
+
+			.pill-non_functional {
+				background: #f4eefe;
+				color: #6b21a8;
+			}
+
+			.pill-must {
+				background: #fbf0ef;
+				color: #b4231f;
+			}
+
+			.pill-should {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			.pill-could {
+				background: #eef4ff;
+				color: #1d4ed8;
+			}
+
+			.pill-wont {
+				background: var(--canvas);
+				color: var(--muted);
+			}
+
 			/* Inline editable table cells. Locked by default; click unlocks into an
 			   input, blur/Enter saves and locks it back in. */
 			[data-editable] {
@@ -1244,12 +1291,14 @@ const memberOnly = user ? isMember(user) : false;
 										<div class="nav-dropdown">
 											<a href="/business-ideas">Business ideas</a>
 											<a href="/projects">Projects</a>
+											<a href="/system-design">System design</a>
 											<a href="/activities">Activities</a>
 										</div>
 									</details>
 									<details class="nav-group">
 										<summary>Personal</summary>
 										<div class="nav-dropdown">
+											<a href="/goals">Goals</a>
 											<a href="/specific-knowledge">Specific knowledge</a>
 										</div>
 									</details>
@@ -1297,8 +1346,10 @@ const memberOnly = user ? isMember(user) : false;
 										<p class="mobile-nav-heading">Delivery</p>
 										<a href="/business-ideas" class="mobile-nav-link">Business ideas</a>
 										<a href="/projects" class="mobile-nav-link">Projects</a>
+										<a href="/system-design" class="mobile-nav-link">System design</a>
 										<a href="/activities" class="mobile-nav-link">Activities</a>
 										<p class="mobile-nav-heading">Personal</p>
+										<a href="/goals" class="mobile-nav-link">Goals</a>
 										<a href="/specific-knowledge" class="mobile-nav-link">Specific knowledge</a>
 										<p class="mobile-nav-heading">Sales &amp; Marketing</p>
 										<a href="/clients" class="mobile-nav-link">CRM</a>

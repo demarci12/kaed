@@ -311,3 +311,85 @@ alter table public.knowledge_cards enable row level security;
 
 create policy "own knowledge cards" on public.knowledge_cards
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Personal goal register: a simple, ordered list of goals the user is
+-- working toward. Drag-and-drop reorderable via rank, like business_ideas.
+create table if not exists public.goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  description text,
+  rank integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.goals enable row level security;
+
+create policy "own goals" on public.goals
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- System design: use cases, actors, system goals, and requirements for a
+-- project, organized the standard requirements-engineering way (actors
+-- perform use cases; use cases satisfy goals; requirements trace back to a
+-- use case). Each row belongs to one project.
+create table if not exists public.system_actors (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  description text,
+  kind text not null default 'primary' check (kind in ('primary', 'secondary', 'system')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.system_goals (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  description text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.system_use_cases (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  actor_id uuid references public.system_actors(id) on delete set null,
+  title text not null,
+  description text,
+  preconditions text,
+  main_flow text,
+  postconditions text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.system_requirements (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  use_case_id uuid references public.system_use_cases(id) on delete set null,
+  title text not null,
+  description text,
+  kind text not null default 'functional' check (kind in ('functional', 'non_functional')),
+  priority text not null default 'must' check (priority in ('must', 'should', 'could', 'wont')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists system_actors_project_id_idx on public.system_actors (project_id);
+create index if not exists system_goals_project_id_idx on public.system_goals (project_id);
+create index if not exists system_use_cases_project_id_idx on public.system_use_cases (project_id);
+create index if not exists system_use_cases_actor_id_idx on public.system_use_cases (actor_id);
+create index if not exists system_requirements_project_id_idx on public.system_requirements (project_id);
+create index if not exists system_requirements_use_case_id_idx on public.system_requirements (use_case_id);
+
+alter table public.system_actors enable row level security;
+alter table public.system_goals enable row level security;
+alter table public.system_use_cases enable row level security;
+alter table public.system_requirements enable row level security;
+
+create policy "own system actors" on public.system_actors for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own system goals" on public.system_goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own system use cases" on public.system_use_cases for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own system requirements" on public.system_requirements for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

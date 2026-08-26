@@ -1,0 +1,502 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import {
+	requireUser,
+	ACTOR_KIND_LABELS,
+	REQUIREMENT_KIND_LABELS,
+	REQUIREMENT_PRIORITY_LABELS,
+	type SystemActor,
+	type SystemGoal,
+	type SystemUseCase,
+	type SystemRequirement,
+} from '../../lib/system-design';
+import type { Project } from '../../lib/projects';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+const projectId = Astro.params.id as string;
+
+const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).maybeSingle();
+if (!project) {
+	return Astro.redirect('/system-design?error=Project not found.');
+}
+const typedProject = project as Project;
+
+const [{ data: actors }, { data: goals }, { data: useCases }, { data: requirements }] = await Promise.all([
+	supabase.from('system_actors').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
+	supabase.from('system_goals').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
+	supabase
+		.from('system_use_cases')
+		.select('*')
+		.eq('project_id', projectId)
+		.order('created_at', { ascending: true }),
+	supabase
+		.from('system_requirements')
+		.select('*')
+		.eq('project_id', projectId)
+		.order('created_at', { ascending: true }),
+]);
+
+const typedActors = (actors ?? []) as SystemActor[];
+const typedGoals = (goals ?? []) as SystemGoal[];
+const typedUseCases = (useCases ?? []) as SystemUseCase[];
+const typedRequirements = (requirements ?? []) as SystemRequirement[];
+
+const actorById = new Map(typedActors.map((actor) => [actor.id, actor]));
+const useCaseById = new Map(typedUseCases.map((useCase) => [useCase.id, useCase]));
+
+const actorKindOptions = Object.entries(ACTOR_KIND_LABELS)
+	.map(([value, label]) => `${value}:${label}`)
+	.join(',');
+const requirementKindOptions = Object.entries(REQUIREMENT_KIND_LABELS)
+	.map(([value, label]) => `${value}:${label}`)
+	.join(',');
+const requirementPriorityOptions = Object.entries(REQUIREMENT_PRIORITY_LABELS)
+	.map(([value, label]) => `${value}:${label}`)
+	.join(',');
+const actorSelectOptions = [
+	':No actor',
+	...typedActors.map((actor) => `${actor.id}:${actor.name}`),
+].join(',');
+const useCaseSelectOptions = [
+	':No use case',
+	...typedUseCases.map((useCase) => `${useCase.id}:${useCase.title}`),
+].join(',');
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout user={auth.user}>
+	<section class="system-design max-w-[1080px]">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Delivery · <a href="/system-design">System design</a></p>
+				<h1>{typedProject.title}.</h1>
+				<p class="lede">
+					Actors perform use cases. Use cases satisfy system goals. Requirements trace back to a use
+					case where they can.
+				</p>
+			</div>
+		</div>
+
+		{error && <p class="form-error">{error}</p>}
+
+		<div class="sd-section">
+			<div class="sd-section-head">
+				<h2>System goals</h2>
+				<button type="button" class="btn ghost" data-open-popup="new-goal">+ Add goal</button>
+			</div>
+			<div class="card-grid">
+				{typedGoals.length ? (
+					typedGoals.map((goal) => (
+						<article class="card">
+							<div class="card-head">
+								<div
+									class="card-title cursor-text"
+									data-editable="text"
+									data-field="title"
+									data-id={goal.id}
+									data-endpoint="/api/system-design/goals"
+									data-value={goal.title}
+								>
+									{goal.title}
+								</div>
+								<form class="shrink-0" method="post" action={`/api/system-design/goals/${goal.id}/delete`}>
+									<button type="submit" class="card-delete" aria-label="Delete goal">×</button>
+								</form>
+							</div>
+							<p
+								class="card-field-value"
+								data-editable="textarea"
+								data-field="description"
+								data-id={goal.id}
+								data-endpoint="/api/system-design/goals"
+								data-value={goal.description ?? ''}
+							>
+								{goal.description || 'Not set.'}
+							</p>
+						</article>
+					))
+				) : (
+					<p class="empty">No system goals yet.</p>
+				)}
+			</div>
+		</div>
+
+		<div class="sd-section">
+			<div class="sd-section-head">
+				<h2>Actors</h2>
+				<button type="button" class="btn ghost" data-open-popup="new-actor">+ Add actor</button>
+			</div>
+			<div class="card-grid">
+				{typedActors.length ? (
+					typedActors.map((actor) => (
+						<article class="card">
+							<div class="card-head">
+								<div
+									class="card-title cursor-text"
+									data-editable="text"
+									data-field="name"
+									data-id={actor.id}
+									data-endpoint="/api/system-design/actors"
+									data-value={actor.name}
+								>
+									{actor.name}
+								</div>
+								<form class="shrink-0" method="post" action={`/api/system-design/actors/${actor.id}/delete`}>
+									<button type="submit" class="card-delete" aria-label="Delete actor">×</button>
+								</form>
+							</div>
+							<div
+								class="inline-block self-start cursor-pointer"
+								data-editable="select"
+								data-field="kind"
+								data-id={actor.id}
+								data-endpoint="/api/system-design/actors"
+								data-value={actor.kind}
+								data-options={actorKindOptions}
+							>
+								<span class={`pill pill-${actor.kind}`}>{ACTOR_KIND_LABELS[actor.kind]}</span>
+							</div>
+							<p
+								class="card-field-value"
+								data-editable="textarea"
+								data-field="description"
+								data-id={actor.id}
+								data-endpoint="/api/system-design/actors"
+								data-value={actor.description ?? ''}
+							>
+								{actor.description || 'Not set.'}
+							</p>
+						</article>
+					))
+				) : (
+					<p class="empty">No actors yet.</p>
+				)}
+			</div>
+		</div>
+
+		<div class="sd-section">
+			<div class="sd-section-head">
+				<h2>Use cases</h2>
+				<button type="button" class="btn ghost" data-open-popup="new-use-case">+ Add use case</button>
+			</div>
+			<div class="card-grid">
+				{typedUseCases.length ? (
+					typedUseCases.map((useCase) => (
+						<article class="card">
+							<div class="card-head">
+								<div
+									class="card-title cursor-text"
+									data-editable="text"
+									data-field="title"
+									data-id={useCase.id}
+									data-endpoint="/api/system-design/use-cases"
+									data-value={useCase.title}
+								>
+									{useCase.title}
+								</div>
+								<form class="shrink-0" method="post" action={`/api/system-design/use-cases/${useCase.id}/delete`}>
+									<button type="submit" class="card-delete" aria-label="Delete use case">×</button>
+								</form>
+							</div>
+							<div
+								class="inline-block self-start cursor-pointer"
+								data-editable="select"
+								data-field="actor_id"
+								data-id={useCase.id}
+								data-endpoint="/api/system-design/use-cases"
+								data-value={useCase.actor_id ?? ''}
+								data-options={actorSelectOptions}
+							>
+								{useCase.actor_id && actorById.has(useCase.actor_id) ? (
+									<span class="chip">{actorById.get(useCase.actor_id)!.name}</span>
+								) : (
+									<span class="chip chip-muted">No actor</span>
+								)}
+							</div>
+							<div class="card-field">
+								<span class="card-field-label">Description</span>
+								<p
+									class="card-field-value"
+									data-editable="textarea"
+									data-field="description"
+									data-id={useCase.id}
+									data-endpoint="/api/system-design/use-cases"
+									data-value={useCase.description ?? ''}
+								>
+									{useCase.description || 'Not set.'}
+								</p>
+							</div>
+							<div class="card-field">
+								<span class="card-field-label">Preconditions</span>
+								<p
+									class="card-field-value"
+									data-editable="textarea"
+									data-field="preconditions"
+									data-id={useCase.id}
+									data-endpoint="/api/system-design/use-cases"
+									data-value={useCase.preconditions ?? ''}
+								>
+									{useCase.preconditions || 'Not set.'}
+								</p>
+							</div>
+							<div class="card-field">
+								<span class="card-field-label">Main flow</span>
+								<p
+									class="card-field-value"
+									data-editable="textarea"
+									data-field="main_flow"
+									data-id={useCase.id}
+									data-endpoint="/api/system-design/use-cases"
+									data-value={useCase.main_flow ?? ''}
+								>
+									{useCase.main_flow || 'Not set.'}
+								</p>
+							</div>
+							<div class="card-field">
+								<span class="card-field-label">Postconditions</span>
+								<p
+									class="card-field-value"
+									data-editable="textarea"
+									data-field="postconditions"
+									data-id={useCase.id}
+									data-endpoint="/api/system-design/use-cases"
+									data-value={useCase.postconditions ?? ''}
+								>
+									{useCase.postconditions || 'Not set.'}
+								</p>
+							</div>
+						</article>
+					))
+				) : (
+					<p class="empty">No use cases yet.</p>
+				)}
+			</div>
+		</div>
+
+		<div class="sd-section">
+			<div class="sd-section-head">
+				<h2>Requirements</h2>
+				<button type="button" class="btn ghost" data-open-popup="new-requirement">+ Add requirement</button>
+			</div>
+			<div class="card-grid">
+				{typedRequirements.length ? (
+					typedRequirements.map((requirement) => (
+						<article class="card">
+							<div class="card-head">
+								<div
+									class="card-title cursor-text"
+									data-editable="text"
+									data-field="title"
+									data-id={requirement.id}
+									data-endpoint="/api/system-design/requirements"
+									data-value={requirement.title}
+								>
+									{requirement.title}
+								</div>
+								<form
+									class="shrink-0"
+									method="post"
+									action={`/api/system-design/requirements/${requirement.id}/delete`}
+								>
+									<button type="submit" class="card-delete" aria-label="Delete requirement">×</button>
+								</form>
+							</div>
+							<div class="flex gap-2 flex-wrap">
+								<div
+									class="inline-block self-start cursor-pointer"
+									data-editable="select"
+									data-field="kind"
+									data-id={requirement.id}
+									data-endpoint="/api/system-design/requirements"
+									data-value={requirement.kind}
+									data-options={requirementKindOptions}
+								>
+									<span class={`pill pill-${requirement.kind}`}>{REQUIREMENT_KIND_LABELS[requirement.kind]}</span>
+								</div>
+								<div
+									class="inline-block self-start cursor-pointer"
+									data-editable="select"
+									data-field="priority"
+									data-id={requirement.id}
+									data-endpoint="/api/system-design/requirements"
+									data-value={requirement.priority}
+									data-options={requirementPriorityOptions}
+								>
+									<span class={`pill pill-${requirement.priority}`}>
+										{REQUIREMENT_PRIORITY_LABELS[requirement.priority]}
+									</span>
+								</div>
+							</div>
+							<div
+								class="inline-block self-start cursor-pointer"
+								data-editable="select"
+								data-field="use_case_id"
+								data-id={requirement.id}
+								data-endpoint="/api/system-design/requirements"
+								data-value={requirement.use_case_id ?? ''}
+								data-options={useCaseSelectOptions}
+							>
+								{requirement.use_case_id && useCaseById.has(requirement.use_case_id) ? (
+									<span class="chip">{useCaseById.get(requirement.use_case_id)!.title}</span>
+								) : (
+									<span class="chip chip-muted">No use case</span>
+								)}
+							</div>
+							<p
+								class="card-field-value"
+								data-editable="textarea"
+								data-field="description"
+								data-id={requirement.id}
+								data-endpoint="/api/system-design/requirements"
+								data-value={requirement.description ?? ''}
+							>
+								{requirement.description || 'Not set.'}
+							</p>
+						</article>
+					))
+				) : (
+					<p class="empty">No requirements yet.</p>
+				)}
+			</div>
+		</div>
+	</section>
+
+	<dialog id="new-goal" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add system goal</h2>
+		<form method="post" action="/api/system-design/goals/create">
+			<input type="hidden" name="project_id" value={projectId} />
+			<label for="goal-title">Title</label>
+			<input id="goal-title" name="title" type="text" required maxlength="160" />
+			<label for="goal-description">Description</label>
+			<textarea id="goal-description" name="description" rows="3"></textarea>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add goal</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="new-actor" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add actor</h2>
+		<form method="post" action="/api/system-design/actors/create">
+			<input type="hidden" name="project_id" value={projectId} />
+			<label for="actor-name">Name</label>
+			<input id="actor-name" name="name" type="text" required maxlength="160" placeholder="e.g. Customer" />
+			<label for="actor-kind">Kind</label>
+			<select id="actor-kind" name="kind">
+				{Object.entries(ACTOR_KIND_LABELS).map(([value, label]) => (
+					<option value={value}>{label}</option>
+				))}
+			</select>
+			<label for="actor-description">Description</label>
+			<textarea id="actor-description" name="description" rows="2"></textarea>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add actor</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="new-use-case" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add use case</h2>
+		<form method="post" action="/api/system-design/use-cases/create">
+			<input type="hidden" name="project_id" value={projectId} />
+			<label for="uc-title">Title</label>
+			<input id="uc-title" name="title" type="text" required maxlength="160" placeholder="e.g. Place an order" />
+			<label for="uc-actor">Actor</label>
+			<select id="uc-actor" name="actor_id">
+				<option value="">No actor</option>
+				{typedActors.map((actor) => (
+					<option value={actor.id}>{actor.name}</option>
+				))}
+			</select>
+			<label for="uc-description">Description</label>
+			<textarea id="uc-description" name="description" rows="2"></textarea>
+			<label for="uc-preconditions">Preconditions</label>
+			<textarea id="uc-preconditions" name="preconditions" rows="2"></textarea>
+			<label for="uc-main-flow">Main flow</label>
+			<textarea id="uc-main-flow" name="main_flow" rows="3"></textarea>
+			<label for="uc-postconditions">Postconditions</label>
+			<textarea id="uc-postconditions" name="postconditions" rows="2"></textarea>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add use case</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="new-requirement" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add requirement</h2>
+		<form method="post" action="/api/system-design/requirements/create">
+			<input type="hidden" name="project_id" value={projectId} />
+			<label for="req-title">Title</label>
+			<input id="req-title" name="title" type="text" required maxlength="160" />
+			<div class="popup-row">
+				<div>
+					<label for="req-kind">Kind</label>
+					<select id="req-kind" name="kind">
+						{Object.entries(REQUIREMENT_KIND_LABELS).map(([value, label]) => (
+							<option value={value}>{label}</option>
+						))}
+					</select>
+				</div>
+				<div>
+					<label for="req-priority">Priority</label>
+					<select id="req-priority" name="priority">
+						{Object.entries(REQUIREMENT_PRIORITY_LABELS).map(([value, label]) => (
+							<option value={value}>{label}</option>
+						))}
+					</select>
+				</div>
+			</div>
+			<label for="req-use-case">Use case</label>
+			<select id="req-use-case" name="use_case_id">
+				<option value="">No use case</option>
+				{typedUseCases.map((useCase) => (
+					<option value={useCase.id}>{useCase.title}</option>
+				))}
+			</select>
+			<label for="req-description">Description</label>
+			<textarea id="req-description" name="description" rows="3"></textarea>
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add requirement</button>
+			</div>
+		</form>
+	</dialog>
+</Layout>
+
+<style>
+	.sd-section {
+		margin-top: 40px;
+	}
+
+	.sd-section:first-of-type {
+		margin-top: 32px;
+	}
+
+	.sd-section-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.sd-section-head h2 {
+		margin: 0;
+		font-family: var(--serif);
+		font-size: 20px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+</style>
