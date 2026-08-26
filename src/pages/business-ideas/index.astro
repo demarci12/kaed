@@ -82,7 +82,13 @@ const error = Astro.url.searchParams.get('error');
 					return (
 						<article class="card" id={`idea-${idea.id}`} data-idea-card data-id={idea.id}>
 							<div class="card-head">
-								<span class="rank-badge" data-rank-badge title="Position">{index + 1}</span>
+								<button
+									type="button"
+									class="rank-badge"
+									data-rank-badge
+									data-id={idea.id}
+									title="Click to set position"
+								>{index + 1}</button>
 								<a class="card-title" href={`/business-ideas/${idea.id}`}>{idea.title}</a>
 								<div class="rank-controls shrink-0">
 									<button
@@ -259,12 +265,99 @@ const error = Astro.url.searchParams.get('error');
 		const cards = document.querySelectorAll<HTMLElement>('#idea-grid [data-idea-card]');
 		cards.forEach((card, index) => {
 			const badge = card.querySelector('[data-rank-badge]');
-			if (badge) badge.textContent = String(index + 1);
+			if (badge && badge.tagName !== 'INPUT') badge.textContent = String(index + 1);
 
 			const upBtn = card.querySelector<HTMLButtonElement>('[data-move="up"]');
 			const downBtn = card.querySelector<HTMLButtonElement>('[data-move="down"]');
 			if (upBtn) upBtn.disabled = index === 0;
 			if (downBtn) downBtn.disabled = index === cards.length - 1;
 		});
+	}
+
+	// Click-to-edit the rank badge: swap the button for a number input, submit
+	// the new 1-based position on Enter/blur, reorder the grid from the
+	// server's authoritative order rather than guessing locally.
+	document.addEventListener('click', (event) => {
+		const target = event.target as HTMLElement;
+		const badge = target.closest<HTMLButtonElement>('[data-rank-badge]');
+		if (!badge || badge.dataset.editing) return;
+
+		startRankEdit(badge);
+	});
+
+	function startRankEdit(badge: HTMLButtonElement) {
+		const id = badge.dataset.id;
+		if (!id) return;
+
+		const originalValue = badge.textContent?.trim() ?? '1';
+		const input = document.createElement('input');
+		input.type = 'number';
+		input.min = '1';
+		input.value = originalValue;
+		input.className = 'rank-badge-input';
+		input.dataset.id = id;
+
+		badge.replaceWith(input);
+		input.focus();
+		input.select();
+
+		let settled = false;
+		const cancel = () => {
+			if (settled) return;
+			settled = true;
+			input.replaceWith(badge);
+		};
+		const commit = async () => {
+			if (settled) return;
+			settled = true;
+
+			const position = Number(input.value);
+			if (!Number.isFinite(position) || position < 1 || String(position) === originalValue) {
+				input.replaceWith(badge);
+				return;
+			}
+
+			input.disabled = true;
+			try {
+				const response = await fetch(`/api/business-ideas/${id}/rank`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ position }),
+				});
+				const payload = await response.json().catch(() => null);
+				if (!response.ok || !payload?.ok) {
+					throw new Error(payload?.error || 'Could not set position.');
+				}
+
+				input.replaceWith(badge);
+				reorderIdeaCards(payload.order as string[]);
+			} catch (error) {
+				console.error(error);
+				input.replaceWith(badge);
+			}
+		};
+
+		input.addEventListener('blur', commit);
+		input.addEventListener('keydown', (keyEvent) => {
+			if (keyEvent.key === 'Enter') {
+				keyEvent.preventDefault();
+				input.blur();
+			} else if (keyEvent.key === 'Escape') {
+				keyEvent.preventDefault();
+				cancel();
+			}
+		});
+	}
+
+	function reorderIdeaCards(order: string[]) {
+		const grid = document.getElementById('idea-grid');
+		if (!grid) return;
+
+		for (const id of order) {
+			const card = document.getElementById(`idea-${id}`);
+			if (card) grid.appendChild(card);
+		}
+
+		renumberIdeaCards();
 	}
 </script>
