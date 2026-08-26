@@ -28,10 +28,6 @@ const typedOngoingProjects = (ongoingProjects ?? []) as PublicActiveProject[];
 			Notes, builds, and challenges I'm working through. Occasional updates
 			land here first.
 		</p>
-		<div class="hero-actions flex items-center gap-6 mt-9">
-			<a class="cta inline-flex items-center py-[13px] px-[26px] rounded-full bg-ink text-white text-[15px] font-medium no-underline border border-ink transition-colors duration-150 hover:bg-transparent hover:text-ink" href="#signup">Join the list</a>
-			<a class="text-link text-muted no-underline text-[15px] transition-colors duration-150 hover:text-ink" href="/login">Log in →</a>
-		</div>
 	</section>
 
 	{typedOngoingProjects.length > 0 && (
@@ -62,91 +58,5 @@ const typedOngoingProjects = (ongoingProjects ?? []) as PublicActiveProject[];
 		</section>
 	)}
 
-	<section id="signup" class="signup mt-16 md:mt-24 py-7 px-5 md:p-10 bg-paper border border-line rounded-2xl">
-		<div class="signup-copy">
-			<h2 class="m-0 font-serif text-[28px] font-semibold tracking-[-0.02em]">Stay in the loop</h2>
-			<p class="mt-2 mb-0 text-muted">Occasional notes on what I'm building and thinking. No noise.</p>
-		</div>
-		<form id="signup-form" class="signup-form flex gap-2.5 flex-wrap mt-6">
-			<label class="sr-only" for="email">Email address</label>
-			<input id="email" name="email" type="email" placeholder="you@example.com" required class="flex-1 basis-full md:basis-[280px] min-w-[220px] w-full md:w-auto h-12 px-4 font-sans text-base text-ink bg-canvas border border-line rounded-full outline-none transition-colors duration-150 focus:border-ink" />
-			<button type="submit" class="flex-1 basis-full md:flex-initial h-12 px-7 font-sans text-[15px] font-medium text-white bg-ink border border-ink rounded-full cursor-pointer transition-colors duration-150 hover:bg-transparent hover:text-ink disabled:cursor-progress disabled:opacity-60 w-full md:w-auto">Subscribe</button>
-		</form>
-		<div id="signup-status" class="status" aria-live="polite"></div>
-	</section>
+
 </Layout>
-
-<script>
-	// Delegated from `document` so it survives ClientRouter soft navigations
-	// -- a listener bound straight to #signup-form goes stale as soon as the
-	// user navigates away and back (e.g. via /login), leaving a submit button
-	// that silently does nothing. Elements are looked up per-event instead.
-	const setStatus = (message: string, tone = 'idle') => {
-		const status = document.getElementById('signup-status');
-		if (!status) return;
-		status.textContent = message;
-		status.className = `status ${tone}`;
-	};
-
-	document.addEventListener('submit', async (event) => {
-		const form = event.target as HTMLElement;
-		if (!(form instanceof HTMLFormElement) || form.id !== 'signup-form') return;
-
-		event.preventDefault();
-
-		const emailInput = document.getElementById('email') as HTMLInputElement | null;
-		const submitButton = form.querySelector('button[type="submit"]');
-		const email = emailInput?.value.trim();
-
-		if (!email) {
-			setStatus('Enter an email address first.', 'error');
-			return;
-		}
-
-		setStatus('Submitting your email...', 'loading');
-		if (submitButton) submitButton.setAttribute('disabled', 'true');
-
-		try {
-			const response = await fetch('/api/subscribe', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ email }),
-			});
-
-			if (!response.ok) {
-				const payload = await response.json().catch(() => null);
-				throw new Error(payload?.error || 'Unable to save your signup right now.');
-			}
-
-			form.reset();
-			setStatus('You are on the list. Thanks.', 'success');
-		} catch (error) {
-			setStatus(error instanceof Error ? error.message : 'Signup failed. Try again.', 'error');
-		} finally {
-			if (submitButton) submitButton.removeAttribute('disabled');
-		}
-	});
-</script>
-
-<style>
-	/* Dynamic status text: the script fully replaces this element's
-	   className (`status ${tone}`) on every submit, so the base look and
-	   its tone variants must stay as a stable CSS class rather than
-	   utilities that would be wiped out on the next state change. */
-	.status {
-		margin-top: 14px;
-		min-height: 1.2em;
-		font-size: 14px;
-		color: var(--muted);
-	}
-
-	.status.error {
-		color: #b4231f;
-	}
-
-	.status.success {
-		color: #1f7a3d;
-	}
-</style>
