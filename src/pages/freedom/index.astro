@@ -1,0 +1,371 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import {
+	requireUser,
+	budgetedFor,
+	freedomSnapshot,
+	HUF_PER_USD,
+	type FinanceCategory,
+	type FinanceBudget,
+	type FinanceLimits,
+	type FinanceTransaction,
+} from '../../lib/finance';
+import type { Project } from '../../lib/projects';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const currentMonth = new Date().toISOString().slice(0, 7);
+
+// One round trip, not five -- see the Promise.all rule in CLAUDE.md.
+const [{ data: categories }, { data: budgets }, { data: limits }, { data: transactions }, { data: projects }] =
+	await Promise.all([
+		supabase.from('finance_categories').select('*'),
+		supabase.from('finance_budgets').select('*').eq('month', `${currentMonth}-01`),
+		supabase.from('finance_limits').select('*').maybeSingle(),
+		supabase.from('finance_transactions').select('*'),
+		supabase.from('projects').select('*').order('mrr', { ascending: false }),
+	]);
+
+const typedCategories = (categories ?? []) as FinanceCategory[];
+const typedBudgets = (budgets ?? []) as FinanceBudget[];
+const typedTransactions = (transactions ?? []) as FinanceTransaction[];
+const typedProjects = (projects ?? []) as Project[];
+const typedLimits = limits as FinanceLimits | null;
+
+const budgetByCategoryId = new Map(typedBudgets.map((b) => [b.category_id, { amount: Number(b.amount) }]));
+const plannedFor = (type: string) =>
+	typedCategories.filter((c) => c.type === type).reduce((sum, c) => sum + budgetedFor(c, budgetByCategoryId), 0);
+
+// Savings uses the same definition as /finance: the starting balance plus
+// every saving-type transaction ever logged.
+const savings =
+	Number(typedLimits?.starting_savings_balance ?? 0) +
+	typedTransactions.filter((t) => t.type === 'saving').reduce((sum, t) => sum + Number(t.amount), 0);
+
+// Only projects you're actually running count toward MRR. A 'done' or
+// 'not_started' project charging money would be a data-entry mistake, and
+// counting it would quietly inflate the one number that matters.
+const activeProjects = typedProjects.filter((p) => p.status === 'active');
+const currentMrr = activeProjects.reduce((sum, p) => sum + Number(p.mrr ?? 0), 0);
+
+const snap = freedomSnapshot({
+	plannedExpense: plannedFor('expense'),
+	plannedIncome: plannedFor('income'),
+	targetMrr: typedLimits?.mrr_target != null ? Number(typedLimits.mrr_target) : null,
+	currentMrr,
+	savings,
+});
+
+// Logged expenses per month so far, as a reality check against the plan --
+// a large gap means the plan is aspirational, not that the app is wrong.
+const expenseMonths = new Set(
+	typedTransactions.filter((t) => t.type === 'expense').map((t) => t.occurred_on.slice(0, 7)),
+);
+const loggedExpenseTotal = typedTransactions
+	.filter((t) => t.type === 'expense')
+	.reduce((sum, t) => sum + Number(t.amount), 0);
+const loggedMonthlyBurn = expenseMonths.size ? loggedExpenseTotal / expenseMonths.size : null;
+
+const huf = (n: number) => Math.round(n).toLocaleString('hu-HU');
+const usd = (n: number) => `$${Math.round(n / HUF_PER_USD).toLocaleString('en-US')}`;
+const months = (n: number | null) => (n == null ? '—' : `${n.toFixed(1)} months`);
+
+// Ladder markers, positioned along the same axis as the progress bar so the
+// survive and replace lines read against the target rather than floating.
+const ladder = [
+	{ label: 'Survive', sub: 'covers planned expenses', value: snap.surviveMrr },
+	{ label: 'Replace', sub: 'matches planned income', value: snap.replaceMrr },
+	{ label: 'Target', sub: 'your quit number', value: snap.targetMrr },
+].sort((a, b) => a.value - b.value);
+
+const barMax = Math.max(snap.targetMrr, snap.replaceMrr, snap.surviveMrr, snap.currentMrr, 1);
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout user={auth.user}>
+	<section class="freedom max-w-[1080px]">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">The point</p>
+				<h1>Freedom.</h1>
+				<p class="lede">
+					What the projects earn, against what the life costs. Everything else in here is a means to
+					move this one bar.
+				</p>
+			</div>
+		</div>
+
+		{error && <p class="form-error">{error}</p>}
+
+		<div class="freedom-hero">
+			<div class="flex items-baseline justify-between gap-4 flex-wrap">
+				<div>
+					<span class="card-field-label">Current MRR</span>
+					<p class="freedom-big">{huf(snap.currentMrr)} <span class="freedom-unit">HUF</span></p>
+					<p class="freedom-sub">{usd(snap.currentMrr)} / month</p>
+				</div>
+				<div class="text-right">
+					<span class="card-field-label">Quit at</span>
+					<p
+						class="freedom-big cursor-text"
+						data-editable="text"
+						data-field="mrr_target"
+						data-id={typedLimits?.id ?? ''}
+						data-endpoint="/api/finance/limits"
+						data-value={String(snap.targetMrr)}
+					>
+						{huf(snap.targetMrr)}
+					</p>
+					<p class="freedom-sub">{usd(snap.targetMrr)} / month</p>
+				</div>
+			</div>
+
+			<div class="freedom-bar" role="img" aria-label={`${Math.round(snap.progress * 100)} percent of target`}>
+				<div class="freedom-bar-fill" style={`width: ${snap.progress * 100}%`}></div>
+				{ladder.map((step) => (
+					<span
+						class="freedom-marker"
+						style={`left: ${Math.min((step.value / barMax) * 100, 100)}%`}
+						title={`${step.label}: ${huf(step.value)} HUF`}
+					></span>
+				))}
+			</div>
+			<p class="freedom-progress-label">
+				{Math.round(snap.progress * 100)}% of the way there
+				{snap.currentMrr === 0 && ' — nothing is charging money yet'}
+			</p>
+		</div>
+
+		<div class="freedom-tiles">
+			<div class="freedom-tile">
+				<span class="card-field-label">Runway</span>
+				<p class="freedom-tile-value">{months(snap.runwayMonths)}</p>
+				<p class="freedom-sub">{huf(snap.savings)} HUF saved, zero income</p>
+			</div>
+			<div class="freedom-tile">
+				<span class="card-field-label">Leverage</span>
+				<p class="freedom-tile-value">
+					{snap.leverage == null ? '—' : `${snap.leverage.toFixed(1)}×`}
+				</p>
+				<p class="freedom-sub">
+					{snap.leverage == null
+						? 'No surplus planned this month'
+						: 'months of runway bought per month worked'}
+				</p>
+			</div>
+			<div class="freedom-tile">
+				<span class="card-field-label">Gap to close</span>
+				<p class="freedom-tile-value">{huf(Math.max(snap.targetMrr - snap.currentMrr, 0))}</p>
+				<p class="freedom-sub">{usd(Math.max(snap.targetMrr - snap.currentMrr, 0))} / month still missing</p>
+			</div>
+		</div>
+
+		<div class="freedom-section">
+			<h2>The ladder</h2>
+			<p class="freedom-note">
+				Three places you could stop. You picked the top one.
+			</p>
+			<div class="table-wrap">
+				<table class="data-table">
+					<thead>
+						<tr><th>Rung</th><th>HUF / month</th><th>USD</th><th>Covered by MRR?</th></tr>
+					</thead>
+					<tbody>
+						{ladder.map((step) => (
+							<tr>
+								<td class="px-4 py-2.5">
+									<strong>{step.label}</strong>
+									<span class="freedom-sub block">{step.sub}</span>
+								</td>
+								<td class="px-4 py-2.5 tabular-nums">{huf(step.value)}</td>
+								<td class="px-4 py-2.5 tabular-nums text-muted">{usd(step.value)}</td>
+								<td class="px-4 py-2.5">
+									{snap.currentMrr >= step.value && step.value > 0 ? (
+										<span class="pill pill-done">Yes</span>
+									) : (
+										<span class="pill pill-not_started">Not yet</span>
+									)}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+			{loggedMonthlyBurn != null && (
+				<p class="freedom-note mt-3">
+					Reality check: you've logged {huf(loggedMonthlyBurn)} HUF/month of actual spend across{' '}
+					{expenseMonths.size} month{expenseMonths.size === 1 ? '' : 's'}, against a plan of{' '}
+					{huf(snap.surviveMrr)}. {loggedMonthlyBurn < snap.surviveMrr * 0.8
+						? 'Either the plan is padded or the logging is incomplete.'
+						: 'Plan and reality agree.'}
+				</p>
+			)}
+		</div>
+
+		<div class="freedom-section">
+			<h2>Where the money comes from</h2>
+			<p class="freedom-note">
+				Only active projects count. Click a number to set it.
+			</p>
+			<div class="table-wrap">
+				<table class="data-table">
+					<thead>
+						<tr><th>Project</th><th>Status</th><th>MRR (HUF)</th><th>Share of target</th></tr>
+					</thead>
+					<tbody>
+						{typedProjects.length ? (
+							typedProjects.map((project) => (
+								<tr>
+									<td class="px-4 py-2.5">
+										<a class="card-title text-base" href={`/projects/${project.id}`}>{project.title}</a>
+									</td>
+									<td class="px-4 py-2.5">
+										<span class={`pill pill-${project.status}`}>{project.status.replace('_', ' ')}</span>
+									</td>
+									<td class="px-4 py-2.5">
+										<span
+											class="cursor-text tabular-nums"
+											data-editable="text"
+											data-field="mrr"
+											data-id={project.id}
+											data-endpoint="/api/projects"
+											data-value={String(Number(project.mrr ?? 0))}
+										>
+											{huf(Number(project.mrr ?? 0))}
+										</span>
+									</td>
+									<td class="px-4 py-2.5 tabular-nums text-muted">
+										{snap.targetMrr > 0 && project.status === 'active'
+											? `${Math.round((Number(project.mrr ?? 0) / snap.targetMrr) * 100)}%`
+											: '—'}
+									</td>
+								</tr>
+							))
+						) : (
+							<tr>
+								<td colspan="4" class="py-7 px-4">
+									No projects yet. <a href="/business-ideas">Pick one of the 80 ideas</a> and start it.
+								</td>
+							</tr>
+						)}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</section>
+</Layout>
+
+<style>
+	.freedom-hero {
+		margin-top: 32px;
+		padding: 28px;
+		border: 1px solid var(--line);
+		border-radius: 16px;
+		background: var(--paper);
+	}
+
+	.freedom-big {
+		margin: 6px 0 0;
+		font-family: var(--serif);
+		font-size: clamp(28px, 5vw, 44px);
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.freedom-unit {
+		font-size: 0.45em;
+		font-weight: 500;
+		color: var(--muted);
+		letter-spacing: 0;
+	}
+
+	.freedom-sub {
+		margin: 4px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* The bar is the whole page in one element: fill is progress, the
+	   markers are the survive/replace/target rungs on the same axis. */
+	.freedom-bar {
+		position: relative;
+		height: 14px;
+		margin-top: 24px;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		background: var(--canvas);
+		overflow: hidden;
+	}
+
+	.freedom-bar-fill {
+		height: 100%;
+		background: var(--ink);
+		border-radius: 999px;
+		transition: width 0.3s ease;
+		min-width: 0;
+	}
+
+	.freedom-marker {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 2px;
+		background: var(--muted);
+		opacity: 0.55;
+		transform: translateX(-1px);
+	}
+
+	.freedom-progress-label {
+		margin: 10px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.freedom-tiles {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 14px;
+		margin-top: 16px;
+	}
+
+	.freedom-tile {
+		padding: 18px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
+	}
+
+	.freedom-tile-value {
+		margin: 6px 0 0;
+		font-family: var(--serif);
+		font-size: 26px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.freedom-section {
+		margin-top: 44px;
+	}
+
+	.freedom-section h2 {
+		margin: 0 0 6px;
+		font-family: var(--serif);
+		font-size: 20px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.freedom-note {
+		margin: 0 0 16px;
+		font-size: 14px;
+		color: var(--muted);
+	}
+</style>

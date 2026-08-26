@@ -22,6 +22,10 @@ create table if not exists public.projects (
   funding_stage text check (funding_stage is null or funding_stage in (
     'idea', 'building', 'bootstrapped', 'funded', 'profitable', 'paused'
   )),
+  -- Monthly recurring revenue. Only 'active' projects are summed on the
+  -- freedom dashboard; counting a done/not_started project would quietly
+  -- inflate the one number the whole app exists to move.
+  mrr numeric(12,2) not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -261,6 +265,8 @@ create table if not exists public.finance_limits (
   daily_limit numeric(12, 2),
   weekly_limit numeric(12, 2),
   starting_savings_balance numeric(12, 2) not null default 0,
+  -- MRR at which the 9-5 gets handed back. Drives /freedom.
+  mrr_target numeric(12, 2),
   updated_at timestamptz not null default now()
 );
 

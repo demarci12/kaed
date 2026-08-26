@@ -7,6 +7,7 @@ export const POST = createFieldRoute({
 	touchUpdatedAt: true,
 	fields: {
 		title: { kind: 'text', required: true, label: 'Title' },
+		mrr: { kind: 'number', min: 0, message: 'MRR must be a number >= 0.' },
 		description: { kind: 'text' },
 		status: {
 			kind: 'enum',
