@@ -576,6 +576,56 @@ const memberOnly = user ? isMember(user) : false;
 				margin: 0;
 			}
 
+			.rank-badge {
+				flex-shrink: 0;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				min-width: 22px;
+				height: 22px;
+				padding: 0 6px;
+				border-radius: 999px;
+				background: var(--canvas);
+				border: 1px solid var(--line);
+				color: var(--muted);
+				font-size: 12px;
+				font-variant-numeric: tabular-nums;
+			}
+
+			.rank-controls {
+				display: inline-flex;
+				gap: 2px;
+			}
+
+			.rank-btn {
+				width: 22px;
+				height: 22px;
+				flex-shrink: 0;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				border-radius: 6px;
+				border: 1px solid var(--line);
+				background: transparent;
+				color: var(--muted);
+				font-size: 12px;
+				line-height: 1;
+				cursor: pointer;
+				transition:
+					border-color 0.15s ease,
+					color 0.15s ease;
+			}
+
+			.rank-btn:hover:not(:disabled) {
+				border-color: var(--ink);
+				color: var(--ink);
+			}
+
+			.rank-btn:disabled {
+				opacity: 0.35;
+				cursor: default;
+			}
+
 			/* ---- Chip: small inline status/link token in a card foot ---- */
 			.chip {
 				display: inline-block;
@@ -1166,7 +1216,7 @@ const memberOnly = user ? isMember(user) : false;
 									<details class="nav-group">
 										<summary>Delivery</summary>
 										<div class="nav-dropdown">
-											<a href="/pain-points">Pain points</a>
+											<a href="/pain-points">OPL: Open Point List</a>
 											<a href="/business-ideas">Business ideas</a>
 											<a href="/projects">Projects</a>
 											<a href="/activities">Activities</a>
@@ -1219,7 +1269,7 @@ const memberOnly = user ? isMember(user) : false;
 								) : (
 									<>
 										<p class="mobile-nav-heading">Delivery</p>
-										<a href="/pain-points" class="mobile-nav-link">Pain points</a>
+										<a href="/pain-points" class="mobile-nav-link">OPL: Open Point List</a>
 										<a href="/business-ideas" class="mobile-nav-link">Business ideas</a>
 										<a href="/projects" class="mobile-nav-link">Projects</a>
 										<a href="/activities" class="mobile-nav-link">Activities</a>

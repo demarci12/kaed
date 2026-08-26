@@ -8,6 +8,7 @@ export interface BusinessIdea {
 	target_market: string | null;
 	validation: string | null;
 	category: IdeaCategory | null;
+	rank: number;
 	created_at: string;
 	updated_at: string;
 }

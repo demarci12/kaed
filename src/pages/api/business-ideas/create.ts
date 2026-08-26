@@ -18,12 +18,21 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 		return redirect('/business-ideas?error=Title is required.');
 	}
 
+	const { data: maxRankRow } = await supabase
+		.from('business_ideas')
+		.select('rank')
+		.order('rank', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+	const nextRank = (maxRankRow?.rank ?? -1) + 1;
+
 	const { error } = await supabase.from('business_ideas').insert({
 		user_id: user.id,
 		title,
 		pain_point: painPoint || null,
 		target_market: targetMarket || null,
 		validation: validation || null,
+		rank: nextRank,
 	});
 
 	if (error) {

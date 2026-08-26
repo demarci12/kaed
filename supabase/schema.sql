@@ -177,6 +177,7 @@ create table if not exists public.business_ideas (
     'tech-app',
     'clone-niche', 'clone-geo', 'clone-pricing', 'clone-usecase', 'clone-oss'
   )),
+  rank integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -185,6 +186,18 @@ alter table public.business_ideas enable row level security;
 
 create policy "own business ideas" on public.business_ideas
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Public, safe-columns view of actively-ongoing projects, shown as cards on
+-- the public homepage. Runs with the view owner's privileges (not the
+-- querying anon role), so it bypasses the projects table's owner-only RLS
+-- policy by design -- only add columns here that are fine to be public.
+create or replace view public.public_active_projects as
+select id, title, tagline, description, website_url, industry, founded_year, funding_stage, created_at
+from public.projects
+where status = 'active'
+order by created_at desc;
+
+grant select on public.public_active_projects to anon, authenticated;
 
 -- Links a project back to the business idea it's executing on, so the
 -- brainstorm → idea → project pipeline is traceable, not just three
