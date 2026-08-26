@@ -21,13 +21,26 @@ const typedOngoingProjects = (ongoingProjects ?? []) as PublicActiveProject[];
 ---
 
 <Layout>
-	<section class="hero max-w-[720px]">
-		<p class="eyebrow m-0 mb-5 text-[13px] tracking-[0.16em] uppercase text-muted">KAED</p>
-		<h1 class="m-0 font-serif font-semibold text-[clamp(2.6rem,7vw,5rem)] leading-[1.02] tracking-[-0.03em]">Personal projects<br />of <em class="italic">Marton Deak</em>.</h1>
-		<p class="lede max-w-[54ch] mt-7 text-lg leading-relaxed text-muted">
-			Notes, builds, and challenges I'm working through. Occasional updates
-			land here first.
-		</p>
+	<section class="hero">
+		<div class="hero-inner">
+			<div class="hero-copy">
+				<p class="eyebrow m-0 mb-5 text-[13px] tracking-[0.16em] uppercase text-muted">KAED</p>
+				<h1 class="m-0 font-serif font-semibold text-[clamp(2.4rem,6vw,4.4rem)] leading-[1.03] tracking-[-0.03em]">Personal projects<br />of <em class="italic">Marton Deak</em>.</h1>
+				<p class="lede max-w-[54ch] mt-7 text-lg leading-relaxed text-muted">
+					Notes, builds, and challenges I'm working through. Occasional updates
+					land here first.
+				</p>
+			</div>
+			<img
+				class="hero-portrait"
+				src="/marton.jpg"
+				alt="Marton Deak"
+				width="640"
+				height="640"
+				loading="eager"
+				decoding="async"
+			/>
+		</div>
 	</section>
 
 	{typedOngoingProjects.length > 0 && (
@@ -60,3 +73,30 @@ const typedOngoingProjects = (ongoingProjects ?? []) as PublicActiveProject[];
 
 
 </Layout>
+
+<style>
+	/* Portrait sits beside the headline on desktop and above it on mobile.
+	   wrap-reverse puts the image first once wrapped, so a phone shows the
+	   face before the copy rather than after it. */
+	.hero-inner {
+		display: flex;
+		align-items: center;
+		gap: clamp(24px, 5vw, 56px);
+		flex-wrap: wrap-reverse;
+	}
+
+	.hero-copy {
+		flex: 1 1 380px;
+		min-width: 0;
+	}
+
+	.hero-portrait {
+		flex: 0 0 auto;
+		width: clamp(150px, 26vw, 260px);
+		height: auto;
+		aspect-ratio: 1;
+		object-fit: cover;
+		border-radius: 50%;
+		border: 1px solid var(--line);
+	}
+</style>
