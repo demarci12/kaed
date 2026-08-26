@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { selectOptionsFromLabels } from '../../lib/select-options';
 import { requireUser, KNOWLEDGE_KIND_LABELS, type KnowledgeCard } from '../../lib/knowledge';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -15,10 +16,7 @@ const { data: cards } = await supabase
 
 const typedCards = (cards ?? []) as KnowledgeCard[];
 
-const kindOptions = [
-	':No kind',
-	...Object.entries(KNOWLEDGE_KIND_LABELS).map(([value, label]) => `${value}:${label}`),
-].join(',');
+const kindOptions = selectOptionsFromLabels(KNOWLEDGE_KIND_LABELS, ['', 'No kind']);
 
 const error = Astro.url.searchParams.get('error');
 ---

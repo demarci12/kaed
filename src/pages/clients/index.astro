@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { selectOptions } from '../../lib/select-options';
 import { requireOwner } from '../../lib/auth';
 import type { Client, ClientStage } from '../../lib/clients';
 
@@ -96,7 +97,7 @@ const error = Astro.url.searchParams.get('error');
 									data-id={client.id}
 									data-endpoint="/api/clients"
 									data-value={client.stage}
-									data-options="lead:Lead,contacted:Contacted,negotiating:Negotiating,won:Won,lost:Lost"
+									data-options={selectOptions([["lead","Lead"],["contacted","Contacted"],["negotiating","Negotiating"],["won","Won"],["lost","Lost"]])}
 								>
 									<span class={`pill pill-${client.stage}`}>{stageLabel[client.stage]}</span>
 								</td>

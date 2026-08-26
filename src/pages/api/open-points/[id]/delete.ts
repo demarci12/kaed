@@ -8,11 +8,11 @@ export const POST: APIRoute = async ({ request, cookies, redirect, params }) => 
 	}
 	const { supabase } = auth;
 
-	const { error } = await supabase.from('ideas').delete().eq('id', params.id);
+	const { error } = await supabase.from('open_points').delete().eq('id', params.id);
 
 	if (error) {
-		return redirect(`/pain-points?error=${encodeURIComponent(error.message)}`);
+		return redirect(`/opl?error=${encodeURIComponent(error.message)}`);
 	}
 
-	return redirect('/pain-points');
+	return redirect('/opl');
 };

@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { selectOptions } from '../../lib/select-options';
 import { requireUser, type Project } from '../../lib/projects';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -99,7 +100,7 @@ const error = Astro.url.searchParams.get('error');
 								data-id={project.id}
 								data-endpoint="/api/projects"
 								data-value={project.status}
-								data-options="not_started:Not started,active:Active,done:Done"
+								data-options={selectOptions([["not_started","Not started"],["active","Active"],["done","Done"]])}
 							>
 								<span class={`pill pill-${project.status}`}>{statusLabel[project.status]}</span>
 							</span>

@@ -3,12 +3,10 @@ import Layout from '../../layouts/Layout.astro';
 import { requireOwner } from '../../lib/auth';
 import { HEADLINE_SIGNAL_TYPES } from '../../lib/projects';
 import type { BusinessIdea } from '../../lib/business-ideas';
-import { IDEA_CATEGORY_PILL_LABELS } from '../../lib/ideas';
+import { IDEA_CATEGORY_PILL_LABELS } from '../../lib/idea-categories';
+import { selectOptionsFromLabels } from '../../lib/select-options';
 
-const categoryOptions = [
-	':Pick category',
-	...Object.entries(IDEA_CATEGORY_PILL_LABELS).map(([value, label]) => `${value}:${label}`),
-].join(',');
+const categoryOptions = selectOptionsFromLabels(IDEA_CATEGORY_PILL_LABELS, ['', 'Pick category']);
 
 const auth = await requireOwner(Astro.request, Astro.cookies);
 if ('redirect' in auth) {

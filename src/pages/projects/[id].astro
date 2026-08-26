@@ -1,7 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { selectOptionsFromLabels } from '../../lib/select-options';
 import { HEADLINE_SIGNAL_TYPES, FUNDING_STAGE_LABELS, type Project, type ProjectLog, type SignalType } from '../../lib/projects';
-import { requireUser, type Challenge } from '../../lib/challenges';
+import { requireUser } from '../../lib/projects';
+import { OPEN_POINT_STATUS_LABELS, type OpenPoint } from '../../lib/open-points';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -21,21 +23,14 @@ if (!project) {
 	return Astro.redirect('/projects');
 }
 
-const { data: logs } = await supabase
-	.from('project_logs')
-	.select('*')
-	.eq('project_id', id)
-	.order('created_at', { ascending: false });
-
-const { data: challenges } = await supabase
-	.from('challenges')
-	.select('*')
-	.eq('project_id', id)
-	.order('created_at', { ascending: true });
+const [{ data: logs }, { data: openPoints }] = await Promise.all([
+	supabase.from('project_logs').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+	supabase.from('open_points').select('*').eq('project_id', id).order('created_at', { ascending: true }),
+]);
 
 const typed = project as Project;
 const typedLogs = (logs ?? []) as ProjectLog[];
-const typedChallenges = (challenges ?? []) as Challenge[];
+const typedOpenPoints = (openPoints ?? []) as OpenPoint[];
 
 let originIdea: { id: string; title: string } | null = null;
 if (typed.business_idea_id) {
@@ -47,7 +42,7 @@ if (typed.business_idea_id) {
 	originIdea = data;
 }
 
-const doneCount = typedChallenges.filter((c) => c.is_done).length;
+const doneCount = typedOpenPoints.filter((point) => point.status === 'closed').length;
 
 const signalCounts = typedLogs.reduce(
 	(acc, log) => {
@@ -84,10 +79,7 @@ const proofPillClass: Record<string, string> = {
 	rejected: 'bg-negative-bg text-negative',
 };
 
-const fundingStageOptions = [
-	':Pick stage',
-	...Object.entries(FUNDING_STAGE_LABELS).map(([value, label]) => `${value}:${label}`),
-].join(',');
+const fundingStageOptions = selectOptionsFromLabels(FUNDING_STAGE_LABELS, ['', 'Pick stage']);
 
 const timelineDotClass: Record<string, string> = {
 	pending: 'bg-warn',
@@ -244,18 +236,18 @@ const error = Astro.url.searchParams.get('error');
 
 		<div class="section mt-14">
 			<div class="section-head flex justify-between gap-3 flex-wrap items-start md:items-center">
-				<h2 class="m-0 mb-5 font-serif text-[22px] font-semibold">Challenges</h2>
+				<h2 class="m-0 mb-5 font-serif text-[22px] font-semibold">Open points</h2>
 				<div class="section-head-actions flex items-center gap-3">
-					{typedChallenges.length > 0 && (
-						<span class="progress-count text-[13px] text-muted tabular-nums">{doneCount}/{typedChallenges.length}</span>
+					{typedOpenPoints.length > 0 && (
+						<span class="progress-count text-[13px] text-muted tabular-nums">{doneCount}/{typedOpenPoints.length} closed</span>
 					)}
-					<button type="button" class="btn ghost small" data-open-popup="new-challenge">+ Add challenge</button>
+					<a class="btn ghost small" href="/opl">Open the OPL →</a>
 				</div>
 			</div>
 
-			{typedChallenges.length > 0 && (
+			{typedOpenPoints.length > 0 && (
 				<div class="progress-bar h-1.5 bg-canvas border border-line rounded-full overflow-hidden mb-5">
-					<div class="progress-bar-fill" style={`width: ${(doneCount / typedChallenges.length) * 100}%`} />
+					<div class="progress-bar-fill" style={`width: ${(doneCount / typedOpenPoints.length) * 100}%`} />
 				</div>
 			)}
 
@@ -263,34 +255,31 @@ const error = Astro.url.searchParams.get('error');
 				<table class="data-table">
 					<thead>
 						<tr>
-							<th>Done</th>
-							<th>Challenge</th>
+							<th>Status</th>
+							<th>Item</th>
+							<th>Contributors</th>
 							<th>Added</th>
 						</tr>
 					</thead>
 					<tbody>
-						{typedChallenges.length ? (
-							typedChallenges.map((challenge) => (
+						{typedOpenPoints.length ? (
+							typedOpenPoints.map((point) => (
 								<tr>
 									<td class="px-4 py-2.5">
-										<form method="post" action={`/api/projects/${typed.id}/challenges/${challenge.id}/toggle`} class="challenge-form m-0">
-											<input type="hidden" name="is_done" value={String(challenge.is_done)} />
-											<button
-												type="submit"
-												class={`challenge-check w-6 h-6 shrink-0 flex items-center justify-center rounded-full border text-white text-[13px] cursor-pointer transition-colors duration-150 ${challenge.is_done ? 'bg-ink border-ink' : 'bg-paper border-line'}`}
-												aria-label="Toggle done"
-											>
-												{challenge.is_done && '✓'}
-											</button>
-										</form>
+										<span class={`pill pill-${point.status}`}>{OPEN_POINT_STATUS_LABELS[point.status]}</span>
 									</td>
-									<td class={`px-4 py-2.5 ${challenge.is_done ? 'text-muted line-through' : ''}`}>{challenge.title}</td>
-									<td class="cell-date px-4 py-2.5">{new Date(challenge.created_at).toLocaleDateString()}</td>
+									<td class={`px-4 py-2.5 ${point.status === 'closed' ? 'text-muted line-through' : ''}`}>
+										{point.title || 'Untitled'}
+									</td>
+									<td class="px-4 py-2.5 text-muted">{point.contributors || '—'}</td>
+									<td class="cell-date px-4 py-2.5">{new Date(point.created_at).toLocaleDateString()}</td>
 								</tr>
 							))
 						) : (
 							<tr>
-								<td colspan="3" class="py-7 px-4">No challenges yet.</td>
+								<td colspan="4" class="py-7 px-4">
+									No open points linked to this project yet. Add one on the <a href="/opl">OPL</a> and link it here.
+								</td>
 							</tr>
 						)}
 					</tbody>
@@ -344,19 +333,6 @@ const error = Astro.url.searchParams.get('error');
 			</div>
 		</div>
 	</section>
-
-	<dialog id="new-challenge" class="popup">
-		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
-		<h2>Add challenge</h2>
-		<form method="post" action={`/api/projects/${typed.id}/challenges`}>
-			<label for="challenge-title">Title</label>
-			<input id="challenge-title" name="title" type="text" placeholder="e.g. Ship the first draft" required maxlength="200" />
-			<div class="popup-actions">
-				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
-				<button type="submit" class="btn">Add</button>
-			</div>
-		</form>
-	</dialog>
 
 	<dialog id="new-log" class="popup">
 		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>

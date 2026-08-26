@@ -1,10 +1,9 @@
 -- Run this once in the Supabase SQL editor for the KAED project.
 --
--- Naming: "projects" are things you've committed to executing (formerly
--- called "challenges"). "challenges" are the actionable sub-goals inside a
--- project (formerly "challenge_todos") — the concrete next steps that keep
--- you from stalling once you've started. This file reflects that renamed
--- state; see git history for the migration that got existing databases here.
+-- Naming: "projects" are things you've committed to executing. The
+-- actionable steps inside a project are open_points linked to it -- the
+-- separate "challenges" table that used to hold them was folded into the
+-- Open Point List, so there is one work-item table rather than two.
 
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
@@ -71,69 +70,48 @@ create policy "own proof uploads" on storage.objects
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- Challenges: the actionable sub-goals needed to reach a project's goal.
-create table if not exists public.challenges (
+-- Personal goal register: a simple, ordered list of goals the user is
+-- working toward. Drag-and-drop reorderable via rank, like business_ideas.
+create table if not exists public.goals (
   id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
-  is_done boolean not null default false,
-  created_at timestamptz not null default now()
+  description text,
+  rank integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists challenges_project_id_idx on public.challenges (project_id);
+alter table public.goals enable row level security;
 
-alter table public.challenges enable row level security;
-
-create policy "own challenges" on public.challenges
+create policy "own goals" on public.goals
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Brainstorming space: a freeform whiteboard of ideas. Cards are positioned
--- freely (position_x/position_y) and can be connected to each other
--- (idea_connections) or promoted into the structured business idea register.
-create table if not exists public.ideas (
+-- Open Point List: the single work-item table. A PMP-style tracker -- what
+-- needs doing, who is on it, where it stands -- optionally linked to exactly
+-- one parent (a goal or a project, never both).
+create table if not exists public.open_points (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   body text,
-  position_x integer not null default (floor(random() * 300 + 40))::int,
-  position_y integer not null default (floor(random() * 300 + 40))::int,
-  -- Idea-generation taxonomy (pain/technology/clone tree): which leaf bucket
-  -- this pain point falls into. Drives the colored category pill on
-  -- /pain-points; null until the user picks one.
-  category text check (category is null or category in (
-    'work-mine', 'work-others',
-    'life-mine', 'life-known', 'life-strangers',
-    'tech-app',
-    'clone-niche', 'clone-geo', 'clone-pricing', 'clone-usecase', 'clone-oss'
-  )),
-  -- /pain-points ("OPL: Open Point List") is now a PMP-style open-items
-  -- tracker rather than a pure idea-capture list: status is the open/in
-  -- progress/closed lifecycle and contributors is a freeform text field for
-  -- who owns/is working the item.
   status text not null default 'open' check (status in ('open', 'in_progress', 'closed')),
+  -- Freeform, not an FK: contributors are often people with no account here.
   contributors text,
-  created_at timestamptz not null default now()
-);
-
-alter table public.ideas enable row level security;
-
-create policy "own ideas" on public.ideas
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-create table if not exists public.idea_connections (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  from_idea_id uuid not null references public.ideas(id) on delete cascade,
-  to_idea_id uuid not null references public.ideas(id) on delete cascade,
+  -- SET NULL, not CASCADE: deleting a project must not silently delete the
+  -- open points written about it -- they fall back to the unparented list.
+  goal_id uuid references public.goals(id) on delete set null,
+  project_id uuid references public.projects(id) on delete set null,
   created_at timestamptz not null default now(),
-  check (from_idea_id <> to_idea_id),
-  unique (from_idea_id, to_idea_id)
+  constraint open_points_single_parent check (goal_id is null or project_id is null)
 );
 
-alter table public.idea_connections enable row level security;
+create index if not exists open_points_goal_id_idx on public.open_points (goal_id);
+create index if not exists open_points_project_id_idx on public.open_points (project_id);
 
-create policy "own idea connections" on public.idea_connections
+alter table public.open_points enable row level security;
+
+create policy "own open points" on public.open_points
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Mini CRM: prospective clients and per-client notes.
@@ -217,14 +195,6 @@ create index if not exists projects_business_idea_id_idx on public.projects (bus
 -- the UI already assumes ("Start working on this" hides once a link exists).
 create unique index if not exists projects_business_idea_id_unique_idx
   on public.projects (business_idea_id)
-  where business_idea_id is not null;
-
--- Links a brainstorm card to the business idea it was promoted into.
-alter table public.ideas
-  add column if not exists business_idea_id uuid references public.business_ideas(id) on delete set null;
-
-create unique index if not exists ideas_business_idea_id_unique_idx
-  on public.ideas (business_idea_id)
   where business_idea_id is not null;
 
 -- Household finance tracker. Shared data: unlike every other table in this
@@ -318,22 +288,6 @@ alter table public.knowledge_cards enable row level security;
 create policy "own knowledge cards" on public.knowledge_cards
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Personal goal register: a simple, ordered list of goals the user is
--- working toward. Drag-and-drop reorderable via rank, like business_ideas.
-create table if not exists public.goals (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  title text not null,
-  description text,
-  rank integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-alter table public.goals enable row level security;
-
-create policy "own goals" on public.goals
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- System design: use cases, actors, system goals, and requirements for a
 -- project, organized the standard requirements-engineering way (actors

@@ -1,6 +1,6 @@
 import { requireOwner } from '../../../../lib/auth';
 import { createFieldRoute } from '../../../../lib/field-route';
-import { IDEA_CATEGORIES } from '../../../../lib/ideas';
+import { IDEA_CATEGORIES } from '../../../../lib/idea-categories';
 
 export const POST = createFieldRoute({
 	table: 'business_ideas',

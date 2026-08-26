@@ -12,9 +12,7 @@ const MCP_AUTH_TOKEN = import.meta.env.MCP_AUTH_TOKEN;
 const TABLES = [
 	'projects',
 	'project_logs',
-	'challenges',
-	'ideas',
-	'idea_connections',
+	'open_points',
 	'clients',
 	'client_notes',
 	'business_ideas',

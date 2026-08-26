@@ -1037,7 +1037,7 @@ const memberOnly = user ? isMember(user) : false;
 				color: #b4231f;
 			}
 
-			/* Idea-generation taxonomy (see /pain-points): best = a pain you
+			/* Idea-generation taxonomy (see /opl): best = a pain you
 			   have yourself at work, then clone plays, then secondhand pain,
 			   then tech looking for a problem. */
 			.pill-empty {
@@ -1170,7 +1170,7 @@ const memberOnly = user ? isMember(user) : false;
 				color: var(--muted);
 			}
 
-			/* OPL status (see /pain-points). */
+			/* OPL status (see /opl). */
 			.pill-open {
 				background: #fbf0ef;
 				color: #b4231f;
@@ -1301,14 +1301,13 @@ const memberOnly = user ? isMember(user) : false;
 								<a href="/finance" class="who-link">Finance</a>
 							) : (
 								<>
-									<a href="/pain-points" class="who-link">OPL</a>
+									<a href="/opl" class="who-link">OPL</a>
 									<details class="nav-group">
 										<summary>Delivery</summary>
 										<div class="nav-dropdown">
 											<a href="/business-ideas">Business ideas</a>
 											<a href="/projects">Projects</a>
 											<a href="/system-design">System design</a>
-											<a href="/activities">Activities</a>
 										</div>
 									</details>
 									<details class="nav-group">
@@ -1358,12 +1357,11 @@ const memberOnly = user ? isMember(user) : false;
 									<a href="/finance" class="mobile-nav-link">Finance</a>
 								) : (
 									<>
-										<a href="/pain-points" class="mobile-nav-link">OPL</a>
+										<a href="/opl" class="mobile-nav-link">OPL</a>
 										<p class="mobile-nav-heading">Delivery</p>
 										<a href="/business-ideas" class="mobile-nav-link">Business ideas</a>
 										<a href="/projects" class="mobile-nav-link">Projects</a>
 										<a href="/system-design" class="mobile-nav-link">System design</a>
-										<a href="/activities" class="mobile-nav-link">Activities</a>
 										<p class="mobile-nav-heading">Personal</p>
 										<a href="/goals" class="mobile-nav-link">Goals</a>
 										<a href="/specific-knowledge" class="mobile-nav-link">Specific knowledge</a>
@@ -1448,10 +1446,17 @@ const memberOnly = user ? isMember(user) : false;
 
 				if (type === 'select') {
 					const select = document.createElement('select');
-					const options = (cell.dataset.options ?? '')
-						.split(',')
-						.filter(Boolean)
-						.map((pair) => pair.split(':'));
+					// JSON, not "value:label,value:label" -- labels are user text
+					// and legitimately contain both commas and colons, which the
+					// old delimiter format silently truncated (a project titled
+					// "OPL: Open Point List" rendered as the option "OPL").
+					// Built by selectOptions() in lib/select-options.ts.
+					let options: [string, string][] = [];
+					try {
+						options = JSON.parse(cell.dataset.options || '[]');
+					} catch {
+						options = [];
+					}
 					for (const [value, label] of options) {
 						const opt = document.createElement('option');
 						opt.value = value;

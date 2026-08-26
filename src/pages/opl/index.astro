@@ -1,0 +1,174 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { selectOptions, selectOptionsFromLabels } from '../../lib/select-options';
+import { requireUser, OPEN_POINT_STATUS_LABELS, type OpenPoint } from '../../lib/open-points';
+import type { Goal } from '../../lib/goals';
+import type { Project } from '../../lib/projects';
+
+const auth = await requireUser(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+// One round trip, not three -- see the Promise.all rule in CLAUDE.md.
+const [{ data: points }, { data: goals }, { data: projects }] = await Promise.all([
+	supabase.from('open_points').select('*').order('created_at', { ascending: false }),
+	supabase.from('goals').select('id, title').order('rank', { ascending: true }),
+	supabase.from('projects').select('id, title').order('title', { ascending: true }),
+]);
+
+const typedPoints = (points ?? []) as OpenPoint[];
+const typedGoals = (goals ?? []) as Pick<Goal, 'id' | 'title'>[];
+const typedProjects = (projects ?? []) as Pick<Project, 'id' | 'title'>[];
+
+const goalById = new Map(typedGoals.map((g) => [g.id, g]));
+const projectById = new Map(typedProjects.map((p) => [p.id, p]));
+
+const statusOptions = selectOptionsFromLabels(OPEN_POINT_STATUS_LABELS);
+
+/**
+ * One dropdown covers both parent kinds. Values are prefixed so a single
+ * select can express "goal G", "project P", or "unlinked" -- the endpoint
+ * splits the prefix back out and enforces the single-parent rule.
+ */
+const linkOptions = selectOptions([
+	['', 'No link'],
+	...typedGoals.map((g) => [`g_${g.id}`, `Goal · ${g.title}`] as [string, string]),
+	...typedProjects.map((p) => [`p_${p.id}`, `Project · ${p.title}`] as [string, string]),
+]);
+
+function linkValue(point: OpenPoint) {
+	if (point.goal_id) return `g_${point.goal_id}`;
+	if (point.project_id) return `p_${point.project_id}`;
+	return '';
+}
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Layout user={auth.user}>
+	<section class="opl max-w-[1080px]">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Delivery</p>
+				<h1>OPL: Open Point List.</h1>
+				<p class="lede">
+					Every open item in one place: what needs doing, who's on it, where it stands, and which goal
+					or project it belongs to. Click any field to edit it.
+				</p>
+			</div>
+			<form method="post" action="/api/open-points/create-inline" class="m-0 shrink-0 w-full md:w-auto">
+				<button type="submit" class="btn w-full md:w-auto justify-center">+ New item</button>
+			</form>
+		</div>
+
+		{error && <p class="form-error">{error}</p>}
+
+		<div class="card-grid">
+			{typedPoints.length ? (
+				typedPoints.map((point) => {
+					const goal = point.goal_id ? goalById.get(point.goal_id) : undefined;
+					const project = point.project_id ? projectById.get(point.project_id) : undefined;
+					return (
+						<article class="card">
+							<div class="card-head">
+								<div
+									class="card-title cursor-text"
+									data-editable="text"
+									data-field="title"
+									data-id={point.id}
+									data-endpoint="/api/open-points"
+									data-value={point.title}
+								>
+									{point.title || 'Untitled'}
+								</div>
+								<form class="shrink-0" method="post" action={`/api/open-points/${point.id}/delete`}>
+									<button type="submit" class="card-delete" aria-label="Delete item">×</button>
+								</form>
+							</div>
+
+							<div class="flex gap-2 flex-wrap items-center">
+								<div
+									class="inline-block cursor-pointer"
+									data-editable="select"
+									data-field="status"
+									data-id={point.id}
+									data-endpoint="/api/open-points"
+									data-value={point.status}
+									data-options={statusOptions}
+								>
+									<span class={`pill pill-${point.status}`}>{OPEN_POINT_STATUS_LABELS[point.status]}</span>
+								</div>
+
+								<div
+									class="inline-block cursor-pointer"
+									data-editable="select"
+									data-field="link"
+									data-id={point.id}
+									data-endpoint="/api/open-points"
+									data-value={linkValue(point)}
+									data-options={linkOptions}
+								>
+									{goal ? (
+										<span class="chip">Goal · {goal.title}</span>
+									) : project ? (
+										<span class="chip">Project · {project.title}</span>
+									) : (
+										<span class="chip chip-muted">No link</span>
+									)}
+								</div>
+							</div>
+
+							<div class="card-field">
+								<span class="card-field-label">Description</span>
+								<p
+									class="card-field-value opl-text"
+									data-editable="textarea"
+									data-field="body"
+									data-id={point.id}
+									data-endpoint="/api/open-points"
+									data-value={point.body ?? ''}
+								>
+									{point.body || 'Write something…'}
+								</p>
+							</div>
+
+							<div class="card-field">
+								<span class="card-field-label">Contributors</span>
+								<p
+									class="card-field-value"
+									data-editable="text"
+									data-field="contributors"
+									data-id={point.id}
+									data-endpoint="/api/open-points"
+									data-value={point.contributors ?? ''}
+								>
+									{point.contributors || 'Unassigned.'}
+								</p>
+							</div>
+
+							<div class="card-foot justify-end">
+								<span class="card-date">{new Date(point.created_at).toLocaleDateString()}</span>
+							</div>
+						</article>
+					);
+				})
+			) : (
+				<p class="empty">Nothing here yet. Click "+ New item" to log your first open point.</p>
+			)}
+		</div>
+	</section>
+</Layout>
+
+<style>
+	.opl-text {
+		line-height: 1.6;
+		white-space: pre-wrap;
+	}
+
+	.opl-text .cell-input {
+		min-height: 100px;
+		resize: vertical;
+	}
+</style>

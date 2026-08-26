@@ -11,6 +11,7 @@ import {
 	type SystemRequirement,
 } from '../../lib/system-design';
 import type { Project } from '../../lib/projects';
+import { selectOptions, selectOptionsFromLabels } from '../../lib/select-options';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -48,23 +49,17 @@ const typedRequirements = (requirements ?? []) as SystemRequirement[];
 const actorById = new Map(typedActors.map((actor) => [actor.id, actor]));
 const useCaseById = new Map(typedUseCases.map((useCase) => [useCase.id, useCase]));
 
-const actorKindOptions = Object.entries(ACTOR_KIND_LABELS)
-	.map(([value, label]) => `${value}:${label}`)
-	.join(',');
-const requirementKindOptions = Object.entries(REQUIREMENT_KIND_LABELS)
-	.map(([value, label]) => `${value}:${label}`)
-	.join(',');
-const requirementPriorityOptions = Object.entries(REQUIREMENT_PRIORITY_LABELS)
-	.map(([value, label]) => `${value}:${label}`)
-	.join(',');
-const actorSelectOptions = [
-	':No actor',
-	...typedActors.map((actor) => `${actor.id}:${actor.name}`),
-].join(',');
-const useCaseSelectOptions = [
-	':No use case',
-	...typedUseCases.map((useCase) => `${useCase.id}:${useCase.title}`),
-].join(',');
+const actorKindOptions = selectOptionsFromLabels(ACTOR_KIND_LABELS);
+const requirementKindOptions = selectOptionsFromLabels(REQUIREMENT_KIND_LABELS);
+const requirementPriorityOptions = selectOptionsFromLabels(REQUIREMENT_PRIORITY_LABELS);
+const actorSelectOptions = selectOptions([
+	['', 'No actor'],
+	...typedActors.map((actor) => [actor.id, actor.name] as [string, string]),
+]);
+const useCaseSelectOptions = selectOptions([
+	['', 'No use case'],
+	...typedUseCases.map((useCase) => [useCase.id, useCase.title] as [string, string]),
+]);
 
 const error = Astro.url.searchParams.get('error');
 ---
