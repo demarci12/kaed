@@ -74,25 +74,33 @@ const error = Astro.url.searchParams.get('error');
 
 		{error && <p class="form-error">{error}</p>}
 
-		<div class="card-grid">
+		<div class="card-grid" id="idea-grid">
 			{typedIdeas.length ? (
 				typedIdeas.map((idea, index) => {
 					const linkedProject = linkedProjectByIdeaId.get(idea.id);
 					const signalCount = signalCountByIdeaId.get(idea.id) ?? 0;
 					return (
-						<article class="card">
+						<article class="card" id={`idea-${idea.id}`} data-idea-card data-id={idea.id}>
 							<div class="card-head">
-								<span class="rank-badge" title="Position">{index + 1}</span>
+								<span class="rank-badge" data-rank-badge title="Position">{index + 1}</span>
 								<a class="card-title" href={`/business-ideas/${idea.id}`}>{idea.title}</a>
 								<div class="rank-controls shrink-0">
-									<form method="post" action={`/api/business-ideas/${idea.id}/move`}>
-										<input type="hidden" name="direction" value="up" />
-										<button type="submit" class="rank-btn" aria-label="Move up" disabled={index === 0}>↑</button>
-									</form>
-									<form method="post" action={`/api/business-ideas/${idea.id}/move`}>
-										<input type="hidden" name="direction" value="down" />
-										<button type="submit" class="rank-btn" aria-label="Move down" disabled={index === typedIdeas.length - 1}>↓</button>
-									</form>
+									<button
+										type="button"
+										class="rank-btn"
+										data-move="up"
+										data-id={idea.id}
+										aria-label="Move up"
+										disabled={index === 0}
+									>↑</button>
+									<button
+										type="button"
+										class="rank-btn"
+										data-move="down"
+										data-id={idea.id}
+										aria-label="Move down"
+										disabled={index === typedIdeas.length - 1}
+									>↓</button>
 								</div>
 								<form class="shrink-0" method="post" action={`/api/business-ideas/${idea.id}/delete`}>
 									<button type="submit" class="card-delete" aria-label="Delete business idea">×</button>
@@ -199,3 +207,64 @@ const error = Astro.url.searchParams.get('error');
 		</form>
 	</dialog>
 </Layout>
+
+<script>
+	// Delegated from `document` (survives ClientRouter soft navigations, per
+	// Layout.astro's established pattern) instead of binding to the buttons
+	// directly, which would go stale after a soft nav away and back.
+	document.addEventListener('click', async (event) => {
+		const target = event.target as HTMLElement;
+		const button = target.closest<HTMLButtonElement>('[data-move]');
+		if (!button || button.disabled) return;
+
+		const direction = button.dataset.move;
+		const id = button.dataset.id;
+		if ((direction !== 'up' && direction !== 'down') || !id) return;
+
+		const card = document.getElementById(`idea-${id}`);
+		if (!card) return;
+
+		const sibling = direction === 'up' ? card.previousElementSibling : card.nextElementSibling;
+		if (!sibling || !(sibling instanceof HTMLElement) || !sibling.hasAttribute('data-idea-card')) return;
+
+		button.disabled = true;
+
+		try {
+			const response = await fetch(`/api/business-ideas/${id}/move`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ direction }),
+			});
+			const payload = await response.json().catch(() => null);
+			if (!response.ok || !payload?.ok) {
+				throw new Error(payload?.error || 'Could not reorder.');
+			}
+			if (!payload.moved) return;
+
+			if (direction === 'up') {
+				card.parentElement?.insertBefore(card, sibling);
+			} else {
+				card.parentElement?.insertBefore(sibling, card);
+			}
+
+			renumberIdeaCards();
+		} catch (error) {
+			console.error(error);
+		} finally {
+			button.disabled = false;
+		}
+	});
+
+	function renumberIdeaCards() {
+		const cards = document.querySelectorAll<HTMLElement>('#idea-grid [data-idea-card]');
+		cards.forEach((card, index) => {
+			const badge = card.querySelector('[data-rank-badge]');
+			if (badge) badge.textContent = String(index + 1);
+
+			const upBtn = card.querySelector<HTMLButtonElement>('[data-move="up"]');
+			const downBtn = card.querySelector<HTMLButtonElement>('[data-move="down"]');
+			if (upBtn) upBtn.disabled = index === 0;
+			if (downBtn) downBtn.disabled = index === cards.length - 1;
+		});
+	}
+</script>
