@@ -1170,6 +1170,22 @@ const memberOnly = user ? isMember(user) : false;
 				color: var(--muted);
 			}
 
+			/* OPL status (see /pain-points). */
+			.pill-open {
+				background: #fbf0ef;
+				color: #b4231f;
+			}
+
+			.pill-in_progress {
+				background: #fff7e6;
+				color: #92620a;
+			}
+
+			.pill-closed {
+				background: #eafaf0;
+				color: #1f7a3d;
+			}
+
 			/* Inline editable table cells. Locked by default; click unlocks into an
 			   input, blur/Enter saves and locks it back in. */
 			[data-editable] {

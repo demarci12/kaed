@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { requireOwner } from '../../../../lib/auth';
 
-const EDITABLE_FIELDS = new Set(['title', 'body']);
+const EDITABLE_FIELDS = new Set(['title', 'body', 'status', 'contributors']);
+const STATUSES = new Set(['open', 'in_progress', 'closed']);
 
 export const POST: APIRoute = async ({ request, cookies, params }) => {
 	const auth = await requireOwner(request, cookies);
@@ -20,8 +21,11 @@ export const POST: APIRoute = async ({ request, cookies, params }) => {
 	if (field === 'title' && !value) {
 		return new Response(JSON.stringify({ error: 'Title cannot be empty.' }), { status: 400 });
 	}
+	if (field === 'status' && !STATUSES.has(value)) {
+		return new Response(JSON.stringify({ error: 'Invalid status.' }), { status: 400 });
+	}
 	const update: Record<string, string | null> = {};
-	update[field] = value || null;
+	update[field] = field === 'status' ? value : value || null;
 
 	const { error } = await supabase.from('ideas').update(update).eq('id', params.id);
 

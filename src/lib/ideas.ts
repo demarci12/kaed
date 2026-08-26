@@ -45,12 +45,22 @@ export const IDEA_CATEGORY_PILL_LABELS: Record<IdeaCategory, string> = {
 
 export const IDEA_CATEGORIES = Object.keys(IDEA_CATEGORY_PILL_LABELS) as IdeaCategory[];
 
+export type OplStatus = 'open' | 'in_progress' | 'closed';
+
+export const OPL_STATUS_LABELS: Record<OplStatus, string> = {
+	open: 'Open',
+	in_progress: 'In progress',
+	closed: 'Closed',
+};
+
 export interface Idea {
 	id: string;
 	user_id: string;
 	title: string;
 	body: string | null;
 	category: IdeaCategory | null;
+	status: OplStatus;
+	contributors: string | null;
 	business_idea_id: string | null;
 	created_at: string;
 }

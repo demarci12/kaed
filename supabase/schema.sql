@@ -107,6 +107,12 @@ create table if not exists public.ideas (
     'tech-app',
     'clone-niche', 'clone-geo', 'clone-pricing', 'clone-usecase', 'clone-oss'
   )),
+  -- /pain-points ("OPL: Open Point List") is now a PMP-style open-items
+  -- tracker rather than a pure idea-capture list: status is the open/in
+  -- progress/closed lifecycle and contributors is a freeform text field for
+  -- who owns/is working the item.
+  status text not null default 'open' check (status in ('open', 'in_progress', 'closed')),
+  contributors text,
   created_at timestamptz not null default now()
 );
 

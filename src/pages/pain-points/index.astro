@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireOwner } from '../../lib/auth';
-import type { Idea } from '../../lib/ideas';
+import { OPL_STATUS_LABELS, type Idea } from '../../lib/ideas';
 
 const auth = await requireOwner(Astro.request, Astro.cookies);
 if ('redirect' in auth) {
@@ -16,6 +16,10 @@ const { data: ideas } = await supabase
 
 const typedIdeas = (ideas ?? []) as Idea[];
 
+const statusOptions = Object.entries(OPL_STATUS_LABELS)
+	.map(([value, label]) => `${value}:${label}`)
+	.join(',');
+
 const error = Astro.url.searchParams.get('error');
 ---
 
@@ -26,12 +30,12 @@ const error = Astro.url.searchParams.get('error');
 				<p class="eyebrow">Personal</p>
 				<h1>OPL: Open Point List.</h1>
 				<p class="lede">
-					Capture what's actually annoying or broken. Once one is worth solving, turn it into a business
-					idea → then a project → then activities you actually work through. Click a field to write.
+					Every open item, PMP-style: what needs doing, who's on it, and where it stands. Click any
+					field to edit it.
 				</p>
 			</div>
 			<form method="post" action="/api/ideas/create-inline" class="new-idea-form m-0 shrink-0 w-full md:w-auto">
-				<button type="submit" class="btn w-full md:w-auto justify-center">+ New pain point</button>
+				<button type="submit" class="btn w-full md:w-auto justify-center">+ New item</button>
 			</form>
 		</div>
 
@@ -41,46 +45,69 @@ const error = Astro.url.searchParams.get('error');
 			{typedIdeas.length ? (
 				typedIdeas.map((idea) => (
 					<article class="card" data-id={idea.id}>
-						<span class="card-field-label">Idea</span>
-						<div
-							class="pain-title font-serif text-lg font-semibold m-0 py-[10px] px-3 border border-line rounded-[10px] bg-canvas cursor-text transition-colors duration-150"
-							data-editable="text"
-							data-field="title"
-							data-id={idea.id}
-							data-endpoint="/api/ideas"
-							data-value={idea.title}
-						>
-							{idea.title || 'Untitled'}
+						<div class="card-head">
+							<div
+								class="card-title pain-title cursor-text"
+								data-editable="text"
+								data-field="title"
+								data-id={idea.id}
+								data-endpoint="/api/ideas"
+								data-value={idea.title}
+							>
+								{idea.title || 'Untitled'}
+							</div>
+							<form class="shrink-0" method="post" action={`/api/ideas/${idea.id}/delete`}>
+								<button type="submit" class="card-delete" aria-label="Delete item">×</button>
+							</form>
 						</div>
 
-						<span class="card-field-label">Description</span>
-						<p
-							class="pain-text flex-1 text-[15px] m-0 py-[10px] px-3 border border-line rounded-[10px] bg-canvas cursor-text transition-colors duration-150"
-							data-editable="textarea"
-							data-field="body"
+						<div
+							class="inline-block self-start cursor-pointer"
+							data-editable="select"
+							data-field="status"
 							data-id={idea.id}
 							data-endpoint="/api/ideas"
-							data-value={idea.body ?? ''}
+							data-value={idea.status}
+							data-options={statusOptions}
 						>
-							{idea.body || 'Write something…'}
-						</p>
+							<span class={`pill pill-${idea.status}`}>{OPL_STATUS_LABELS[idea.status]}</span>
+						</div>
 
-						<div class="card-foot">
-							{idea.business_idea_id ? (
-								<a class="chip" href={`/business-ideas/${idea.business_idea_id}`}>→ View business idea</a>
-							) : (
-								<form method="post" action={`/api/ideas/${idea.id}/promote`}>
-									<button type="submit" class="chip">Generate business idea →</button>
-								</form>
-							)}
-							<form method="post" action={`/api/ideas/${idea.id}/delete`}>
-								<button type="submit" class="card-delete" aria-label="Delete pain point">×</button>
-							</form>
+						<div class="card-field">
+							<span class="card-field-label">Description</span>
+							<p
+								class="card-field-value pain-text"
+								data-editable="textarea"
+								data-field="body"
+								data-id={idea.id}
+								data-endpoint="/api/ideas"
+								data-value={idea.body ?? ''}
+							>
+								{idea.body || 'Write something…'}
+							</p>
+						</div>
+
+						<div class="card-field">
+							<span class="card-field-label">Contributors</span>
+							<p
+								class="card-field-value"
+								data-editable="text"
+								data-field="contributors"
+								data-id={idea.id}
+								data-endpoint="/api/ideas"
+								data-value={idea.contributors ?? ''}
+							>
+								{idea.contributors || 'Unassigned.'}
+							</p>
+						</div>
+
+						<div class="card-foot justify-end">
+							<span class="card-date">{new Date(idea.created_at).toLocaleDateString()}</span>
 						</div>
 					</article>
 				))
 			) : (
-				<p class="empty">Nothing here yet. Click "+ New pain point" to start writing.</p>
+				<p class="empty">Nothing here yet. Click "+ New item" to log your first open point.</p>
 			)}
 		</div>
 	</section>
@@ -99,30 +126,9 @@ const error = Astro.url.searchParams.get('error');
 		line-height: 1.35;
 	}
 
-	.pain-title:hover,
-	.pain-text:hover {
-		border-color: var(--muted);
-	}
-
 	.pain-text {
 		line-height: 1.6;
-		color: var(--ink);
 		white-space: pre-wrap;
-	}
-
-	.pain-text:not(.editing) {
-		color: var(--muted);
-	}
-
-	.pain-title[data-value]:not([data-value=""]),
-	.pain-text[data-value]:not([data-value=""]) {
-		color: var(--ink);
-	}
-
-	.pain-title.editing,
-	.pain-text.editing {
-		border-color: var(--ink);
-		background: var(--paper);
 	}
 
 	.cell-input {
