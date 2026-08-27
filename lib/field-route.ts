@@ -25,12 +25,24 @@ export interface FieldRouteOptions {
 	ownerOnly?: boolean;
 	touchUpdatedAt?: boolean;
 	onWrite?: (field: string, value: string, update: Record<string, unknown>) => void;
+	/**
+	 * Runs after the update succeeds, with the same Supabase client and row id
+	 * -- for side effects that need their own row (e.g. logging a status
+	 * change to a history table). Errors here are swallowed: the edit itself
+	 * already saved, so failing the request over a history-log write would
+	 * make the user re-type a save that actually worked.
+	 */
+	afterWrite?: (
+		ctx: { supabase: import('@supabase/supabase-js').SupabaseClient; id: string; userId: string },
+		field: string,
+		value: string,
+	) => Promise<void>;
 }
 
 const fail = (error: string, status: number) => NextResponse.json({ error }, { status });
 
 export function createFieldRoute(options: FieldRouteOptions) {
-	const { table, fields, ownerOnly, touchUpdatedAt, onWrite } = options;
+	const { table, fields, ownerOnly, touchUpdatedAt, onWrite, afterWrite } = options;
 
 	return async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
 		const session = ownerOnly ? await getOwnerSession() : await getSession();
@@ -88,6 +100,15 @@ export function createFieldRoute(options: FieldRouteOptions) {
 
 		const { error } = await session.supabase.from(table).update(update).eq('id', id);
 		if (error) return fail(error.message, 500);
+
+		if (afterWrite) {
+			try {
+				await afterWrite({ supabase: session.supabase, id, userId: session.user.id }, field, value);
+			} catch {
+				// Save already succeeded; a history-log failure shouldn't surface
+				// as a failed edit.
+			}
+		}
 
 		return NextResponse.json({ ok: true });
 	};

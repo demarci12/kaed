@@ -382,3 +382,39 @@ alter table public.investments enable row level security;
 
 create policy "own investments" on public.investments
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Comment/update log on an open point. List view shows only the latest;
+-- the detail page shows the full thread -- the same shape as client_notes.
+create table if not exists public.open_point_notes (
+  id uuid primary key default gen_random_uuid(),
+  open_point_id uuid not null references public.open_points(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  note text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists open_point_notes_open_point_id_idx on public.open_point_notes (open_point_id);
+
+alter table public.open_point_notes enable row level security;
+
+create policy "own open point notes" on public.open_point_notes
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- One row per status transition, so "how long has this actually been stuck
+-- in progress" is answerable instead of a guess. Written whenever
+-- open_points.status changes (see the field route's onWrite hook) and once
+-- at creation for the starting status.
+create table if not exists public.open_point_status_events (
+  id uuid primary key default gen_random_uuid(),
+  open_point_id uuid not null references public.open_points(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  status text not null check (status in ('open', 'in_progress', 'closed')),
+  changed_at timestamptz not null default now()
+);
+
+create index if not exists open_point_status_events_open_point_id_idx on public.open_point_status_events (open_point_id);
+
+alter table public.open_point_status_events enable row level security;
+
+create policy "own open point status events" on public.open_point_status_events
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
