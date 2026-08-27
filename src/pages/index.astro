@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { createSupabaseServerClient } from '../lib/supabase';
-import { FUNDING_STAGE_LABELS, type FundingStage } from '../lib/projects';
+import { FUNDING_STAGE_LABELS, externalHref, type FundingStage } from '../lib/projects';
 
 interface PublicActiveProject {
 	id: string;
@@ -61,8 +61,8 @@ const typedOngoingProjects = (ongoingProjects ?? []) as PublicActiveProject[];
 						<div class="mt-4 flex items-center gap-3 text-[13px] text-muted flex-wrap">
 							{project.industry && <span>{project.industry}</span>}
 							{project.founded_year && <span>Since {project.founded_year}</span>}
-							{project.website_url && (
-								<a class="text-link text-ink no-underline" href={project.website_url} target="_blank" rel="noopener noreferrer">Visit →</a>
+							{externalHref(project.website_url) && (
+								<a class="text-link text-ink no-underline" href={externalHref(project.website_url)} target="_blank" rel="noopener noreferrer">Visit →</a>
 							)}
 						</div>
 					</article>

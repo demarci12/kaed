@@ -48,3 +48,40 @@ export interface ProjectLog {
 	signal_type: SignalType;
 	created_at: string;
 }
+
+/**
+ * Make a stored website value safe to use as an `href`.
+ *
+ * URLs are typed in bare ("jobro.hu"), and a bare value in an href is a
+ * *relative* path -- the browser resolves it against the current origin and
+ * sends you to kaed.hu/jobro.hu instead of the real site. Prepending https://
+ * when no scheme is present is what makes the link actually leave the app.
+ *
+ * Only http(s) is allowed through: anything else (javascript:, data:) is
+ * rejected outright rather than rendered as a clickable link.
+ */
+export function externalHref(url: string | null | undefined): string | null {
+	const trimmed = (url ?? '').trim();
+	if (!trimmed) return null;
+
+	const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+	let parsed: URL;
+	try {
+		parsed = new URL(withScheme);
+	} catch {
+		return null;
+	}
+	return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
+}
+
+/** The bare host, for showing a link without the scheme clutter. */
+export function displayHost(url: string | null | undefined): string | null {
+	const href = externalHref(url);
+	if (!href) return null;
+	try {
+		return new URL(href).host.replace(/^www\./, '');
+	} catch {
+		return null;
+	}
+}

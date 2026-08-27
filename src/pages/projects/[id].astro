@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { selectOptionsFromLabels } from '../../lib/select-options';
-import { HEADLINE_SIGNAL_TYPES, FUNDING_STAGE_LABELS, type Project, type ProjectLog, type SignalType } from '../../lib/projects';
+import { HEADLINE_SIGNAL_TYPES, FUNDING_STAGE_LABELS, type Project, type ProjectLog, type SignalType , externalHref } from '../../lib/projects';
 import { requireUser } from '../../lib/projects';
 import { OPEN_POINT_STATUS_LABELS, type OpenPoint } from '../../lib/open-points';
 
@@ -141,8 +141,8 @@ const error = Astro.url.searchParams.get('error');
 				<div class="card-field">
 					<span class="card-field-label flex items-center justify-between gap-2">
 						Website
-						{typed.website_url && (
-							<a class="text-[11px] font-normal normal-case tracking-normal text-ink no-underline border-b border-line hover:border-ink" href={typed.website_url} target="_blank" rel="noopener noreferrer">Visit ↗</a>
+						{externalHref(typed.website_url) && (
+							<a class="text-[11px] font-normal normal-case tracking-normal text-ink no-underline border-b border-line hover:border-ink" href={externalHref(typed.website_url)} target="_blank" rel="noopener noreferrer">Visit ↗</a>
 						)}
 					</span>
 					<p
