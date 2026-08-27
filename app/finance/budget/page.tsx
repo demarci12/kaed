@@ -4,7 +4,7 @@ import {
 	budgetedFor,
 	type FinanceBudget, type FinanceCategory, type FinanceLimits, type FinanceTransaction, type FinanceType,
 } from '@/lib/finance';
-import { btnGhost, cx, table, tableWrap, td, th, FormError, PageHead } from '@/components/ui';
+import { btnGhost, cx, table, tableWrap, td, tdNum, th, FormError, PageHead } from '@/components/ui';
 
 const SECTION_LABEL: Record<FinanceType, string> = { income: 'Income', expense: 'Expense', saving: 'Saving' };
 
@@ -181,7 +181,7 @@ export default async function BudgetPage({
 										<td className={cx(td, 'font-medium whitespace-nowrap')}>
 											{p.months === 1 ? 'End of this month' : `${p.months} months`}
 										</td>
-										<td className={cx(td, 'text-right tabular-nums whitespace-nowrap')}>{formatAmount(p.balance)}</td>
+										<td className={tdNum}>{formatAmount(p.balance)}</td>
 									</tr>
 								))}
 							</tbody>
@@ -234,13 +234,13 @@ export default async function BudgetPage({
 														<button type="submit" className={cx(btnGhost, 'min-h-8 px-3.5 text-[13px]')}>Save</button>
 													</form>
 												</td>
-												<td className={cx(td, 'text-right tabular-nums whitespace-nowrap text-muted')}>
+												<td className={cx(tdNum, 'text-muted')}>
 													{planned > 0 ? formatAmount(toWeekly(planned)) : '—'}
 												</td>
-												<td className={cx(td, 'text-right tabular-nums whitespace-nowrap text-muted')}>
+												<td className={cx(tdNum, 'text-muted')}>
 													{planned > 0 ? formatAmount(toDaily(planned)) : '—'}
 												</td>
-												<td className={cx(td, 'text-right tabular-nums whitespace-nowrap')}>{formatAmount(actual)}</td>
+												<td className={tdNum}>{formatAmount(actual)}</td>
 												<td className={td}>
 													<div className="flex flex-col gap-1.5 min-w-[120px]">
 														<span className={cx('tabular-nums', type === 'expense' && remaining < 0 && 'text-negative font-medium')}>

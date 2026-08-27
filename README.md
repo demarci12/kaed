@@ -1,46 +1,30 @@
-# Astro Starter Kit: Basics
+# kead
+
+Personal operating system app — deployed to [kaed.hu](https://kaed.hu).
+
+Next.js 15 (App Router) + React 19 + Tailwind v4, backed by Supabase (Postgres + auth). Deploys to Vercel from `main` on every push.
+
+## Structure
+
+- `app/` — pages (Server Components) and API routes (`app/api/**`, Route Handlers)
+- `lib/` — framework-agnostic data access, types, and business logic per feature
+- `components/` — shared UI: the design-system class strings (`ui.tsx`), inline-edit cells, popups, nav
+- `supabase/schema.sql` — source of truth for the database, not auto-applied (see `CLAUDE.md`)
+- `middleware.ts` — refreshes the Supabase session on every request
+
+## Local development
 
 ```sh
-npm create astro@latest -- --template basics
+cp .env.example .env   # fill in real values
+npm install
+npm run dev             # http://localhost:4321
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+| Command | Action |
+| :-- | :-- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run typecheck` | `tsc --noEmit` |
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+See `CLAUDE.md` for the project's working conventions (Supabase migrations, the finance module's derived-value rules, styling conventions).
