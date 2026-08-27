@@ -95,9 +95,9 @@ const fetchedAt = new Date(prices.fetchedAt).toLocaleTimeString('hu-HU', { hour:
 			</div>
 		</div>
 
-		<div class="inv-meta">
+		<div class="inv-meta" data-fetched-at={prices.fetchedAt}>
 			<span>
-				Updated {fetchedAt}
+				<span data-age>Updated {fetchedAt}</span>
 				{prices.usdHuf && ` · 1 USD = ${prices.usdHuf.toFixed(2)} HUF`}
 			</span>
 			{/* A link, not a fetch: prices are computed server-side, so
@@ -354,6 +354,8 @@ const fetchedAt = new Date(prices.fetchedAt).toLocaleTimeString('hu-HU', { hour:
 </style>
 
 <script>
+	import { navigate } from 'astro:transitions/client';
+
 	// Delegated from `document` so it survives ClientRouter soft navigations --
 	// a listener bound to the button itself goes stale after the refresh
 	// navigation swaps the DOM, and the button silently stops responding.
@@ -365,5 +367,64 @@ const fetchedAt = new Date(prices.fetchedAt).toLocaleTimeString('hu-HU', { hour:
 		button.classList.add('is-refreshing');
 		const label = button.querySelector('.inv-refresh-label');
 		if (label) label.textContent = 'Fetching…';
+	});
+
+	// How often the client re-requests the page. Deliberately shorter than the
+	// server's 5-minute price cache and deliberately WITHOUT ?refresh=1: most
+	// polls are served from that cache for free, so prices land within a minute
+	// of going stale while the API is still only hit once per cache window.
+	const POLL_MS = 60 * 1000;
+
+	function ageLabel(iso: string): string {
+		const seconds = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+		if (seconds < 60) return 'Updated just now';
+		const minutes = Math.round(seconds / 60);
+		if (minutes < 60) return `Updated ${minutes} min ago`;
+		const hours = Math.round(minutes / 60);
+		return `Updated ${hours} h ago`;
+	}
+
+	// A reload mid-edit would throw away what's being typed, and a reload behind
+	// an open dialog would close it. Both are worse than briefly stale prices.
+	function safeToRefresh(): boolean {
+		if (document.hidden) return false;
+		if (document.querySelector('.editing')) return false;
+		if (document.querySelector('dialog[open]')) return false;
+		return true;
+	}
+
+	let timer: number | undefined;
+
+	function tick() {
+		const meta = document.querySelector<HTMLElement>('[data-fetched-at]');
+		if (!meta) {
+			// Navigated away from the investments page; stop polling.
+			if (timer) window.clearInterval(timer);
+			timer = undefined;
+			return;
+		}
+
+		const age = meta.querySelector('[data-age]');
+		const iso = meta.dataset.fetchedAt;
+		if (age && iso) age.textContent = ageLabel(iso);
+
+		if (!iso || Date.now() - new Date(iso).getTime() < POLL_MS) return;
+		if (!safeToRefresh()) return;
+
+		navigate(location.pathname, { history: 'replace' });
+	}
+
+	function start() {
+		if (timer) window.clearInterval(timer);
+		// Ticks every 15s to keep the age label honest; the reload itself is
+		// still gated on POLL_MS above.
+		timer = window.setInterval(tick, 15 * 1000);
+		tick();
+	}
+
+	start();
+	document.addEventListener('astro:page-load', start);
+	document.addEventListener('visibilitychange', () => {
+		if (!document.hidden) tick();
 	});
 </script>

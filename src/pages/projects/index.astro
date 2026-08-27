@@ -43,10 +43,27 @@ const error = Astro.url.searchParams.get('error');
 				typedProjects.map((project) => (
 					<article class="card">
 						<div class="card-head">
-							<a class="card-title" href={`/projects/${project.id}`}>{project.title}</a>
-							<form method="post" action={`/api/projects/${project.id}/delete`} class="project-delete-form m-0 shrink-0">
-								<button type="submit" class="card-delete" aria-label="Delete project">×</button>
-							</form>
+							<div
+								class="card-title cursor-text"
+								data-editable="text"
+								data-field="title"
+								data-id={project.id}
+								data-endpoint="/api/projects"
+								data-value={project.title}
+							>
+								{project.title}
+							</div>
+							<div class="card-actions">
+								<a
+									class="card-open"
+									href={`/projects/${project.id}`}
+									aria-label={`Open ${project.title}`}
+									title="Open"
+								>↗</a>
+								<form method="post" action={`/api/projects/${project.id}/delete`} class="project-delete-form m-0">
+									<button type="submit" class="card-delete" aria-label="Delete project">×</button>
+								</form>
+							</div>
 						</div>
 
 						<div class="card-field min-w-0">

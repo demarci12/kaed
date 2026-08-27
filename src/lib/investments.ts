@@ -34,8 +34,20 @@ export interface PriceResult {
  * not cost a credit. One shared cache per server instance; a cold start just
  * pays for one fetch.
  */
-const CACHE_TTL_MS = 5 * 60 * 1000;
-let cache: { at: number; result: PriceResult } | null = null;
+export const CACHE_TTL_MS = 5 * 60 * 1000;
+let cache: { at: number; key: string; result: PriceResult } | null = null;
+
+/**
+ * Cache identity is the set of holdings, not just time. Keyed on time alone,
+ * adding a coin would return the previous result for up to five minutes and
+ * the new row would render as "no price returned" until the TTL lapsed.
+ */
+function cacheKey(holdings: { symbol: string; cmc_slug: string | null }[]): string {
+	return holdings
+		.map((h) => `${h.symbol.toUpperCase()}:${h.cmc_slug ?? ''}`)
+		.sort()
+		.join('|');
+}
 
 const CMC_BASE = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest';
 const CMC_FX = 'https://pro-api.coinmarketcap.com/v2/tools/price-conversion';
@@ -84,7 +96,8 @@ export async function fetchPrices(
 	apiKey: string | undefined,
 	options: { force?: boolean } = {},
 ): Promise<PriceResult> {
-	if (!options.force && cache && Date.now() - cache.at < CACHE_TTL_MS) {
+	const key = cacheKey(holdings);
+	if (!options.force && cache && cache.key === key && Date.now() - cache.at < CACHE_TTL_MS) {
 		return cache.result;
 	}
 
@@ -166,7 +179,7 @@ export async function fetchPrices(
 		missing: holdings.filter((h) => !quotes[h.symbol]).map((h) => h.symbol),
 	};
 
-	cache = { at: Date.now(), result };
+	cache = { at: Date.now(), key, result };
 	return result;
 }
 

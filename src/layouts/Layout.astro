@@ -117,6 +117,14 @@ const memberOnly = user ? isMember(user) : false;
 				position: relative;
 			}
 
+			/* OPL is the one nav entry that's a filled button rather than a
+			   muted link -- it's the daily-driver list, so it reads as the
+			   primary action. Sized down to sit inside the nav row. */
+			.nav .nav-cta {
+				padding: 7px 16px;
+				font-size: 13px;
+			}
+
 			.nav-group summary {
 				color: var(--muted);
 				cursor: pointer;
@@ -232,6 +240,12 @@ const memberOnly = user ? isMember(user) : false;
 
 			.mobile-nav[open] .hamburger-icon span:last-child {
 				transform: translateY(-5.5px) rotate(-45deg);
+			}
+
+			.mobile-nav-cta {
+				justify-content: center;
+				width: 100%;
+				margin: 4px 0 6px;
 			}
 
 			.mobile-nav-heading {
@@ -1377,8 +1391,7 @@ const memberOnly = user ? isMember(user) : false;
 								<a href="/finance" class="who-link">Finance</a>
 							) : (
 								<>
-									<a href="/freedom" class="who-link">Freedom</a>
-									<a href="/opl" class="who-link">OPL</a>
+									<a href="/opl" class="btn nav-cta">OPL</a>
 									<details class="nav-group">
 										<summary>Delivery</summary>
 										<div class="nav-dropdown">
@@ -1390,6 +1403,7 @@ const memberOnly = user ? isMember(user) : false;
 									<details class="nav-group">
 										<summary>Personal</summary>
 										<div class="nav-dropdown">
+											<a href="/freedom">Freedom</a>
 											<a href="/goals">Goals</a>
 											<a href="/specific-knowledge">Specific knowledge</a>
 										</div>
@@ -1435,13 +1449,13 @@ const memberOnly = user ? isMember(user) : false;
 									<a href="/finance" class="mobile-nav-link">Finance</a>
 								) : (
 									<>
-										<a href="/freedom" class="mobile-nav-link">Freedom</a>
-										<a href="/opl" class="mobile-nav-link">OPL</a>
+										<a href="/opl" class="btn mobile-nav-cta">OPL</a>
 										<p class="mobile-nav-heading">Delivery</p>
 										<a href="/business-ideas" class="mobile-nav-link">Business ideas</a>
 										<a href="/projects" class="mobile-nav-link">Projects</a>
 										<a href="/system-design" class="mobile-nav-link">System design</a>
 										<p class="mobile-nav-heading">Personal</p>
+										<a href="/freedom" class="mobile-nav-link">Freedom</a>
 										<a href="/goals" class="mobile-nav-link">Goals</a>
 										<a href="/specific-knowledge" class="mobile-nav-link">Specific knowledge</a>
 										<p class="mobile-nav-heading">Sales &amp; Marketing</p>
