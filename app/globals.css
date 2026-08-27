@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+
+/*
+ * The entire design system. One file, tokens only -- no component classes.
+ *
+ * The Astro version carried 1384 lines of hand-written CSS alongside Tailwind,
+ * and the two kept colliding (a scoped `.nav a` silently outranked the global
+ * `.btn` and rendered white button text grey). Everything visual now lives in
+ * utilities on the element, so specificity is never a question.
+ */
+@theme {
+	--color-paper: #ffffff;
+	--color-canvas: #f7f6f3;
+	--color-ink: #14110f;
+	--color-muted: #6b655d;
+	--color-line: #e4e0d8;
+
+	--color-positive: #1f7a3d;
+	--color-positive-bg: #eafaf0;
+	--color-negative: #b4231f;
+	--color-negative-bg: #fbf0ef;
+	--color-negative-line: #e7c3c1;
+	--color-info: #1d4ed8;
+	--color-info-bg: #eef4ff;
+	--color-warn: #92620a;
+	--color-warn-bg: #fff7e6;
+	--color-accent: #6b21a8;
+	--color-accent-bg: #f4eefe;
+
+	--font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	background: var(--color-canvas);
+	color: var(--color-ink);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+}
+
+/* The one unavoidable exception: the UA stylesheet ships
+   `dialog { max-width: calc(100% - 6px - 2em) }`, which beat width:100% and
+   rendered every mobile bottom sheet 38px narrower than the screen. A utility
+   on the element cannot override a UA rule that Tailwind has no variant for. */
+dialog::backdrop {
+	background: rgb(20 17 15 / 0.45);
+	backdrop-filter: blur(3px);
+}

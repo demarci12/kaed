@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "kead": {
+      "command": "node",
+      "args": ["/Users/martondeak/Desktop/Projects/kead/mcp-server/index.js"]
+    }
+  }
+}
