@@ -5,7 +5,10 @@ import { createSupabaseServerClient } from '@/lib/supabase';
 import { isMember } from '@/lib/auth';
 import { Nav, type NavGroup } from '@/components/Nav';
 
-export const metadata: Metadata = { title: 'KAED' };
+export const metadata: Metadata = {
+	title: 'KAED',
+	icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/favicon.ico' }] },
+};
 
 const GROUPS: NavGroup[] = [
 	{ label: 'Delivery', links: [['/business-ideas', 'Business ideas'], ['/projects', 'Projects'], ['/system-design', 'System design']] },

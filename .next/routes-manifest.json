@@ -18,7 +18,304 @@
     "afterFiles": [],
     "fallback": []
   },
-  "dynamicRoutes": [],
+  "dynamicRoutes": [
+    {
+      "page": "/api/business-ideas/[id]/delete",
+      "regex": "^/api/business\\-ideas/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/business\\-ideas/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/business-ideas/[id]/field",
+      "regex": "^/api/business\\-ideas/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/business\\-ideas/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/business-ideas/[id]/move",
+      "regex": "^/api/business\\-ideas/([^/]+?)/move(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/business\\-ideas/(?<nxtPid>[^/]+?)/move(?:/)?$"
+    },
+    {
+      "page": "/api/business-ideas/[id]/rank",
+      "regex": "^/api/business\\-ideas/([^/]+?)/rank(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/business\\-ideas/(?<nxtPid>[^/]+?)/rank(?:/)?$"
+    },
+    {
+      "page": "/api/business-ideas/[id]/update",
+      "regex": "^/api/business\\-ideas/([^/]+?)/update(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/business\\-ideas/(?<nxtPid>[^/]+?)/update(?:/)?$"
+    },
+    {
+      "page": "/api/clients/[id]/field",
+      "regex": "^/api/clients/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/clients/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/clients/[id]/notes",
+      "regex": "^/api/clients/([^/]+?)/notes(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/clients/(?<nxtPid>[^/]+?)/notes(?:/)?$"
+    },
+    {
+      "page": "/api/clients/[id]/update",
+      "regex": "^/api/clients/([^/]+?)/update(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/clients/(?<nxtPid>[^/]+?)/update(?:/)?$"
+    },
+    {
+      "page": "/api/finance/categories/[id]/delete",
+      "regex": "^/api/finance/categories/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/finance/categories/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/finance/categories/[id]/field",
+      "regex": "^/api/finance/categories/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/finance/categories/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/finance/investments/[id]/delete",
+      "regex": "^/api/finance/investments/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/finance/investments/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/finance/investments/[id]/field",
+      "regex": "^/api/finance/investments/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/finance/investments/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/finance/limits/[id]/field",
+      "regex": "^/api/finance/limits/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/finance/limits/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/finance/transactions/[id]/delete",
+      "regex": "^/api/finance/transactions/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/finance/transactions/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/goals/[id]/delete",
+      "regex": "^/api/goals/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/goals/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/goals/[id]/field",
+      "regex": "^/api/goals/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/goals/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/idea-connections/[id]/delete",
+      "regex": "^/api/idea\\-connections/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/idea\\-connections/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/knowledge-cards/[id]/delete",
+      "regex": "^/api/knowledge\\-cards/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/knowledge\\-cards/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/knowledge-cards/[id]/field",
+      "regex": "^/api/knowledge\\-cards/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/knowledge\\-cards/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/open-points/[id]/delete",
+      "regex": "^/api/open\\-points/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/open\\-points/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/open-points/[id]/field",
+      "regex": "^/api/open\\-points/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/open\\-points/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/projects/[id]/delete",
+      "regex": "^/api/projects/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/projects/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/projects/[id]/field",
+      "regex": "^/api/projects/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/projects/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/projects/[id]/logs",
+      "regex": "^/api/projects/([^/]+?)/logs(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/projects/(?<nxtPid>[^/]+?)/logs(?:/)?$"
+    },
+    {
+      "page": "/api/projects/[id]/status",
+      "regex": "^/api/projects/([^/]+?)/status(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/projects/(?<nxtPid>[^/]+?)/status(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/actors/[id]/delete",
+      "regex": "^/api/system\\-design/actors/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/actors/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/actors/[id]/field",
+      "regex": "^/api/system\\-design/actors/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/actors/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/goals/[id]/delete",
+      "regex": "^/api/system\\-design/goals/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/goals/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/goals/[id]/field",
+      "regex": "^/api/system\\-design/goals/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/goals/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/requirements/[id]/delete",
+      "regex": "^/api/system\\-design/requirements/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/requirements/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/requirements/[id]/field",
+      "regex": "^/api/system\\-design/requirements/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/requirements/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/use-cases/[id]/delete",
+      "regex": "^/api/system\\-design/use\\-cases/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/use\\-cases/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/system-design/use-cases/[id]/field",
+      "regex": "^/api/system\\-design/use\\-cases/([^/]+?)/field(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/system\\-design/use\\-cases/(?<nxtPid>[^/]+?)/field(?:/)?$"
+    },
+    {
+      "page": "/business-ideas/[id]",
+      "regex": "^/business\\-ideas/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/business\\-ideas/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/clients/[id]",
+      "regex": "^/clients/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/clients/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/projects/[id]",
+      "regex": "^/projects/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/projects/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/system-design/[id]",
+      "regex": "^/system\\-design/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/system\\-design/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
   "staticRoutes": [
     {
       "page": "/",
@@ -31,6 +328,84 @@
       "regex": "^/_not\\-found(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/business-ideas",
+      "regex": "^/business\\-ideas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/business\\-ideas(?:/)?$"
+    },
+    {
+      "page": "/clients",
+      "regex": "^/clients(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/clients(?:/)?$"
+    },
+    {
+      "page": "/finance",
+      "regex": "^/finance(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance(?:/)?$"
+    },
+    {
+      "page": "/finance/budget",
+      "regex": "^/finance/budget(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance/budget(?:/)?$"
+    },
+    {
+      "page": "/finance/investments",
+      "regex": "^/finance/investments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance/investments(?:/)?$"
+    },
+    {
+      "page": "/finance/settings",
+      "regex": "^/finance/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance/settings(?:/)?$"
+    },
+    {
+      "page": "/freedom",
+      "regex": "^/freedom(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/freedom(?:/)?$"
+    },
+    {
+      "page": "/goals",
+      "regex": "^/goals(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/goals(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/opl",
+      "regex": "^/opl(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/opl(?:/)?$"
+    },
+    {
+      "page": "/projects",
+      "regex": "^/projects(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/projects(?:/)?$"
+    },
+    {
+      "page": "/specific-knowledge",
+      "regex": "^/specific\\-knowledge(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/specific\\-knowledge(?:/)?$"
+    },
+    {
+      "page": "/system-design",
+      "regex": "^/system\\-design(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/system\\-design(?:/)?$"
     }
   ],
   "dataRoutes": [],
