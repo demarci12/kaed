@@ -359,3 +359,26 @@ create policy "own system actors" on public.system_actors for all using (auth.ui
 create policy "own system goals" on public.system_goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own system use cases" on public.system_use_cases for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own system requirements" on public.system_requirements for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Crypto holdings, owner-only (the shared `member` role never sees these).
+-- Prices come from CoinMarketCap at request time and are not stored; only the
+-- position itself lives here.
+create table if not exists public.investments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  -- cmc_slug wins over symbol when set, for tickers that collide across
+  -- chains (SIGMA resolves to several coins; sigma-sol is the one held).
+  symbol text not null,
+  cmc_slug text,
+  quantity numeric(28, 10) not null default 0,
+  cost_basis_huf numeric(16, 2) not null default 0,
+  goal_price_usd numeric(28, 10),
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.investments enable row level security;
+
+create policy "own investments" on public.investments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

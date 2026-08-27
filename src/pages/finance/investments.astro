@@ -1,0 +1,305 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireOwner, fetchPrices, positionMetrics, type Investment } from '../../lib/investments';
+
+// requireOwner, not requireUser: /finance itself is shared with the member
+// role, but this page is owner-only and redirects them back to /finance.
+const auth = await requireOwner(Astro.request, Astro.cookies);
+if ('redirect' in auth) {
+	return Astro.redirect(auth.redirect);
+}
+const { supabase } = auth;
+
+const { data: rows } = await supabase.from('investments').select('*').order('sort_order', { ascending: true });
+const investments = (rows ?? []) as Investment[];
+
+// Read server-side only, and via process.env rather than import.meta.env so
+// Vite doesn't inline the literal key into the build output -- rotating the
+// key on Vercel then takes effect without a redeploy.
+const prices = await fetchPrices(
+	investments.map((i) => ({ symbol: i.symbol, cmc_slug: i.cmc_slug })),
+	process.env.CMC_API_KEY,
+	{ force: Astro.url.searchParams.has('refresh') },
+);
+
+const positions = investments.map((inv) => ({
+	inv,
+	quote: prices.quotes[inv.symbol],
+	m: positionMetrics(inv, prices.quotes[inv.symbol]),
+}));
+
+const totals = positions.reduce(
+	(acc, p) => ({
+		value: acc.value + p.m.valueHuf,
+		cost: acc.cost + p.m.costHuf,
+		goal: acc.goal + (p.m.goalValueHuf ?? 0),
+	}),
+	{ value: 0, cost: 0, goal: 0 },
+);
+const totalChange = totals.value - totals.cost;
+const totalChangePct = totals.cost > 0 ? (totalChange / totals.cost) * 100 : null;
+
+const huf = (n: number) => Math.round(n).toLocaleString('hu-HU');
+const pct = (n: number | null) => (n == null ? '—' : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`);
+const usdPrice = (n: number) => (n < 0.01 ? n.toFixed(8) : n.toFixed(4));
+const sign = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
+
+const error = Astro.url.searchParams.get('error');
+const fetchedAt = new Date(prices.fetchedAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+---
+
+<Layout user={auth.user}>
+	<section class="investments max-w-[1180px]">
+		<div class="page-head">
+			<div>
+				<p class="eyebrow">Finance · Private</p>
+				<h1>Investments.</h1>
+				<p class="lede">
+					Live prices from CoinMarketCap. Click any white number to edit it.
+				</p>
+			</div>
+			<div class="page-head-actions">
+				<a class="btn ghost" href="/finance">← Finance</a>
+				<button type="button" class="btn" data-open-popup="new-investment">+ Add holding</button>
+			</div>
+		</div>
+
+		{error && <p class="form-error">{error}</p>}
+		{prices.error && <p class="form-error">Price lookup failed: {prices.error}</p>}
+		{prices.missing.length > 0 && !prices.error && (
+			<p class="form-error">No price returned for: {prices.missing.join(', ')}. Check the symbol or set a CMC slug.</p>
+		)}
+
+		<div class="inv-tiles">
+			<div class="inv-tile">
+				<span class="card-field-label">Value now</span>
+				<p class="inv-tile-value">{huf(totals.value)}</p>
+				<p class="inv-sub">HUF</p>
+			</div>
+			<div class="inv-tile">
+				<span class="card-field-label">Invested</span>
+				<p class="inv-tile-value">{huf(totals.cost)}</p>
+				<p class="inv-sub">HUF</p>
+			</div>
+			<div class="inv-tile">
+				<span class="card-field-label">Profit / loss</span>
+				<p class={`inv-tile-value ${sign(totalChange)}`}>{huf(totalChange)}</p>
+				<p class={`inv-sub ${sign(totalChange)}`}>{pct(totalChangePct)}</p>
+			</div>
+			<div class="inv-tile">
+				<span class="card-field-label">If goals hit</span>
+				<p class="inv-tile-value">{huf(totals.goal)}</p>
+				<p class="inv-sub">
+					{totals.value > 0 ? `${(totals.goal / totals.value).toFixed(1)}× from here` : 'HUF'}
+				</p>
+			</div>
+		</div>
+
+		<p class="inv-meta">
+			Updated {fetchedAt}
+			{prices.usdHuf && ` · 1 USD = ${prices.usdHuf.toFixed(2)} HUF`}
+			· <a href="/finance/investments?refresh=1">Refresh</a>
+		</p>
+
+		<div class="table-wrap">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Asset</th>
+						<th class="num">Quantity</th>
+						<th class="num">Price USD</th>
+						<th class="num">Value HUF</th>
+						<th class="num">Invested</th>
+						<th class="num">Change</th>
+						<th class="num">Change %</th>
+						<th class="num">Goal USD</th>
+						<th class="num">To goal</th>
+						<th class="num">Goal HUF</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{positions.length ? (
+						positions.map(({ inv, quote, m }) => (
+							<tr>
+								<td class="px-4 py-2.5">
+									<span
+										class="inv-symbol cursor-text"
+										data-editable="text"
+										data-field="symbol"
+										data-id={inv.id}
+										data-endpoint="/api/finance/investments"
+										data-value={inv.symbol}
+									>{inv.symbol}</span>
+									{inv.cmc_slug && <span class="inv-slug">{inv.cmc_slug}</span>}
+								</td>
+								<td class="num">
+									<span
+										class="cursor-text"
+										data-editable="text"
+										data-field="quantity"
+										data-id={inv.id}
+										data-endpoint="/api/finance/investments"
+										data-value={String(Number(inv.quantity))}
+									>{Number(inv.quantity).toLocaleString('hu-HU')}</span>
+								</td>
+								<td class="num muted">{quote ? usdPrice(quote.priceUsd) : '—'}</td>
+								<td class="num">{quote ? huf(m.valueHuf) : '—'}</td>
+								<td class="num">
+									<span
+										class="cursor-text"
+										data-editable="text"
+										data-field="cost_basis_huf"
+										data-id={inv.id}
+										data-endpoint="/api/finance/investments"
+										data-value={String(Number(inv.cost_basis_huf))}
+									>{huf(Number(inv.cost_basis_huf))}</span>
+								</td>
+								<td class={`num ${sign(m.changeHuf)}`}>{quote ? huf(m.changeHuf) : '—'}</td>
+								<td class={`num ${sign(m.changeHuf)}`}>{quote ? pct(m.changePct) : '—'}</td>
+								<td class="num">
+									<span
+										class="cursor-text"
+										data-editable="text"
+										data-field="goal_price_usd"
+										data-id={inv.id}
+										data-endpoint="/api/finance/investments"
+										data-value={inv.goal_price_usd != null ? String(Number(inv.goal_price_usd)) : ''}
+									>{inv.goal_price_usd != null ? Number(inv.goal_price_usd) : 'Set'}</span>
+								</td>
+								<td class="num muted">{pct(m.upsidePct)}</td>
+								<td class="num">{m.goalValueHuf != null ? huf(m.goalValueHuf) : '—'}</td>
+								<td class="px-2 py-2.5">
+									<form method="post" action={`/api/finance/investments/${inv.id}/delete`}>
+										<button type="submit" class="card-delete" aria-label={`Delete ${inv.symbol}`}>×</button>
+									</form>
+								</td>
+							</tr>
+						))
+					) : (
+						<tr><td colspan="11" class="py-7 px-4">No holdings yet. Add your first one.</td></tr>
+					)}
+				</tbody>
+				{positions.length > 0 && (
+					<tfoot>
+						<tr>
+							<td class="px-4 py-3"><strong>SUM</strong></td>
+							<td colspan="2"></td>
+							<td class="num"><strong>{huf(totals.value)}</strong></td>
+							<td class="num"><strong>{huf(totals.cost)}</strong></td>
+							<td class={`num ${sign(totalChange)}`}><strong>{huf(totalChange)}</strong></td>
+							<td class={`num ${sign(totalChange)}`}><strong>{pct(totalChangePct)}</strong></td>
+							<td colspan="2"></td>
+							<td class="num"><strong>{huf(totals.goal)}</strong></td>
+							<td></td>
+						</tr>
+					</tfoot>
+				)}
+			</table>
+		</div>
+	</section>
+
+	<dialog id="new-investment" class="popup">
+		<button type="button" class="popup-close" data-close-popup aria-label="Close">&times;</button>
+		<h2>Add holding</h2>
+		<form method="post" action="/api/finance/investments/create">
+			<label for="symbol">Symbol</label>
+			<input id="symbol" name="symbol" type="text" required maxlength="20" placeholder="ONDO" />
+
+			<label for="cmc_slug">CoinMarketCap slug (optional)</label>
+			<input id="cmc_slug" name="cmc_slug" type="text" maxlength="60" placeholder="sigma-sol" />
+
+			<label for="quantity">Quantity</label>
+			<input id="quantity" name="quantity" type="number" step="any" min="0" required />
+
+			<label for="cost_basis_huf">Invested (HUF)</label>
+			<input id="cost_basis_huf" name="cost_basis_huf" type="number" step="any" min="0" required />
+
+			<label for="goal_price_usd">Goal price (USD)</label>
+			<input id="goal_price_usd" name="goal_price_usd" type="number" step="any" min="0" />
+
+			<div class="popup-actions">
+				<button type="button" class="btn ghost" data-close-popup>Cancel</button>
+				<button type="submit" class="btn">Add holding</button>
+			</div>
+		</form>
+	</dialog>
+</Layout>
+
+<style>
+	.inv-tiles {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 14px;
+		margin-top: 32px;
+	}
+
+	.inv-tile {
+		padding: 18px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--paper);
+	}
+
+	.inv-tile-value {
+		margin: 6px 0 0;
+		font-family: var(--serif);
+		font-size: 26px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.inv-sub {
+		margin: 4px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.inv-meta {
+		margin: 14px 0 18px;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.inv-symbol {
+		font-weight: 600;
+	}
+
+	.inv-slug {
+		display: block;
+		font-size: 11px;
+		color: var(--muted);
+	}
+
+	/* Numeric columns are right-aligned and tabular so the digits line up
+	   into scannable columns, which is the entire point of this table. */
+	.data-table .num {
+		text-align: right;
+		padding: 10px 16px;
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.data-table th.num {
+		text-align: right;
+	}
+
+	.data-table .muted {
+		color: var(--muted);
+	}
+
+	.pos {
+		color: var(--color-positive, #1f7a3d);
+	}
+
+	.neg {
+		color: var(--color-negative, #b4231f);
+	}
+
+	tfoot td {
+		border-top: 1px solid var(--line);
+		background: var(--canvas);
+	}
+</style>

@@ -20,6 +20,14 @@ Astro app (SSR, `output: 'server'`, Vercel adapter) backed by Supabase, deployed
 - A "Statistics" nav entry exists on `/finance` as a disabled placeholder ("Soon" badge) — intentionally not built yet, on hold per the user.
 - Daily/weekly spending limits shown on `/finance` derive from the current month's planned expense budget by default (`/finance/budget`), overridden by `finance_limits` if set.
 
+### Investments (`/finance/investments`)
+
+- Owner-only: the page uses `requireOwner`, and the link on `/finance` renders behind `!isMember(auth.user)` — the shared `member` role can reach `/finance` but never this.
+- Prices come from CoinMarketCap server-side. **`CMC_API_KEY` is read via `process.env`, not `import.meta.env`** — Vite statically inlines `import.meta.env` into the build output, which bakes the key into build artifacts and means rotating it needs a redeploy. Keep it on `process.env`.
+- The free CMC plan allows **one `convert` option per call**, so `convert=HUF,USD` is rejected. Quotes are fetched in USD (the default) and the forint rate comes from one `/v2/tools/price-conversion` call; every HUF figure is `usdPrice * rate`, so the displayed rate always matches the rate used.
+- Symbol and slug lookups **cannot be mixed in one call**. Symbols are batched into a single request; each slug costs its own. Results cache for 5 minutes per server instance so a page refresh doesn't burn credits — `?refresh=1` forces a fetch.
+- `positionMetrics()` in `src/lib/investments.ts` owns every derived column (value, change, %, goal value, upside). It returns `null` rather than `Infinity`/`NaN` for a zero cost basis, a missing quote, or a zero price — don't recompute these inline.
+
 ## Supabase schema changes
 
 - `supabase/schema.sql` is the source of truth but isn't auto-applied — there's no linked Supabase CLI project (no DB password on file).

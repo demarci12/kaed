@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { requireUser } from '../../lib/finance';
+import { isMember } from '../../lib/auth';
 import type { FinanceBudget, FinanceCategory, FinanceLimits, FinanceTransaction } from '../../lib/finance';
 
 const auth = await requireUser(Astro.request, Astro.cookies);
@@ -8,6 +9,8 @@ if ('redirect' in auth) {
 	return Astro.redirect(auth.redirect);
 }
 const { supabase } = auth;
+// Investments are the owner's alone; the shared member role never sees the link.
+const isOwner = !isMember(auth.user);
 
 const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
 
@@ -97,6 +100,7 @@ const error = Astro.url.searchParams.get('error');
 			</div>
 			<div class="page-head-actions shrink-0">
 				<a href="/finance/budget" class="btn ghost">Budget planning →</a>
+				{isOwner && <a href="/finance/investments" class="btn ghost">Investments →</a>}
 				<a href="/finance/settings" class="btn ghost">Settings</a>
 				<button type="button" class="btn ghost disabled opacity-45 cursor-not-allowed pointer-events-none" disabled aria-disabled="true">
 					Statistics <span class="soon-badge ml-1.5 px-[7px] py-px rounded-full bg-canvas border border-line text-[10px] font-semibold tracking-[0.04em] uppercase text-muted">Soon</span>
