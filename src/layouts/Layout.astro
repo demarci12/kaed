@@ -471,10 +471,25 @@ const memberOnly = user ? isMember(user) : false;
 				align-items: flex-start;
 				justify-content: space-between;
 				gap: 12px;
+				/* Wraps so a crowded head (rank badge + title + open + reorder +
+				   delete) drops its controls to a second line on a narrow phone
+				   instead of squeezing the title into a one-word column and
+				   pushing the card past the viewport edge. */
+				flex-wrap: wrap;
+			}
+
+			/* Trailing controls travel together, so they wrap as one unit
+			   rather than breaking up across two lines. */
+			.card-actions {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				margin-left: auto;
+				flex-shrink: 0;
 			}
 
 			.card-title {
-				flex: 1;
+				flex: 1 1 10rem;
 				min-width: 0;
 				font-family: var(--serif);
 				font-size: 19px;
@@ -615,6 +630,31 @@ const memberOnly = user ? isMember(user) : false;
 				font-family: inherit;
 				text-align: center;
 				font-variant-numeric: tabular-nums;
+			}
+
+			/* Opens the detail page from a list whose title is inline-editable,
+			   so clicking the title renames and this opens. Without it the
+			   only way into the detail view would be to give up inline rename. */
+			.card-open {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 22px;
+				height: 22px;
+				border-radius: 6px;
+				border: 1px solid transparent;
+				color: var(--muted);
+				font-size: 13px;
+				line-height: 1;
+				text-decoration: none;
+				transition:
+					border-color 0.15s ease,
+					color 0.15s ease;
+			}
+
+			.card-open:hover {
+				border-color: var(--ink);
+				color: var(--ink);
 			}
 
 			.rank-controls {
@@ -1364,6 +1404,7 @@ const memberOnly = user ? isMember(user) : false;
 										<summary>Finance</summary>
 										<div class="nav-dropdown">
 											<a href="/finance">Personal finance</a>
+											<a href="/finance/investments">Investments</a>
 										</div>
 									</details>
 								</>
@@ -1407,6 +1448,7 @@ const memberOnly = user ? isMember(user) : false;
 										<a href="/clients" class="mobile-nav-link">CRM</a>
 										<p class="mobile-nav-heading">Finance</p>
 										<a href="/finance" class="mobile-nav-link">Personal finance</a>
+										<a href="/finance/investments" class="mobile-nav-link">Investments</a>
 									</>
 								)}
 								<div class="mt-2 pt-3 border-t border-line flex flex-col gap-2.5">
