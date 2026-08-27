@@ -1255,12 +1255,48 @@ const memberOnly = user ? isMember(user) : false;
 					left: 0;
 					right: 0;
 					width: 100%;
-					max-height: 85vh;
+					/* The UA stylesheet sets `dialog { max-width: calc(100% -
+					   6px - 2em) }`, which silently beat our width:100% and
+					   left the sheet 38px narrower than the screen on every
+					   phone -- flush corners floating off both edges. Nothing
+					   in our own CSS said 282px; the browser did. */
+					max-width: none;
+					/* dvh, not vh: on mobile Safari/Chrome `vh` is measured
+					   against the viewport with the URL bar hidden, so 85vh can
+					   be taller than what's actually on screen and the sheet's
+					   action buttons end up under the browser chrome. */
+					max-height: 85dvh;
 					margin: 0;
 					padding-top: 22px;
+					/* Clear the home indicator on gesture-nav phones -- without
+					   this the Cancel/Save row sits under it and is hard to hit. */
+					padding-bottom: max(32px, calc(env(safe-area-inset-bottom) + 20px));
+					padding-left: 20px;
+					padding-right: 20px;
 					border-radius: 20px 20px 0 0;
 					border-bottom: none;
 					transform: translateY(100%);
+				}
+
+				/* Side-by-side fields stack on phones. Two 44px-tall date inputs
+				   sharing ~280px of usable width render as "yyyy. mm" with the
+				   day clipped off -- the Hungarian date format simply doesn't
+				   fit in half a phone. Stacking is the only version where the
+				   value is fully readable. */
+				.popup .popup-row {
+					flex-direction: column;
+					gap: 0;
+				}
+
+				/* Once stacked, each field is a normal row again and needs the
+				   standard 18px rhythm back -- the desktop rule that zeroes it
+				   only makes sense while the columns sit next to each other. */
+				.popup .popup-row > div > label:not(.btn) {
+					margin-top: 18px;
+				}
+
+				.popup .popup-row > div:first-child > label:not(.btn) {
+					margin-top: 18px;
 				}
 				dialog.popup[open] {
 					transform: translateY(0);
