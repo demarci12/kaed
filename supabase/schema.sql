@@ -107,11 +107,18 @@ create table if not exists public.open_points (
   goal_id uuid references public.goals(id) on delete set null,
   project_id uuid references public.projects(id) on delete set null,
   created_at timestamptz not null default now(),
+  -- Null = active, shows on /opl. Set = hidden from the main list but kept
+  -- (notes and status history included) and visible on /opl/archive.
+  -- Separate from `status`: an item can be archived at any status, not just
+  -- closed -- an abandoned "open" item shouldn't have to be marked done
+  -- first just to get it out of the way.
+  archived_at timestamptz,
   constraint open_points_single_parent check (goal_id is null or project_id is null)
 );
 
 create index if not exists open_points_goal_id_idx on public.open_points (goal_id);
 create index if not exists open_points_project_id_idx on public.open_points (project_id);
+create index if not exists open_points_archived_at_idx on public.open_points (archived_at);
 
 alter table public.open_points enable row level security;
 

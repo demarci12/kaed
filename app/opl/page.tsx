@@ -16,15 +16,17 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 	const { supabase } = await requireOwner();
 	const { error } = await searchParams;
 
-	// One round trip, not four -- see the Promise.all rule in CLAUDE.md.
-	const [{ data: points }, { data: goals }, { data: projects }, { data: notes }] = await Promise.all([
-		supabase.from('open_points').select('*').order('created_at', { ascending: false }),
-		supabase.from('goals').select('id, title').order('rank', { ascending: true }),
-		supabase.from('projects').select('id, title').order('title', { ascending: true }),
-		// Newest first, so the first row seen per open_point_id below is
-		// already the latest -- no separate per-point query needed.
-		supabase.from('open_point_notes').select('*').order('created_at', { ascending: false }),
-	]);
+	// One round trip, not five -- see the Promise.all rule in CLAUDE.md.
+	const [{ data: points }, { data: goals }, { data: projects }, { data: notes }, { count: archivedCount }] =
+		await Promise.all([
+			supabase.from('open_points').select('*').is('archived_at', null).order('created_at', { ascending: false }),
+			supabase.from('goals').select('id, title').order('rank', { ascending: true }),
+			supabase.from('projects').select('id, title').order('title', { ascending: true }),
+			// Newest first, so the first row seen per open_point_id below is
+			// already the latest -- no separate per-point query needed.
+			supabase.from('open_point_notes').select('*').order('created_at', { ascending: false }),
+			supabase.from('open_points').select('id', { count: 'exact', head: true }).not('archived_at', 'is', null),
+		]);
 
 	const typedPoints = (points ?? []) as OpenPoint[];
 	const typedGoals = (goals ?? []) as Pick<Goal, 'id' | 'title'>[];
@@ -60,9 +62,14 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 				title="OPL: Open Point List."
 				lede="Every open item in one place: what needs doing, who's on it, where it stands, and which goal or project it belongs to. Click any field to edit it, or open one to see its full note history and how long it's spent in each status."
 				actions={
-					<form method="post" action="/api/open-points/create-inline" className="m-0 shrink-0 w-full md:w-auto">
-						<button type="submit" className={`${btn} w-full md:w-auto`}>+ New item</button>
-					</form>
+					<>
+						{!!archivedCount && (
+							<Link href="/opl/archive" className={chipMuted}>Archived ({archivedCount})</Link>
+						)}
+						<form method="post" action="/api/open-points/create-inline" className="m-0 shrink-0 w-full md:w-auto">
+							<button type="submit" className={`${btn} w-full md:w-auto`}>+ New item</button>
+						</form>
+					</>
 				}
 			/>
 
@@ -87,6 +94,9 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 									/>
 									<div className="flex items-center gap-1.5 shrink-0">
 										<Link href={`/opl/${point.id}`} className={iconBtn} aria-label={`Open ${point.title || 'item'}`} title="Open">↗</Link>
+										<form method="post" action={`/api/open-points/${point.id}/archive`} className="m-0 shrink-0">
+											<button type="submit" className={iconBtn} aria-label="Archive item" title="Archive">🗄</button>
+										</form>
 										<form method="post" action={`/api/open-points/${point.id}/delete`} className="m-0 shrink-0">
 											<button type="submit" className={deleteBtn} aria-label="Delete item">×</button>
 										</form>

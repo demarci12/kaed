@@ -12,7 +12,7 @@ import {
 import type { Goal } from '@/lib/goals';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
-import { btn, cardLabel, cardValue, chip, chipMuted, cx, Empty, FormError, Pill } from '@/components/ui';
+import { btn, btnGhost, cardLabel, cardValue, chip, chipMuted, cx, Empty, FormError, Pill } from '@/components/ui';
 import { NewNotePopup } from './NewNotePopup';
 
 const STATUS_OPTIONS = Object.entries(OPEN_POINT_STATUS_LABELS) as [string, string][];
@@ -71,12 +71,29 @@ export default async function OpenPointDetailPage({
 					className="font-serif text-[clamp(1.9rem,4vw,2.6rem)] font-semibold tracking-[-0.02em] leading-tight"
 					display={typed.title || 'Untitled'}
 				/>
-				{typed.status !== 'closed' && (
-					<form method="post" action={`/api/open-points/${typed.id}/close`}>
-						<button type="submit" className={btn}>✓ Mark done</button>
-					</form>
-				)}
+				<div className="flex items-center gap-2 shrink-0">
+					{typed.status !== 'closed' && (
+						<form method="post" action={`/api/open-points/${typed.id}/close`}>
+							<button type="submit" className={btn}>✓ Mark done</button>
+						</form>
+					)}
+					{typed.archived_at ? (
+						<form method="post" action={`/api/open-points/${typed.id}/restore`}>
+							<button type="submit" className={btnGhost}>↺ Restore</button>
+						</form>
+					) : (
+						<form method="post" action={`/api/open-points/${typed.id}/archive`}>
+							<button type="submit" className={btnGhost}>🗄 Archive</button>
+						</form>
+					)}
+				</div>
 			</div>
+
+			{typed.archived_at && (
+				<p className="mt-3 mb-0 text-sm text-muted">
+					Archived {new Date(typed.archived_at).toLocaleString()}.
+				</p>
+			)}
 
 			{error && <FormError>{error}</FormError>}
 

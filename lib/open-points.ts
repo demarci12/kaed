@@ -23,6 +23,8 @@ export interface OpenPoint {
 	goal_id: string | null;
 	project_id: string | null;
 	created_at: string;
+	/** Null = active. Set = hidden from /opl, kept (with its notes and status history) on /opl/archive. */
+	archived_at: string | null;
 }
 
 export interface OpenPointNote {
