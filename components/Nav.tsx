@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { btn, btnGhost, cx } from './ui';
 
 export interface NavGroup { label: string; links: [string, string][] }
@@ -15,6 +15,42 @@ export interface NavGroup { label: string; links: [string, string][] }
 export function Nav({ email, groups, memberOnly }: { email: string; groups: NavGroup[]; memberOnly: boolean }) {
 	const [openGroup, setOpenGroup] = useState<string | null>(null);
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const navRef = useRef<HTMLElement>(null);
+	const mobileRef = useRef<HTMLDivElement>(null);
+
+	/**
+	 * Click-outside-to-close, not onMouseLeave. The dropdown panel sits
+	 * `top-[calc(100%+12px)]` below its trigger -- a `position: relative`
+	 * wrapper's hoverable box is only as tall as its normal-flow content (the
+	 * button), not its absolutely-positioned children, so the mouse crosses
+	 * genuinely-outside space in that 12px gap on the way down to the menu.
+	 * onMouseLeave fired there, React unmounted the panel before the click on
+	 * a link landed, and the whole menu read as "opens then instantly closes."
+	 */
+	useEffect(() => {
+		if (!openGroup) return;
+		const onPointerDown = (e: PointerEvent) => {
+			if (!navRef.current?.contains(e.target as Node)) setOpenGroup(null);
+		};
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') setOpenGroup(null);
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		document.addEventListener('keydown', onKeyDown);
+		return () => {
+			document.removeEventListener('pointerdown', onPointerDown);
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [openGroup]);
+
+	useEffect(() => {
+		if (!mobileOpen) return;
+		const onPointerDown = (e: PointerEvent) => {
+			if (!mobileRef.current?.contains(e.target as Node)) setMobileOpen(false);
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		return () => document.removeEventListener('pointerdown', onPointerDown);
+	}, [mobileOpen]);
 
 	if (memberOnly) {
 		return (
@@ -27,9 +63,9 @@ export function Nav({ email, groups, memberOnly }: { email: string; groups: NavG
 
 	return (
 		<>
-			<nav className="hidden md:flex items-center gap-4 text-sm">
+			<nav ref={navRef} className="hidden md:flex items-center gap-4 text-sm">
 				{groups.map((g) => (
-					<div key={g.label} className="relative" onMouseLeave={() => setOpenGroup(null)}>
+					<div key={g.label} className="relative">
 						<button
 							type="button"
 							onClick={() => setOpenGroup(openGroup === g.label ? null : g.label)}
@@ -54,7 +90,7 @@ export function Nav({ email, groups, memberOnly }: { email: string; groups: NavG
 				<SignOut />
 			</nav>
 
-			<div className="md:hidden relative">
+			<div ref={mobileRef} className="md:hidden relative">
 				<button type="button" aria-label="Menu" onClick={() => setMobileOpen(!mobileOpen)}
 					className="flex items-center justify-center w-11 h-11 rounded-full border border-line bg-transparent cursor-pointer">
 					<span className="relative block w-[18px] h-[13px]">
