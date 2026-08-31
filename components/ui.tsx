@@ -68,6 +68,9 @@ const PILL: Record<string, string> = {
 	functional: 'bg-info-bg text-info', non_functional: 'bg-accent-bg text-accent',
 	should: 'bg-warn-bg text-warn', could: 'bg-info-bg text-info', wont: 'bg-canvas text-muted',
 	testing: 'bg-warn-bg text-warn', go: 'bg-positive-bg text-positive', no_go: 'bg-negative-bg text-negative',
+	pending: 'bg-warn-bg text-warn', summarized: 'bg-positive-bg text-positive', failed: 'bg-negative-bg text-negative',
+	delivery: 'bg-info-bg text-info', marketing: 'bg-accent-bg text-accent', sales: 'bg-positive-bg text-positive',
+	market_research: 'bg-warn-bg text-warn',
 };
 
 export function Pill({ value, children }: { value: string; children: ReactNode }) {

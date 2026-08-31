@@ -491,3 +491,61 @@ alter table public.idea_lab_evidence enable row level security;
 create policy "own idea lab evidence" on public.idea_lab_evidence
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- Study collection: paste a URL, Claude extracts startup-relevant takeaways
+-- from it. Manual entry for now; source_type anticipates the long-term goal
+-- (auto-scraping YouTube/X/websites) without building that yet.
+create table if not exists public.studies (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  url text not null,
+  title text,
+  source_type text not null default 'blog' check (source_type in ('blog', 'youtube', 'x', 'website')),
+  status text not null default 'pending' check (status in ('pending', 'summarized', 'failed')),
+  error text,
+  fetched_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists studies_status_idx on public.studies (status);
+
+alter table public.studies enable row level security;
+
+create policy "own studies" on public.studies
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- One row per extracted takeaway, categorized so they're filterable later
+-- ("show me every sales takeaway across all studies") rather than locked
+-- inside one freeform summary blob per study.
+create table if not exists public.study_takeaways (
+  id uuid primary key default gen_random_uuid(),
+  study_id uuid not null references public.studies(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category text not null check (category in ('delivery', 'marketing', 'sales', 'market_research', 'other')),
+  takeaway text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists study_takeaways_study_id_idx on public.study_takeaways (study_id);
+create index if not exists study_takeaways_category_idx on public.study_takeaways (category);
+
+alter table public.study_takeaways enable row level security;
+
+create policy "own study takeaways" on public.study_takeaways
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Freeform discussion thread on a study, same shape as client_notes /
+-- open_point_notes.
+create table if not exists public.study_comments (
+  id uuid primary key default gen_random_uuid(),
+  study_id uuid not null references public.studies(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  comment text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists study_comments_study_id_idx on public.study_comments (study_id);
+
+alter table public.study_comments enable row level security;
+
+create policy "own study comments" on public.study_comments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
