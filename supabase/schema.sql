@@ -425,3 +425,69 @@ alter table public.open_point_status_events enable row level security;
 
 create policy "own open point status events" on public.open_point_status_events
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- Idea Lab: the 11-step "find a startup idea" process as a working tool.
+-- One row per candidate idea being run through the process; each step below
+-- is a field on it, filled in as you work through the framework. Converting
+-- to a business idea (business_idea_id set) doesn't delete the candidate --
+-- the process notes stay as the paper trail for why that idea was chosen.
+create table if not exists public.idea_candidates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  -- Step 1: domains you already have access to.
+  domains text,
+  -- Step 2: personal pain audit within those domains.
+  personal_pain text,
+  -- Step 4: confirmation money is already moving in the space.
+  money_evidence text,
+  -- Step 5: the secret -- what valuable thing nobody's building yet.
+  secret text,
+  -- Step 6: the one specific, nameable buyer.
+  buyer text,
+  -- Step 7: answers to the three stress-test questions.
+  stress_test text,
+  -- Step 8: checked against the four idea traps (CISP, tar pit, schlep, unsexy).
+  trap_check text,
+  -- Step 9: notes against the 10-question score.
+  score_notes text,
+  -- Step 10: the pitch, headline, and what validation actually turned up.
+  validation text,
+  decision text not null default 'testing' check (decision in ('testing', 'go', 'no_go')),
+  rank integer not null default 0,
+  -- Set once Step 11 happens for real -- converted into the business idea
+  -- register. Kept as a link, not a delete, so the process trail survives.
+  business_idea_id uuid references public.business_ideas(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idea_candidates_business_idea_id_idx on public.idea_candidates (business_idea_id);
+
+alter table public.idea_candidates enable row level security;
+
+create policy "own idea candidates" on public.idea_candidates
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Step 3: market-demand evidence log. A repeating list, not one field --
+-- the framework explicitly asks you to log every finding (problem, source,
+-- permalink, engagement, date, quote), not summarize them into a paragraph.
+create table if not exists public.idea_lab_evidence (
+  id uuid primary key default gen_random_uuid(),
+  idea_candidate_id uuid not null references public.idea_candidates(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  problem text not null,
+  source text,
+  permalink text,
+  engagement text,
+  quote text,
+  found_on date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idea_lab_evidence_idea_candidate_id_idx on public.idea_lab_evidence (idea_candidate_id);
+
+alter table public.idea_lab_evidence enable row level security;
+
+create policy "own idea lab evidence" on public.idea_lab_evidence
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+

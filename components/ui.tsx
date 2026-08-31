@@ -67,6 +67,7 @@ const PILL: Record<string, string> = {
 	primary: 'bg-info-bg text-info', secondary: 'bg-warn-bg text-warn', system: 'bg-accent-bg text-accent',
 	functional: 'bg-info-bg text-info', non_functional: 'bg-accent-bg text-accent',
 	should: 'bg-warn-bg text-warn', could: 'bg-info-bg text-info', wont: 'bg-canvas text-muted',
+	testing: 'bg-warn-bg text-warn', go: 'bg-positive-bg text-positive', no_go: 'bg-negative-bg text-negative',
 };
 
 export function Pill({ value, children }: { value: string; children: ReactNode }) {
