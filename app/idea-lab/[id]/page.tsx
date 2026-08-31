@@ -61,9 +61,24 @@ export default async function IdeaLabDetailPage({
 				Work through the steps in order -- each builds on the one before it. Fields save as you go.
 			</p>
 
+			{/* Jump-to-step rail: without this the only way to reach step 10 was
+			    scrolling past nine others every time -- same problem the source
+			    worksheet artifact solved with its own anchor nav. */}
+			<nav className="mt-5 flex gap-1.5 flex-wrap" aria-label="Jump to step">
+				{IDEA_LAB_STEPS.map((step) => (
+					<a
+						key={step.n}
+						href={`#step-${step.n}`}
+						className="font-mono text-[11px] text-muted no-underline bg-paper border border-line rounded-full px-2.5 py-[3px] hover:border-ink hover:text-ink"
+					>
+						{step.n}
+					</a>
+				))}
+			</nav>
+
 			<div className="mt-10 flex flex-col gap-12">
 				{IDEA_LAB_STEPS.map((step) => (
-					<div key={step.n}>
+					<div key={step.n} id={`step-${step.n}`} className="scroll-mt-6">
 						<div className="flex items-baseline gap-2.5">
 							<span className="font-serif text-lg font-semibold text-muted tabular-nums">{step.n}.</span>
 							<h2 className="m-0 font-serif text-lg font-semibold">{step.title}</h2>
