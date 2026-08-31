@@ -6,9 +6,10 @@ import {
 } from '@/lib/idea-lab';
 import { InlineEdit } from '@/components/InlineEdit';
 import {
-	btn, btnGhost, cardValue, chip, chipMuted, cx, deleteBtn, Empty, FormError, Pill,
+	btn, btnGhost, chip, chipMuted, deleteBtn, Empty, FormError, Pill,
 } from '@/components/ui';
 import { NewEvidencePopup } from './NewEvidencePopup';
+import { StepEditor } from './StepEditor';
 
 const DECISION_OPTIONS = Object.entries(IDEA_DECISION_LABELS) as [string, string][];
 
@@ -57,7 +58,7 @@ export default async function IdeaLabDetailPage({
 			{error && <FormError>{error}</FormError>}
 
 			<p className="mt-6 mb-0 text-sm text-muted">
-				Work through the steps in order -- each builds on the one before it. Click any field to write.
+				Work through the steps in order -- each builds on the one before it. Fields save as you go.
 			</p>
 
 			<div className="mt-10 flex flex-col gap-12">
@@ -112,14 +113,10 @@ export default async function IdeaLabDetailPage({
 								display={<Pill value={typed.decision}>{IDEA_DECISION_LABELS[typed.decision]}</Pill>}
 							/>
 						) : (
-							<InlineEdit
-								value={(typed[step.field] as string | null) ?? ''}
-								field={step.field}
-								id={typed.id}
-								endpoint="/api/idea-lab"
-								kind="textarea"
-								className={cx('block', cardValue)}
-								placeholder="Write something…"
+							<StepEditor
+								candidateId={typed.id}
+								step={step}
+								initialRaw={typed[step.field as Exclude<typeof step.field, 'evidence' | 'decision'>] as string | null}
 							/>
 						)}
 					</div>

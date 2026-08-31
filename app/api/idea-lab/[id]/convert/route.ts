@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getOwnerSession } from '@/lib/auth';
-import type { IdeaCandidate } from '@/lib/idea-lab';
+import { IDEA_LAB_STEPS, summarizeStepAnswer, type IdeaCandidate } from '@/lib/idea-lab';
+
+const PERSONAL_PAIN_STEP = IDEA_LAB_STEPS.find((s) => s.field === 'personal_pain')!;
+const BUYER_STEP = IDEA_LAB_STEPS.find((s) => s.field === 'buyer')!;
+const VALIDATION_STEP = IDEA_LAB_STEPS.find((s) => s.field === 'validation')!;
 
 /**
  * Turns a candidate into a real row in the business idea register. The
@@ -32,14 +36,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		.maybeSingle();
 	const nextRank = ((maxRankRow?.rank as number | undefined) ?? -1) + 1;
 
+	// Step answers are stored as JSON (see parseStepAnswer/composeStepAnswer in
+	// lib/idea-lab.ts) -- summarizeStepAnswer turns that back into the
+	// readable prose these business_ideas columns expect, instead of the raw
+	// JSON blob landing in a field a human is meant to read.
+	const painPoint = summarizeStepAnswer(PERSONAL_PAIN_STEP, typed.personal_pain);
+	const targetMarket = summarizeStepAnswer(BUYER_STEP, typed.buyer);
+	const validation = summarizeStepAnswer(VALIDATION_STEP, typed.validation);
+
 	const { data: created, error } = await supabase
 		.from('business_ideas')
 		.insert({
 			user_id: user.id,
 			title: typed.title,
-			pain_point: typed.personal_pain || null,
-			target_market: typed.buyer || null,
-			validation: typed.validation || null,
+			pain_point: painPoint || null,
+			target_market: targetMarket || null,
+			validation: validation || null,
 			rank: nextRank,
 		})
 		.select('id')
