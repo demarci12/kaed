@@ -3,14 +3,14 @@
 import { Popup, PopupActions } from '@/components/Popup';
 import { btnGhost, input, label, textarea } from '@/components/ui';
 
-export function NewEvidencePopup({ candidateId }: { candidateId: string }) {
+export function NewEvidencePopup() {
 	return (
 		<Popup
 			title="Log a finding"
 			trigger={(open) => <button type="button" className={btnGhost} onClick={open}>+ Log finding</button>}
 		>
 			{(close) => (
-				<form method="post" action={`/api/idea-lab/${candidateId}/evidence`}>
+				<form method="post" action="/api/idea-lab/evidence">
 					<label className={label} htmlFor="problem">Problem</label>
 					<textarea id="problem" className={textarea} name="problem" rows={2} placeholder="What are people struggling with?" required />
 
