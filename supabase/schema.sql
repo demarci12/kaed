@@ -459,6 +459,10 @@ create table if not exists public.idea_lab (
   score_notes text,
   -- Step 11: the pitch, headline, and what validation actually turned up.
   validation text,
+  -- Where the guided walkthrough left off. Persisted rather than kept in the
+  -- URL because nobody finishes eleven steps in one sitting -- coming back
+  -- tomorrow should resume the process, not restart it.
+  current_step smallint not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

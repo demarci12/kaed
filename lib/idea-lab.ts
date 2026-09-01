@@ -33,6 +33,8 @@ export interface IdeaLabWorksheet {
 	trap_check: string | null;
 	score_notes: string | null;
 	validation: string | null;
+	/** Where the guided walkthrough left off, 1-based. */
+	current_step: number;
 	created_at: string;
 	updated_at: string;
 }
@@ -67,7 +69,7 @@ export interface IdeaLabEvidence {
 /** The worksheet columns that are plain prose steps, i.e. inline-editable. */
 export type IdeaLabProseField = Exclude<
 	keyof IdeaLabWorksheet,
-	'id' | 'user_id' | 'created_at' | 'updated_at'
+	'id' | 'user_id' | 'current_step' | 'created_at' | 'updated_at'
 >;
 
 /**
