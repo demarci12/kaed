@@ -68,14 +68,14 @@ export const IDEA_LAB_STEPS: IdeaLabStep[] = [
 		title: 'Identify your domains',
 		field: 'domains',
 		guidance:
-			"Every job, hobby you're genuinely deep in, community you're active in, and life stage/transition you've been through. You have an unfair advantage in every domain you already live in.",
+			"Every job, hobby you're genuinely deep in, community you're active in, and life stage/transition you've been through. You have an unfair advantage in every domain you already live in. One domain per line -- Step 2 mines pain within each one you list here.",
 	},
 	{
 		n: 2,
 		title: 'Mine personal pain within each domain',
 		field: 'personal_pain',
 		guidance:
-			'Money already spent fixing an annoyance, workarounds you built, things you Google repeatedly, complaints you make out loud, "why doesn\'t this exist" moments. Write each as: "[Who] struggles with [specific problem] when [specific situation]."',
+			'For each domain you listed in Step 1: money already spent fixing an annoyance, workarounds you built, things you Google repeatedly, complaints you make out loud, "why doesn\'t this exist" moments. Write each as: "[Who] struggles with [specific problem] when [specific situation]."',
 	},
 	{
 		n: 3,
@@ -141,3 +141,49 @@ export const IDEA_LAB_STEPS: IdeaLabStep[] = [
 			"If it passed Steps 1-10, commit to a small scoped build and get it in front of real users fast. If it stalled at Step 10, that's data, not a dead end -- return to Step 3 or 6 with what you learned.",
 	},
 ];
+
+// ---- Step 2's domain-linked pain mining ---------------------------------
+//
+// Step 2 isn't a generic pain brain-dump -- it's mining pain *within each
+// domain from Step 1*. domains stays one plain textarea (one domain per
+// line); personal_pain stores a small { [domain]: painNotes } map instead
+// of one flat blob, so the UI can show one field per domain and the two
+// steps actually connect.
+
+export type DomainPainMap = Record<string, string>;
+
+export function splitDomains(rawDomains: string | null | undefined): string[] {
+	return (rawDomains ?? '')
+		.split('\n')
+		.map((d) => d.trim())
+		.filter(Boolean);
+}
+
+const LEGACY_KEY = '__legacy__';
+
+export function parseDomainPain(raw: string | null | undefined): DomainPainMap {
+	if (!raw) return {};
+	try {
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as DomainPainMap;
+	} catch {
+		// fall through
+	}
+	// Plain text written before domain-linking existed -- never silently
+	// dropped, kept under a synthetic key and surfaced by the UI/summary.
+	return { [LEGACY_KEY]: raw };
+}
+
+export function composeDomainPain(map: DomainPainMap): string {
+	return JSON.stringify(map);
+}
+
+/** Human-readable rollup, used for the business-idea conversion mapping. */
+export function summarizeDomainPain(map: DomainPainMap): string {
+	return Object.entries(map)
+		.filter(([, v]) => v?.trim())
+		.map(([domain, v]) => (domain === LEGACY_KEY ? v.trim() : `${domain}: ${v.trim()}`))
+		.join('\n\n');
+}
+
+export { LEGACY_KEY as DOMAIN_PAIN_LEGACY_KEY };

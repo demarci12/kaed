@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getOwnerSession } from '@/lib/auth';
-import type { IdeaCandidate } from '@/lib/idea-lab';
+import { parseDomainPain, summarizeDomainPain, type IdeaCandidate } from '@/lib/idea-lab';
 
 /**
  * Turns a candidate into a real row in the business idea register. The
@@ -32,12 +32,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		.maybeSingle();
 	const nextRank = ((maxRankRow?.rank as number | undefined) ?? -1) + 1;
 
+	// personal_pain holds a { domain: painNotes } map, not prose -- see
+	// DomainPainEditor.tsx / parseDomainPain in lib/idea-lab.ts. Render it
+	// back to readable text here so the converted idea's pain_point reads
+	// normally instead of showing a JSON blob.
+	const painPoint = summarizeDomainPain(parseDomainPain(typed.personal_pain));
+
 	const { data: created, error } = await supabase
 		.from('business_ideas')
 		.insert({
 			user_id: user.id,
 			title: typed.title,
-			pain_point: typed.personal_pain || null,
+			pain_point: painPoint || null,
 			target_market: typed.buyer || null,
 			validation: typed.validation || null,
 			rank: nextRank,
