@@ -9,7 +9,6 @@ import {
 	btn, btnGhost, cardValue, chip, chipMuted, cx, deleteBtn, Empty, FormError, Pill,
 } from '@/components/ui';
 import { NewEvidencePopup } from './NewEvidencePopup';
-import { DomainPainEditor } from './DomainPainEditor';
 
 const DECISION_OPTIONS = Object.entries(IDEA_DECISION_LABELS) as [string, string][];
 
@@ -127,8 +126,6 @@ export default async function IdeaLabDetailPage({
 								className="inline-block cursor-pointer"
 								display={<Pill value={typed.decision}>{IDEA_DECISION_LABELS[typed.decision]}</Pill>}
 							/>
-						) : step.field === 'personal_pain' ? (
-							<DomainPainEditor candidateId={typed.id} domainsRaw={typed.domains} initialPainRaw={typed.personal_pain} />
 						) : (
 							<InlineEdit
 								value={(typed[step.field] as string | null) ?? ''}

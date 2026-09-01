@@ -15,11 +15,13 @@ export const IDEA_DECISION_LABELS: Record<IdeaDecision, string> = {
 export const IDEA_DECISIONS = Object.keys(IDEA_DECISION_LABELS) as IdeaDecision[];
 
 /**
- * One candidate run through the 11-step "find a startup idea" process.
- * Steps 1, 2 and 4-10 are single freeform fields here; step 3 (market-demand
- * evidence) is a repeating log in idea_lab_evidence instead, since the
+ * One candidate run through the idea-finding process. `domains` is unused by
+ * the UI (the domain-gated step it backed was removed) but stays in the
+ * schema rather than being dropped -- no data loss risk for a column that
+ * costs nothing sitting empty. Step 2 (market-demand evidence) is a
+ * repeating log in idea_lab_evidence instead of a field here, since the
  * process explicitly asks you to log every finding, not summarize them into
- * one paragraph. Step 11 (decision) is a plain enum.
+ * one paragraph. The last step (decision) is a plain enum.
  */
 export interface IdeaCandidate {
 	id: string;
@@ -54,7 +56,7 @@ export interface IdeaLabEvidence {
 	created_at: string;
 }
 
-/** One step of the process: the field it edits (or 'evidence' for the step-3 log) and the condensed guidance shown above the field. */
+/** One step of the process: the field it edits (or 'evidence' for the market-demand log) and the condensed guidance shown above the field. */
 export interface IdeaLabStep {
 	n: number;
 	title: string;
@@ -65,125 +67,72 @@ export interface IdeaLabStep {
 export const IDEA_LAB_STEPS: IdeaLabStep[] = [
 	{
 		n: 1,
-		title: 'Identify your domains',
-		field: 'domains',
+		title: 'Mine your personal pain',
+		field: 'personal_pain',
 		guidance:
-			"Every job, hobby you're genuinely deep in, community you're active in, and life stage/transition you've been through. You have an unfair advantage in every domain you already live in. One domain per line -- Step 2 mines pain within each one you list here.",
+			'Money already spent fixing an annoyance, workarounds you built, things you Google repeatedly, complaints you make out loud, "why doesn\'t this exist" moments. Write each as: "[Who] struggles with [specific problem] when [specific situation]."',
 	},
 	{
 		n: 2,
-		title: 'Mine personal pain within each domain',
-		field: 'personal_pain',
-		guidance:
-			'For each domain you listed in Step 1: money already spent fixing an annoyance, workarounds you built, things you Google repeatedly, complaints you make out loud, "why doesn\'t this exist" moments. Write each as: "[Who] struggles with [specific problem] when [specific situation]."',
-	},
-	{
-		n: 3,
 		title: 'Find domain-specific market demand',
 		field: 'evidence',
 		guidance:
 			'Search relevant subreddits for frustration phrases ("wish there was", "alternative to X", "hate X"), not topic names. Read the comments, not just the post. Log every finding below. 20+ mentions across subreddits is a decent signal; 50+ across platforms is strong.',
 	},
 	{
-		n: 4,
+		n: 3,
 		title: 'Confirm money is already moving',
 		field: 'money_evidence',
 		guidance:
 			'Existing paid tools, job postings referencing the problem, agencies/freelancers paid to solve it manually, rough ad spend in the space. A market where nobody spends money is a red flag, however painful it feels.',
 	},
 	{
-		n: 5,
+		n: 4,
 		title: 'Look for a secret',
 		field: 'secret',
 		guidance:
 			"What valuable thing is nobody building? A field nobody's rigorously studied, or something forbidden/taboo/unsaid in this domain. The best place to look is wherever no one else is looking.",
 	},
 	{
-		n: 6,
+		n: 5,
 		title: 'Narrow to one specific, nameable buyer',
 		field: 'buyer',
 		guidance:
 			'Not "small businesses" -- "freelance wedding photographers who lose bookings to slow reply times." A crowded market for that buyer is a good sign, not a disqualifier.',
 	},
 	{
-		n: 7,
+		n: 6,
 		title: 'Stress-test the idea',
 		field: 'stress_test',
 		guidance:
 			'What if you had to ship in two weeks? What if you could only charge 10x more? What if you could serve only one customer, ever?',
 	},
 	{
-		n: 8,
+		n: 7,
 		title: 'Check against the idea traps',
 		field: 'trap_check',
 		guidance:
 			"Solution in search of a problem, tar pit (looks easy, quietly defeats founders for years), the schlep filter (avoiding tedious-but-necessary work), the unsexy filter (avoiding boring spaces that are actually underserved).",
 	},
 	{
-		n: 9,
+		n: 8,
 		title: 'Score against the 10 questions',
 		field: 'score_notes',
 		guidance:
 			'Founder-market fit, market size, problem acuteness, competition (good sign), personal want, timing, proxies in adjacent markets, long-term interest, scalability, idea-space hit rate. Hard-to-start, boring, and "competitors who all missed the same thing" are good signs that feel bad.',
 	},
 	{
-		n: 10,
+		n: 9,
 		title: 'Validate with a pitch and real money',
 		field: 'validation',
 		guidance:
-			'One-paragraph pitch + landing-page headline, taken to 15-20 people matching your Step 6 buyer. Ask about past behavior and spend, never "would you buy this?" Push for a waitlist deposit, presale, or pledge -- dollars in hand is the only reliable signal.',
+			'One-paragraph pitch + landing-page headline, taken to 15-20 people matching your Step 5 buyer. Ask about past behavior and spend, never "would you buy this?" Push for a waitlist deposit, presale, or pledge -- dollars in hand is the only reliable signal.',
 	},
 	{
-		n: 11,
+		n: 10,
 		title: 'Decide and move',
 		field: 'decision',
 		guidance:
-			"If it passed Steps 1-10, commit to a small scoped build and get it in front of real users fast. If it stalled at Step 10, that's data, not a dead end -- return to Step 3 or 6 with what you learned.",
+			"If it passed Steps 1-9, commit to a small scoped build and get it in front of real users fast. If it stalled at Step 9, that's data, not a dead end -- return to Step 2 or 5 with what you learned.",
 	},
 ];
-
-// ---- Step 2's domain-linked pain mining ---------------------------------
-//
-// Step 2 isn't a generic pain brain-dump -- it's mining pain *within each
-// domain from Step 1*. domains stays one plain textarea (one domain per
-// line); personal_pain stores a small { [domain]: painNotes } map instead
-// of one flat blob, so the UI can show one field per domain and the two
-// steps actually connect.
-
-export type DomainPainMap = Record<string, string>;
-
-export function splitDomains(rawDomains: string | null | undefined): string[] {
-	return (rawDomains ?? '')
-		.split('\n')
-		.map((d) => d.trim())
-		.filter(Boolean);
-}
-
-const LEGACY_KEY = '__legacy__';
-
-export function parseDomainPain(raw: string | null | undefined): DomainPainMap {
-	if (!raw) return {};
-	try {
-		const parsed = JSON.parse(raw);
-		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as DomainPainMap;
-	} catch {
-		// fall through
-	}
-	// Plain text written before domain-linking existed -- never silently
-	// dropped, kept under a synthetic key and surfaced by the UI/summary.
-	return { [LEGACY_KEY]: raw };
-}
-
-export function composeDomainPain(map: DomainPainMap): string {
-	return JSON.stringify(map);
-}
-
-/** Human-readable rollup, used for the business-idea conversion mapping. */
-export function summarizeDomainPain(map: DomainPainMap): string {
-	return Object.entries(map)
-		.filter(([, v]) => v?.trim())
-		.map(([domain, v]) => (domain === LEGACY_KEY ? v.trim() : `${domain}: ${v.trim()}`))
-		.join('\n\n');
-}
-
-export { LEGACY_KEY as DOMAIN_PAIN_LEGACY_KEY };
