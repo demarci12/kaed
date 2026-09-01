@@ -20,16 +20,25 @@ export async function POST(request: Request) {
 		.limit(1)
 		.maybeSingle();
 
-	const { error } = await supabase.from('idea_candidates').insert({
-		user_id: user.id,
-		title,
-		rank: (last?.rank ?? -1) + 1,
-	});
+	const { data: created, error } = await supabase
+		.from('idea_candidates')
+		.insert({
+			user_id: user.id,
+			title,
+			rank: (last?.rank ?? -1) + 1,
+		})
+		.select('id')
+		.single();
 
-	if (error) {
-		return NextResponse.redirect(new URL(`/idea-lab?error=${encodeURIComponent(error.message)}`, request.url), {
-			status: 303,
-		});
+	if (error || !created) {
+		return NextResponse.redirect(
+			new URL(`/idea-lab?error=${encodeURIComponent(error?.message ?? 'Could not create the idea.')}`, request.url),
+			{ status: 303 },
+		);
 	}
-	return NextResponse.redirect(new URL('/idea-lab', request.url), { status: 303 });
+
+	// Idea Lab is the brainstorming workspace for one idea, not a form that
+	// files itself away -- creating one should drop you straight into it, not
+	// back onto the list you just left.
+	return NextResponse.redirect(new URL(`/idea-lab/${created.id}`, request.url), { status: 303 });
 }
