@@ -25,7 +25,7 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 	return (
 		<section className="max-w-[1080px]">
 			<PageHead
-				eyebrow="Delivery"
+				eyebrow="Personal"
 				title="Studies."
 				lede="Paste a URL -- Claude reads it and pulls out takeaways relevant to delivery, marketing, sales, market research, or anything else that matters for building a startup. Manual for now; auto-scraping YouTube/X/websites is the long-term goal."
 			/>
