@@ -7,6 +7,7 @@ import {
 } from '@/lib/system-design';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import { NewActorPopup, NewGoalPopup, NewRequirementPopup, NewUseCasePopup } from './Popups';
 import {
 	card, cardGrid, cardHead, cardLabel, cardTitle, cardValue, chip, chipMuted, cx,
@@ -72,23 +73,21 @@ export default async function SystemDesignDetailPage({
 					<h2 className={sectionTitle}>System goals</h2>
 					<NewGoalPopup projectId={projectId} />
 				</div>
-				<div className={cardGrid}>
+				<CardList className={cardGrid}>
 					{typedGoals.length ? (
 						typedGoals.map((goal) => (
-							<article key={goal.id} className={card}>
+							<CardItem key={goal.id} id={goal.id} className={card}>
 								<div className={cardHead}>
 									<InlineEdit value={goal.title} field="title" id={goal.id} endpoint="/api/system-design/goals" className={cardTitle} />
-									<form className="shrink-0" method="post" action={`/api/system-design/goals/${goal.id}/delete`}>
-										<button type="submit" className={deleteBtn} aria-label="Delete goal">×</button>
-									</form>
+									<RemoveButton id={goal.id} endpoint={`/api/system-design/goals/${goal.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete goal">×</RemoveButton>
 								</div>
 								<InlineEdit value={goal.description ?? ''} field="description" id={goal.id} endpoint="/api/system-design/goals" kind="textarea" className={`block ${cardValue}`} />
-							</article>
+							</CardItem>
 						))
 					) : (
 						<Empty>No system goals yet.</Empty>
 					)}
-				</div>
+				</CardList>
 			</div>
 
 			<div className={section}>
@@ -96,15 +95,13 @@ export default async function SystemDesignDetailPage({
 					<h2 className={sectionTitle}>Actors</h2>
 					<NewActorPopup projectId={projectId} />
 				</div>
-				<div className={cardGrid}>
+				<CardList className={cardGrid}>
 					{typedActors.length ? (
 						typedActors.map((actor) => (
-							<article key={actor.id} className={card}>
+							<CardItem key={actor.id} id={actor.id} className={card}>
 								<div className={cardHead}>
 									<InlineEdit value={actor.name} field="name" id={actor.id} endpoint="/api/system-design/actors" className={cardTitle} />
-									<form className="shrink-0" method="post" action={`/api/system-design/actors/${actor.id}/delete`}>
-										<button type="submit" className={deleteBtn} aria-label="Delete actor">×</button>
-									</form>
+									<RemoveButton id={actor.id} endpoint={`/api/system-design/actors/${actor.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete actor">×</RemoveButton>
 								</div>
 								<div>
 									<InlineEdit
@@ -119,12 +116,12 @@ export default async function SystemDesignDetailPage({
 									/>
 								</div>
 								<InlineEdit value={actor.description ?? ''} field="description" id={actor.id} endpoint="/api/system-design/actors" kind="textarea" className={`block ${cardValue}`} />
-							</article>
+							</CardItem>
 						))
 					) : (
 						<Empty>No actors yet.</Empty>
 					)}
-				</div>
+				</CardList>
 			</div>
 
 			<div className={section}>
@@ -132,15 +129,13 @@ export default async function SystemDesignDetailPage({
 					<h2 className={sectionTitle}>Use cases</h2>
 					<NewUseCasePopup projectId={projectId} actors={typedActors.map((a) => ({ id: a.id, name: a.name }))} />
 				</div>
-				<div className={cardGrid}>
+				<CardList className={cardGrid}>
 					{typedUseCases.length ? (
 						typedUseCases.map((useCase) => (
-							<article key={useCase.id} className={card}>
+							<CardItem key={useCase.id} id={useCase.id} className={card}>
 								<div className={cardHead}>
 									<InlineEdit value={useCase.title} field="title" id={useCase.id} endpoint="/api/system-design/use-cases" className={cardTitle} />
-									<form className="shrink-0" method="post" action={`/api/system-design/use-cases/${useCase.id}/delete`}>
-										<button type="submit" className={deleteBtn} aria-label="Delete use case">×</button>
-									</form>
+									<RemoveButton id={useCase.id} endpoint={`/api/system-design/use-cases/${useCase.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete use case">×</RemoveButton>
 								</div>
 								<div>
 									<InlineEdit
@@ -169,12 +164,12 @@ export default async function SystemDesignDetailPage({
 										<InlineEdit value={value ?? ''} field={field} id={useCase.id} endpoint="/api/system-design/use-cases" kind="textarea" className={`block ${cardValue}`} />
 									</div>
 								))}
-							</article>
+							</CardItem>
 						))
 					) : (
 						<Empty>No use cases yet.</Empty>
 					)}
-				</div>
+				</CardList>
 			</div>
 
 			<div className={section}>
@@ -182,15 +177,13 @@ export default async function SystemDesignDetailPage({
 					<h2 className={sectionTitle}>Requirements</h2>
 					<NewRequirementPopup projectId={projectId} useCases={typedUseCases.map((u) => ({ id: u.id, name: u.title }))} />
 				</div>
-				<div className={cardGrid}>
+				<CardList className={cardGrid}>
 					{typedRequirements.length ? (
 						typedRequirements.map((requirement) => (
-							<article key={requirement.id} className={card}>
+							<CardItem key={requirement.id} id={requirement.id} className={card}>
 								<div className={cardHead}>
 									<InlineEdit value={requirement.title} field="title" id={requirement.id} endpoint="/api/system-design/requirements" className={cardTitle} />
-									<form className="shrink-0" method="post" action={`/api/system-design/requirements/${requirement.id}/delete`}>
-										<button type="submit" className={deleteBtn} aria-label="Delete requirement">×</button>
-									</form>
+									<RemoveButton id={requirement.id} endpoint={`/api/system-design/requirements/${requirement.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete requirement">×</RemoveButton>
 								</div>
 								<div className="flex gap-2 flex-wrap">
 									<InlineEdit
@@ -231,12 +224,12 @@ export default async function SystemDesignDetailPage({
 									/>
 								</div>
 								<InlineEdit value={requirement.description ?? ''} field="description" id={requirement.id} endpoint="/api/system-design/requirements" kind="textarea" className={cx('block', cardValue)} />
-							</article>
+							</CardItem>
 						))
 					) : (
 						<Empty>No requirements yet.</Empty>
 					)}
-				</div>
+				</CardList>
 			</div>
 		</section>
 	);

@@ -4,6 +4,7 @@ import { OPEN_POINT_STATUS_LABELS, type OpenPoint, type OpenPointNote } from '@/
 import type { Goal } from '@/lib/goals';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btn, card, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
 	chip, chipMuted, deleteBtn, iconBtn, Empty, FormError, PageHead, Pill,
@@ -75,14 +76,14 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 
 			{error && <FormError>{error}</FormError>}
 
-			<div className={cardGrid}>
+			<CardList className={cardGrid}>
 				{typedPoints.length ? (
 					typedPoints.map((point) => {
 						const goal = point.goal_id ? goalById.get(point.goal_id) : undefined;
 						const project = point.project_id ? projectById.get(point.project_id) : undefined;
 						const latestNote = latestNoteByPoint.get(point.id);
 						return (
-							<article key={point.id} className={card}>
+							<CardItem key={point.id} id={point.id} className={card}>
 								<div className={cardHead}>
 									<InlineEdit
 										value={point.title}
@@ -94,12 +95,19 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 									/>
 									<div className="flex items-center gap-1.5 shrink-0">
 										<Link href={`/opl/${point.id}`} className={iconBtn} aria-label={`Open ${point.title || 'item'}`} title="Open">↗</Link>
-										<form method="post" action={`/api/open-points/${point.id}/archive`} className="m-0 shrink-0">
-											<button type="submit" className={iconBtn} aria-label="Archive item" title="Archive">🗄</button>
-										</form>
-										<form method="post" action={`/api/open-points/${point.id}/delete`} className="m-0 shrink-0">
-											<button type="submit" className={deleteBtn} aria-label="Delete item">×</button>
-										</form>
+										<RemoveButton
+											id={point.id}
+											endpoint={`/api/open-points/${point.id}/archive`}
+											className={iconBtn}
+											ariaLabel="Archive item"
+											title="Archive"
+										>🗄</RemoveButton>
+										<RemoveButton
+											id={point.id}
+											endpoint={`/api/open-points/${point.id}/delete`}
+											className={deleteBtn}
+											ariaLabel="Delete item"
+										>×</RemoveButton>
 									</div>
 								</div>
 
@@ -188,13 +196,13 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 								<div className={`${cardFoot} justify-end`}>
 									<span className={cardDate}>{new Date(point.created_at).toLocaleDateString()}</span>
 								</div>
-							</article>
+							</CardItem>
 						);
 					})
 				) : (
 					<Empty>Nothing here yet. Click &quot;+ New item&quot; to log your first open point.</Empty>
 				)}
-			</div>
+			</CardList>
 		</section>
 	);
 }

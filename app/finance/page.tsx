@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import type { FinanceBudget, FinanceCategory, FinanceLimits, FinanceTransaction } from '@/lib/finance';
 import { Popup, PopupActions } from '@/components/Popup';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btn, btnGhost, cx, input, label, table, tableWrap, td, th, FormError, PageHead, Pill,
 } from '@/components/ui';
@@ -235,9 +236,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 							<th className={th} />
 						</tr>
 					</thead>
-					<tbody>
+					<CardList as="tbody">
 						{typedTransactions.length ? typedTransactions.map((t) => (
-							<tr key={t.id}>
+							<CardItem key={t.id} id={t.id} as="tr">
 								<td className={cx(td, 'whitespace-nowrap tabular-nums')}>{t.occurred_on}</td>
 								<td className={cx(td, 'whitespace-nowrap')}>
 									<Pill value={t.type}>
@@ -256,23 +257,20 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 									{t.type === 'expense' ? '−' : '+'}{formatAmount(Number(t.amount))}
 								</td>
 								<td className={cx(td, 'whitespace-nowrap text-right')}>
-									<form method="post" action={`/api/finance/transactions/${t.id}/delete`} className="m-0 inline-block">
-										<button
-											type="submit"
-											aria-label="Delete transaction"
-											className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full border border-transparent bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:border-line hover:text-negative"
-										>
-											×
-										</button>
-									</form>
+									<RemoveButton
+										id={t.id}
+										endpoint={`/api/finance/transactions/${t.id}/delete`}
+										ariaLabel="Delete transaction"
+										className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full border border-transparent bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:border-line hover:text-negative disabled:opacity-40"
+									>×</RemoveButton>
 								</td>
-							</tr>
+							</CardItem>
 						)) : (
 							<tr>
 								<td colSpan={6} className={cx(td, 'py-7 text-muted')}>No transactions yet. Add your first one.</td>
 							</tr>
 						)}
-					</tbody>
+					</CardList>
 				</table>
 			</div>
 		</section>

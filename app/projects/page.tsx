@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import { NewProjectPopup } from './NewProjectPopup';
 import {
 	card, cardActions, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
@@ -42,10 +43,10 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 
 			{error && <FormError>{error}</FormError>}
 
-			<div className={cardGrid}>
+			<CardList className={cardGrid}>
 				{typedProjects.length ? (
 					typedProjects.map((project) => (
-						<article key={project.id} className={card}>
+						<CardItem key={project.id} id={project.id} className={card}>
 							<div className={cardHead}>
 								<InlineEdit
 									value={project.title}
@@ -61,9 +62,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 										aria-label={`Open ${project.title}`}
 										title="Open"
 									>↗</Link>
-									<form method="post" action={`/api/projects/${project.id}/delete`} className="m-0">
-										<button type="submit" className={deleteBtn} aria-label="Delete project">×</button>
-									</form>
+									<RemoveButton
+										id={project.id}
+										endpoint={`/api/projects/${project.id}/delete`}
+										className={deleteBtn}
+										ariaLabel="Delete project"
+									>×</RemoveButton>
 								</div>
 							</div>
 
@@ -117,12 +121,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 								/>
 								<span className={cardDate}>{new Date(project.created_at).toLocaleDateString()}</span>
 							</div>
-						</article>
+						</CardItem>
 					))
 				) : (
 					<Empty>No projects yet. Create your first one.</Empty>
 				)}
-			</div>
+			</CardList>
 		</section>
 	);
 }

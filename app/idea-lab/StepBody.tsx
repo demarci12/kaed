@@ -3,6 +3,7 @@ import {
 	IDEA_DECISION_LABELS, type IdeaCandidate, type IdeaLabEvidence, type IdeaLabStep, type IdeaLabWorksheet,
 } from '@/lib/idea-lab';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import { btn, cardValue, chip, chipMuted, cx, deleteBtn, Empty, Pill } from '@/components/ui';
 import { NewEvidencePopup } from './NewEvidencePopup';
 
@@ -29,14 +30,17 @@ export function StepBody({
 					<NewEvidencePopup />
 				</div>
 				{evidence.length ? (
-					<div className="flex flex-col gap-3">
+					<CardList as="div" className="flex flex-col gap-3">
 						{evidence.map((e) => (
-							<div key={e.id} className="p-4 rounded-[10px] border border-line bg-canvas">
+							<CardItem key={e.id} id={e.id} as="div" className="p-4 rounded-[10px] border border-line bg-canvas">
 								<div className="flex items-start justify-between gap-3">
 									<p className="m-0 text-sm font-medium">{e.problem}</p>
-									<form method="post" action={`/api/idea-lab/evidence/${e.id}/delete`} className="m-0 shrink-0">
-										<button type="submit" className={deleteBtn} aria-label="Delete evidence">×</button>
-									</form>
+									<RemoveButton
+										id={e.id}
+										endpoint={`/api/idea-lab/evidence/${e.id}/delete`}
+										className={`${deleteBtn} shrink-0`}
+										ariaLabel="Delete evidence"
+									>×</RemoveButton>
 								</div>
 								<div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-muted">
 									{e.source && <span className={chipMuted}>{e.source}</span>}
@@ -47,9 +51,9 @@ export function StepBody({
 									)}
 								</div>
 								{e.quote && <p className="mt-2.5 mb-0 text-sm italic text-muted">&ldquo;{e.quote}&rdquo;</p>}
-							</div>
+							</CardItem>
 						))}
-					</div>
+					</CardList>
 				) : (
 					<Empty>No findings logged yet.</Empty>
 				)}
@@ -69,17 +73,20 @@ export function StepBody({
 				</form>
 
 				{candidates.length ? (
-					<div className="flex flex-col gap-3">
+					<CardList as="div" className="flex flex-col gap-3">
 						{candidates.map((c) => (
-							<div key={c.id} className="p-4 rounded-[10px] border border-line bg-canvas">
+							<CardItem key={c.id} id={c.id} as="div" className="p-4 rounded-[10px] border border-line bg-canvas">
 								<div className="flex items-start justify-between gap-3">
 									<InlineEdit
 										value={c.title} field="title" id={c.id} endpoint="/api/idea-lab"
 										className="text-sm font-medium" display={c.title}
 									/>
-									<form method="post" action={`/api/idea-lab/${c.id}/delete`} className="m-0 shrink-0">
-										<button type="submit" className={deleteBtn} aria-label="Delete idea">×</button>
-									</form>
+									<RemoveButton
+										id={c.id}
+										endpoint={`/api/idea-lab/${c.id}/delete`}
+										className={`${deleteBtn} shrink-0`}
+										ariaLabel="Delete idea"
+									>×</RemoveButton>
 								</div>
 
 								<InlineEdit
@@ -101,9 +108,9 @@ export function StepBody({
 										</form>
 									)}
 								</div>
-							</div>
+							</CardItem>
 						))}
-					</div>
+					</CardList>
 				) : (
 					<Empty>No ideas yet. Work Steps 1-5 first, then name what surfaced.</Empty>
 				)}

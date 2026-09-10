@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import type { FinanceCategory, FinanceLimits, FinanceType } from '@/lib/finance';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import { btn, cx, FormError, PageHead } from '@/components/ui';
 
 const field = 'font-sans text-base text-ink bg-canvas border border-line rounded-[10px] px-3.5 py-2.5 outline-none focus:border-ink';
@@ -36,9 +37,9 @@ function CategoryTable({ title, categories, withInterest }: {
 							<th className={catTh} />
 						</tr>
 					</thead>
-					<tbody>
+					<CardList as="tbody">
 						{categories.length ? categories.map((c) => (
-							<tr key={c.id}>
+							<CardItem key={c.id} id={c.id} as="tr">
 								<td className={catTd}>
 									<InlineEdit value={c.name} field="name" id={c.id} endpoint="/api/finance/categories" />
 								</td>
@@ -59,20 +60,18 @@ function CategoryTable({ title, categories, withInterest }: {
 									</td>
 								)}
 								<td className={cx(catTd, 'w-[1%] text-right')}>
-									<form method="post" action={`/api/finance/categories/${c.id}/delete`} className="m-0">
-										<button
-											type="submit" aria-label="Delete category"
-											className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full border-0 bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:bg-paper hover:text-negative"
-										>
-											×
-										</button>
-									</form>
+									<RemoveButton
+										id={c.id}
+										endpoint={`/api/finance/categories/${c.id}/delete`}
+										ariaLabel="Delete category"
+										className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full border-0 bg-transparent text-muted text-[15px] leading-none cursor-pointer hover:bg-paper hover:text-negative disabled:opacity-40"
+									>×</RemoveButton>
 								</td>
-							</tr>
+							</CardItem>
 						)) : (
 							<tr><td colSpan={cols} className={cx(catTd, 'py-4 text-muted')}>None yet.</td></tr>
 						)}
-					</tbody>
+					</CardList>
 				</table>
 			</div>
 		</div>

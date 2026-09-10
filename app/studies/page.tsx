@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import { STUDY_SOURCE_LABELS, STUDY_STATUS_LABELS, type Study } from '@/lib/studies';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btn, card, cardDate, cardFoot, cardGrid, cardHead, cardTitle, chipMuted, deleteBtn, Empty, FormError, PageHead, Pill,
 } from '@/components/ui';
@@ -46,17 +47,20 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 				<button type="submit" className={btn}>Summarize</button>
 			</form>
 
-			<div className={cardGrid}>
+			<CardList className={cardGrid}>
 				{typedStudies.length ? (
 					typedStudies.map((s) => (
-						<article key={s.id} className={card}>
+						<CardItem key={s.id} id={s.id} className={card}>
 							<div className={cardHead}>
 								<Link href={`/studies/${s.id}`} className={cardTitle}>
 									{s.title || (s.status === 'pending' ? 'Summarizing…' : new URL(s.url).hostname)}
 								</Link>
-								<form method="post" action={`/api/studies/${s.id}/delete`} className="m-0 shrink-0">
-									<button type="submit" className={deleteBtn} aria-label="Delete study">×</button>
-								</form>
+								<RemoveButton
+									id={s.id}
+									endpoint={`/api/studies/${s.id}/delete`}
+									className={`${deleteBtn} shrink-0`}
+									ariaLabel="Delete study"
+								>×</RemoveButton>
 							</div>
 
 							<div className="flex items-center gap-2 flex-wrap">
@@ -74,12 +78,12 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 							<div className={`${cardFoot} justify-end`}>
 								<span className={cardDate}>{new Date(s.created_at).toLocaleDateString()}</span>
 							</div>
-						</article>
+						</CardItem>
 					))
 				) : (
 					<Empty>Nothing here yet. Paste a URL above to summarize your first one.</Empty>
 				)}
-			</div>
+			</CardList>
 		</section>
 	);
 }

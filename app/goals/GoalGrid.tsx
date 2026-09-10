@@ -52,6 +52,22 @@ export function GoalGrid({ goals }: { goals: Goal[] }) {
 		}
 	}
 
+	async function remove(id: string) {
+		const snapshot = items;
+		setItems((current) => current.filter((g) => g.id !== id));
+		try {
+			const res = await fetch(`/api/goals/${id}/delete`, {
+				method: 'POST',
+				headers: { Accept: 'application/json' },
+			});
+			const payload = await res.json().catch(() => null);
+			if (!res.ok || payload?.ok === false) throw new Error(payload?.error || 'Could not delete.');
+		} catch (error) {
+			console.error(error);
+			setItems(snapshot);
+		}
+	}
+
 	if (!items.length) return <div className={cardGrid}><Empty>No goals yet. Register your first one.</Empty></div>;
 
 	return (
@@ -88,9 +104,12 @@ export function GoalGrid({ goals }: { goals: Goal[] }) {
 							endpoint="/api/goals"
 							className={cardTitle}
 						/>
-						<form method="post" action={`/api/goals/${goal.id}/delete`} className="m-0 shrink-0">
-							<button type="submit" className={deleteBtn} aria-label="Delete goal">×</button>
-						</form>
+						<button
+							type="button"
+							className={`${deleteBtn} shrink-0`}
+							aria-label="Delete goal"
+							onClick={() => remove(goal.id)}
+						>×</button>
 					</div>
 
 					<div className="min-w-0">

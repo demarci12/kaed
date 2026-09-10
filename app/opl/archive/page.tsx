@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import { OPEN_POINT_STATUS_LABELS, type OpenPoint } from '@/lib/open-points';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btnGhost, card, cardDate, cardFoot, cardHead, cardTitle, deleteBtn, Empty, FormError, PageHead, Pill,
 } from '@/components/ui';
@@ -28,15 +29,19 @@ export default async function OplArchivePage({ searchParams }: { searchParams: P
 
 			{error && <FormError>{error}</FormError>}
 
-			<div className="mt-10 grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+			<CardList className="mt-10 grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
 				{typedPoints.length ? (
 					typedPoints.map((point) => (
-						<article key={point.id} className={card}>
+						<CardItem key={point.id} id={point.id} className={card}>
 							<div className={cardHead}>
 								<Link href={`/opl/${point.id}`} className={cardTitle}>{point.title || 'Untitled'}</Link>
-								<form method="post" action={`/api/open-points/${point.id}/delete`} className="m-0 shrink-0">
-									<button type="submit" className={deleteBtn} aria-label="Delete permanently">×</button>
-								</form>
+								<RemoveButton
+									id={point.id}
+									endpoint={`/api/open-points/${point.id}/delete`}
+									className={`${deleteBtn} shrink-0`}
+									ariaLabel="Delete permanently"
+									confirm="Delete this item for good? Notes and history go with it."
+								>×</RemoveButton>
 							</div>
 
 							<Pill value={point.status}>{OPEN_POINT_STATUS_LABELS[point.status]}</Pill>
@@ -45,16 +50,19 @@ export default async function OplArchivePage({ searchParams }: { searchParams: P
 								<span className={cardDate}>
 									Archived {point.archived_at ? new Date(point.archived_at).toLocaleDateString() : ''}
 								</span>
-								<form method="post" action={`/api/open-points/${point.id}/restore`} className="m-0">
-									<button type="submit" className={btnGhost}>↺ Restore</button>
-								</form>
+								<RemoveButton
+									id={point.id}
+									endpoint={`/api/open-points/${point.id}/restore`}
+									className={btnGhost}
+									ariaLabel="Restore"
+								>↺ Restore</RemoveButton>
 							</div>
-						</article>
+						</CardItem>
 					))
 				) : (
 					<Empty>Nothing archived.</Empty>
 				)}
-			</div>
+			</CardList>
 		</section>
 	);
 }

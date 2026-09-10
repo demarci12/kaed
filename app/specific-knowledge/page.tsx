@@ -1,6 +1,7 @@
 import { requireOwner } from '@/lib/auth';
 import { KNOWLEDGE_KIND_LABELS, type KnowledgeCard } from '@/lib/knowledge';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	card, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
 	chipMuted, deleteBtn, Empty, FormError, PageHead, Pill,
@@ -31,10 +32,10 @@ export default async function SpecificKnowledgePage({ searchParams }: { searchPa
 
 			{error && <FormError>{error}</FormError>}
 
-			<div className={cardGrid}>
+			<CardList className={cardGrid}>
 				{typedCards.length ? (
 					typedCards.map((item) => (
-						<article key={item.id} className={card}>
+						<CardItem key={item.id} id={item.id} className={card}>
 							<div className={cardHead}>
 								<InlineEdit
 									value={item.title}
@@ -43,9 +44,12 @@ export default async function SpecificKnowledgePage({ searchParams }: { searchPa
 									endpoint="/api/knowledge-cards"
 									className={cardTitle}
 								/>
-								<form method="post" action={`/api/knowledge-cards/${item.id}/delete`} className="m-0 shrink-0">
-									<button type="submit" className={deleteBtn} aria-label="Delete card">×</button>
-								</form>
+								<RemoveButton
+									id={item.id}
+									endpoint={`/api/knowledge-cards/${item.id}/delete`}
+									className={`${deleteBtn} shrink-0`}
+									ariaLabel="Delete card"
+								>×</RemoveButton>
 							</div>
 
 							<InlineEdit
@@ -90,12 +94,12 @@ export default async function SpecificKnowledgePage({ searchParams }: { searchPa
 							<div className={`${cardFoot} justify-end`}>
 								<span className={cardDate}>{new Date(item.created_at).toLocaleDateString()}</span>
 							</div>
-						</article>
+						</CardItem>
 					))
 				) : (
 					<Empty>Nothing here yet. Add your first card to start mapping what you actually know.</Empty>
 				)}
-			</div>
+			</CardList>
 		</section>
 	);
 }
