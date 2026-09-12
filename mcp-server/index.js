@@ -47,8 +47,46 @@ const TABLES = [
   "finance_transactions",
   "finance_budgets",
   "finance_limits",
+  "think_pad_pages",
   "think_pad_entries",
+  "think_pad_tables",
+  "think_pad_table_rows",
 ];
+
+/**
+ * Same "recompute the whole thing" approach as lib/think-pad-helpers.ts's
+ * recomputeSearchText -- duplicated here because this stdio server is a
+ * standalone Node script, not part of the Next.js build, so it can't import
+ * from kead/lib directly. Keep both in sync by hand.
+ */
+async function recomputeSearchText(pageId) {
+  const { data: lines } = await supabase
+    .from("think_pad_entries")
+    .select("body")
+    .eq("page_id", pageId);
+  const { data: table } = await supabase
+    .from("think_pad_tables")
+    .select("id")
+    .eq("page_id", pageId)
+    .maybeSingle();
+
+  const parts = (lines ?? []).map((l) => l.body).filter(Boolean);
+  if (table) {
+    const { data: rows } = await supabase
+      .from("think_pad_table_rows")
+      .select("data")
+      .eq("table_id", table.id);
+    for (const row of rows ?? []) {
+      for (const value of Object.values(row.data ?? {})) {
+        if (value != null && value !== "") parts.push(String(value));
+      }
+    }
+  }
+  await supabase
+    .from("think_pad_pages")
+    .update({ search_text: parts.join(" ") })
+    .eq("id", pageId);
+}
 
 /**
  * There's exactly one real owner account (the shared "member" role is
@@ -148,7 +186,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "save_thought",
       description:
-        "Append a thought, note, idea, or reflection to the bottom of the user's Think Pad -- one continuous document at kaed.hu/think-pad, same as if they'd typed it there. Call this whenever they ask you to save, jot down, log, or remember something, or wrap up a reflective conversation they want captured. Pass their words close to verbatim in `body` -- don't summarize unless asked to. Multiple lines (separated by \\n) land as separate lines in the doc, in order.",
+        "Append a thought, note, idea, or reflection to the user's Think Pad (kaed.hu/think-pad) -- lands at the bottom of a running \"Inbox\" page, created on first use, same as if they'd typed it there. Call this whenever they ask you to save, jot down, log, or remember something, or wrap up a reflective conversation they want captured. Pass their words close to verbatim in `body` -- don't summarize unless asked to. Multiple lines (separated by \\n) land as separate lines in the doc, in order.",
       inputSchema: {
         type: "object",
         properties: {
@@ -237,15 +275,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           .filter(Boolean);
         if (!lines.length) return errorResult("body is required.");
         const user_id = await getOwnerUserId();
+
+        // Everything dictated to Claude lands on one running "Inbox" page
+        // (created on first use) -- never needs to know or choose a page.
+        let { data: inbox } = await supabase
+          .from("think_pad_pages")
+          .select("id")
+          .eq("user_id", user_id)
+          .eq("title", "Inbox")
+          .maybeSingle();
+        if (!inbox) {
+          const { data: created, error: createError } = await supabase
+            .from("think_pad_pages")
+            .insert({ user_id, title: "Inbox" })
+            .select("id")
+            .single();
+          if (createError) return errorResult(createError.message);
+          inbox = created;
+        }
+
         const { data: last } = await supabase
           .from("think_pad_entries")
           .select("position")
+          .eq("page_id", inbox.id)
           .order("position", { ascending: false })
           .limit(1)
           .maybeSingle();
         const base = last?.position ?? -1;
         const rows = lines.map((body, i) => ({
           user_id,
+          page_id: inbox.id,
           body,
           source: "mcp",
           position: base + i + 1,
@@ -255,6 +314,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           .insert(rows)
           .select();
         if (error) return errorResult(error.message);
+        await recomputeSearchText(inbox.id);
         return textResult(data);
       }
 

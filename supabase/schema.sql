@@ -581,22 +581,58 @@ alter table public.study_comments enable row level security;
 create policy "own study comments" on public.study_comments
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- One continuous document of lines (Notion-style), not separate posts. `body`
--- is one line/block; `position` (float, midpoint-insertion) orders them --
--- pressing Enter mid-document splits at the cursor and inserts a line between
--- two existing positions without renumbering anything else. Written from the
--- app, or appended at the bottom by Claude via the remote MCP endpoint's
--- `save_thought` tool (multi-line input becomes one row per line) -- that
--- tool resolves the owner's user_id server-side, so nothing about auth needs
--- to reach the chat. `source` just marks which lines came from chat.
---
--- `title` is dormant: an earlier "blog of separate posts" version of this
--- table had one, no app code reads or writes it any more, and it was never
--- dropped because the table was already live and DROP COLUMN needs a human
--- to run it (ask before doing that, same as any other DDL here).
+-- Think Pad: a real wiki, not a blog. think_pad_pages is one row per page;
+-- think_pad_entries is one row per *line* of a page's Notion-style document
+-- (page_id + float `position` for midpoint insertion -- pressing Enter
+-- mid-document splits at the cursor and inserts a line between two existing
+-- positions without renumbering anything else). [[Page Title]] links are
+-- resolved by title at render time, not stored resolved; search_text/tsv
+-- cover a page's title + every line's body + every attached table cell (see
+-- recomputeSearchText in lib/think-pad-helpers.ts). Lines written from the
+-- app, or appended by Claude via the remote MCP endpoint's `save_thought`
+-- tool, which finds-or-creates a page titled "Inbox" and appends there --
+-- that tool resolves the owner's user_id server-side, so nothing about auth
+-- needs to reach the chat. `source` on a line just marks which came from chat.
+create table if not exists public.think_pad_pages (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  search_text text not null default '',
+  search_tsv tsvector,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists think_pad_pages_search_idx on public.think_pad_pages using gin (search_tsv);
+
+alter table public.think_pad_pages enable row level security;
+
+create policy "own think pad pages" on public.think_pad_pages
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create or replace function public.think_pad_pages_tsv_trigger() returns trigger as $$
+begin
+  new.search_tsv := to_tsvector('english', coalesce(new.title, '') || ' ' || coalesce(new.search_text, ''));
+  return new;
+end
+$$ language plpgsql;
+
+create trigger think_pad_pages_tsv_update
+  before insert or update on public.think_pad_pages
+  for each row execute function public.think_pad_pages_tsv_trigger();
+
+-- `title` here is dormant: an earlier "blog of separate posts" version of
+-- this table had one, no app code reads or writes it any more, and it was
+-- never dropped because the table was already live and DROP COLUMN needs a
+-- human to run it (ask before doing that, same as any other DDL here).
+-- `page_id` is nullable for the same "already live" reason -- it was added
+-- with ALTER TABLE after this table already had rows, and every write path
+-- sets it in practice; see CLAUDE.md's Think Pad section for why it was
+-- deliberately never tightened to NOT NULL.
 create table if not exists public.think_pad_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  page_id uuid references public.think_pad_pages(id) on delete cascade,
   title text,
   body text not null,
   position double precision not null default 0,
@@ -605,9 +641,49 @@ create table if not exists public.think_pad_entries (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists think_pad_entries_position_idx on public.think_pad_entries (position);
+create index if not exists think_pad_entries_page_position_idx on public.think_pad_entries (page_id, position);
 
 alter table public.think_pad_entries enable row level security;
 
 create policy "own think pad entries" on public.think_pad_entries
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- At most one table per page (a page "attaches" a database); columns are a
+-- typed spec (text/number/date/select), rows carry their cell values as
+-- jsonb keyed by column name. RLS goes through the owning page since these
+-- rows have no user_id column of their own.
+create table if not exists public.think_pad_tables (
+  id uuid primary key default gen_random_uuid(),
+  page_id uuid not null unique references public.think_pad_pages(id) on delete cascade,
+  name text not null,
+  columns jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.think_pad_table_rows (
+  id uuid primary key default gen_random_uuid(),
+  table_id uuid not null references public.think_pad_tables(id) on delete cascade,
+  position double precision not null default 0,
+  data jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists think_pad_table_rows_table_idx on public.think_pad_table_rows (table_id, position);
+
+alter table public.think_pad_tables enable row level security;
+alter table public.think_pad_table_rows enable row level security;
+
+create policy "own think pad tables" on public.think_pad_tables
+  for all using (exists (select 1 from public.think_pad_pages p where p.id = page_id and p.user_id = auth.uid()))
+  with check (exists (select 1 from public.think_pad_pages p where p.id = page_id and p.user_id = auth.uid()));
+
+create policy "own think pad table rows" on public.think_pad_table_rows
+  for all using (exists (
+    select 1 from public.think_pad_tables t join public.think_pad_pages p on p.id = t.page_id
+    where t.id = table_id and p.user_id = auth.uid()
+  ))
+  with check (exists (
+    select 1 from public.think_pad_tables t join public.think_pad_pages p on p.id = t.page_id
+    where t.id = table_id and p.user_id = auth.uid()
+  ));

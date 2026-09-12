@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { recomputeSearchText } from '@/lib/think-pad-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,10 @@ const TABLES = [
 	'finance_transactions',
 	'finance_budgets',
 	'finance_limits',
+	'think_pad_pages',
 	'think_pad_entries',
+	'think_pad_tables',
+	'think_pad_table_rows',
 ];
 
 function assertTable(table: string) {
@@ -93,7 +97,7 @@ const TOOLS = [
 	{
 		name: 'save_thought',
 		description:
-			"Append a thought, note, idea, or reflection to the bottom of the user's Think Pad -- one continuous document at kaed.hu/think-pad, same as if they'd typed it there. Call this whenever they ask you to save, jot down, log, or remember something, or wrap up a reflective conversation they want captured. Pass their words close to verbatim in `body` -- don't summarize unless asked to. Multiple lines (separated by \\n) land as separate lines in the doc, in order.",
+			"Append a thought, note, idea, or reflection to the user's Think Pad (kaed.hu/think-pad) -- lands at the bottom of a running \"Inbox\" page, created on first use, same as if they'd typed it there. Call this whenever they ask you to save, jot down, log, or remember something, or wrap up a reflective conversation they want captured. Pass their words close to verbatim in `body` -- don't summarize unless asked to. Multiple lines (separated by \\n) land as separate lines in the doc, in order.",
 		inputSchema: {
 			type: 'object',
 			properties: {
@@ -185,16 +189,44 @@ async function callTool(name: string, args: ToolArgs) {
 				const lines = (args.body ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
 				if (!lines.length) return toolError('body is required.');
 				const user_id = await getOwnerUserId(supabase);
+
+				// Everything dictated to Claude lands on one running "Inbox" page
+				// (created on first use) -- a chat session never has to know or
+				// choose which Think Pad page to append to.
+				let { data: inbox } = await supabase
+					.from('think_pad_pages')
+					.select('id')
+					.eq('user_id', user_id)
+					.eq('title', 'Inbox')
+					.maybeSingle();
+				if (!inbox) {
+					const { data: created, error: createError } = await supabase
+						.from('think_pad_pages')
+						.insert({ user_id, title: 'Inbox' })
+						.select('id')
+						.single();
+					if (createError) return toolError(createError.message);
+					inbox = created;
+				}
+
 				const { data: last } = await supabase
 					.from('think_pad_entries')
 					.select('position')
+					.eq('page_id', inbox.id)
 					.order('position', { ascending: false })
 					.limit(1)
 					.maybeSingle();
 				const base = (last?.position as number | undefined) ?? -1;
-				const rows = lines.map((body, i) => ({ user_id, body, source: 'mcp', position: base + i + 1 }));
+				const rows = lines.map((body, i) => ({
+					user_id,
+					page_id: inbox.id,
+					body,
+					source: 'mcp',
+					position: base + i + 1,
+				}));
 				const { data, error } = await supabase.from('think_pad_entries').insert(rows).select();
 				if (error) return toolError(error.message);
+				await recomputeSearchText(supabase, inbox.id);
 				return toolResult(data);
 			}
 

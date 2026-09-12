@@ -9,9 +9,16 @@ import { btn, btnGhost, cx } from './ui';
  * `dialog { max-width: calc(100% - 6px - 2em) }` silently beat width:100% and
  * left every sheet 38px narrower than the phone.
  */
-export function Popup({ trigger, title, children }: { trigger: (open: () => void) => ReactNode; title: string; children: (close: () => void) => ReactNode; }) {
+export function Popup({ trigger, title, children, defaultOpen = false }: {
+	trigger: (open: () => void) => ReactNode;
+	title: string;
+	children: (close: () => void) => ReactNode;
+	/** Opens on mount -- for landing on a page with the dialog already up
+	 *  (e.g. following a "create this page" link straight into the form). */
+	defaultOpen?: boolean;
+}) {
 	const ref = useRef<HTMLDialogElement>(null);
-	const [open, setOpen] = useState(false);
+	const [open, setOpen] = useState(defaultOpen);
 
 	useEffect(() => {
 		const d = ref.current;
