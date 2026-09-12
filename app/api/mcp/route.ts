@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +26,7 @@ const TABLES = [
 	'finance_transactions',
 	'finance_budgets',
 	'finance_limits',
+	'think_pad_entries',
 ];
 
 function assertTable(table: string) {
@@ -89,6 +90,19 @@ const TOOLS = [
 			required: ['table', 'filters'],
 		},
 	},
+	{
+		name: 'save_thought',
+		description:
+			"Save a thought, note, idea, or reflection to the user's Think Pad -- a running personal journal shown newest-first at kaed.hu/think-pad. Call this whenever the user asks you to save, jot down, log, or remember something as a thought/note, or wraps up a reflective conversation they want captured. Pass their words in `body`, close to verbatim -- don't summarize unless asked to. Add `title` only if a short one is natural; most thoughts don't need one.",
+		inputSchema: {
+			type: 'object',
+			properties: {
+				body: { type: 'string', description: 'The thought itself.' },
+				title: { type: 'string', description: 'Optional short title.' },
+			},
+			required: ['body'],
+		},
+	},
 ];
 
 function toolResult(data: unknown) {
@@ -107,6 +121,22 @@ interface ToolArgs {
 	order_by?: string;
 	ascending?: boolean;
 	limit?: number;
+	body?: string;
+	title?: string;
+}
+
+/**
+ * There's exactly one real owner account (the shared `member` role is
+ * finance-only, same check as `isMember` in lib/auth.ts) -- looking it up here
+ * means tools like `save_thought` never need the chat session to know or pass
+ * a user id.
+ */
+async function getOwnerUserId(supabase: SupabaseClient): Promise<string> {
+	const { data, error } = await supabase.auth.admin.listUsers();
+	if (error) throw new Error(error.message);
+	const owner = data.users.find((u) => u.user_metadata?.role !== 'member');
+	if (!owner) throw new Error('No owner account found.');
+	return owner.id;
 }
 
 async function callTool(name: string, args: ToolArgs) {
@@ -149,6 +179,18 @@ async function callTool(name: string, args: ToolArgs) {
 				if (!args.filters || Object.keys(args.filters).length === 0)
 					return toolError('filters must be a non-empty object');
 				const { data, error } = await supabase.from(args.table!).delete().match(args.filters).select();
+				if (error) return toolError(error.message);
+				return toolResult(data);
+			}
+
+			case 'save_thought': {
+				const body = (args.body ?? '').trim();
+				if (!body) return toolError('body is required.');
+				const user_id = await getOwnerUserId(supabase);
+				const { data, error } = await supabase
+					.from('think_pad_entries')
+					.insert({ user_id, body, title: args.title?.trim() || null, source: 'mcp' })
+					.select();
 				if (error) return toolError(error.message);
 				return toolResult(data);
 			}

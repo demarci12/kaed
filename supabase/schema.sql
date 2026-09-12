@@ -580,3 +580,25 @@ alter table public.study_comments enable row level security;
 
 create policy "own study comments" on public.study_comments
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- A running journal of freeform thoughts, shown newest-first like a blog.
+-- Written from the app, or dictated to Claude via the remote MCP endpoint's
+-- `save_thought` tool -- that tool resolves the owner's user_id server-side,
+-- so nothing about auth needs to reach the chat. `source` just distinguishes
+-- the two origins on the page.
+create table if not exists public.think_pad_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text,
+  body text not null,
+  source text not null default 'app' check (source in ('app', 'mcp')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists think_pad_entries_created_at_idx on public.think_pad_entries (created_at desc);
+
+alter table public.think_pad_entries enable row level security;
+
+create policy "own think pad entries" on public.think_pad_entries
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
