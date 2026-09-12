@@ -581,22 +581,31 @@ alter table public.study_comments enable row level security;
 create policy "own study comments" on public.study_comments
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- A running journal of freeform thoughts, shown newest-first like a blog.
--- Written from the app, or dictated to Claude via the remote MCP endpoint's
--- `save_thought` tool -- that tool resolves the owner's user_id server-side,
--- so nothing about auth needs to reach the chat. `source` just distinguishes
--- the two origins on the page.
+-- One continuous document of lines (Notion-style), not separate posts. `body`
+-- is one line/block; `position` (float, midpoint-insertion) orders them --
+-- pressing Enter mid-document splits at the cursor and inserts a line between
+-- two existing positions without renumbering anything else. Written from the
+-- app, or appended at the bottom by Claude via the remote MCP endpoint's
+-- `save_thought` tool (multi-line input becomes one row per line) -- that
+-- tool resolves the owner's user_id server-side, so nothing about auth needs
+-- to reach the chat. `source` just marks which lines came from chat.
+--
+-- `title` is dormant: an earlier "blog of separate posts" version of this
+-- table had one, no app code reads or writes it any more, and it was never
+-- dropped because the table was already live and DROP COLUMN needs a human
+-- to run it (ask before doing that, same as any other DDL here).
 create table if not exists public.think_pad_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text,
   body text not null,
+  position double precision not null default 0,
   source text not null default 'app' check (source in ('app', 'mcp')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create index if not exists think_pad_entries_created_at_idx on public.think_pad_entries (created_at desc);
+create index if not exists think_pad_entries_position_idx on public.think_pad_entries (position);
 
 alter table public.think_pad_entries enable row level security;
 

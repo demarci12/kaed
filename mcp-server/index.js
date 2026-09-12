@@ -148,12 +148,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "save_thought",
       description:
-        "Save a thought, note, idea, or reflection to the user's Think Pad -- a running personal journal shown newest-first at kaed.hu/think-pad. Call this whenever the user asks you to save, jot down, log, or remember something as a thought/note, or wraps up a reflective conversation they want captured. Pass their words in `body`, close to verbatim -- don't summarize unless asked to. Add `title` only if a short one is natural; most thoughts don't need one.",
+        "Append a thought, note, idea, or reflection to the bottom of the user's Think Pad -- one continuous document at kaed.hu/think-pad, same as if they'd typed it there. Call this whenever they ask you to save, jot down, log, or remember something, or wrap up a reflective conversation they want captured. Pass their words close to verbatim in `body` -- don't summarize unless asked to. Multiple lines (separated by \\n) land as separate lines in the doc, in order.",
       inputSchema: {
         type: "object",
         properties: {
-          body: { type: "string", description: "The thought itself." },
-          title: { type: "string", description: "Optional short title." },
+          body: {
+            type: "string",
+            description: "The thought itself. Use \\n to save it as multiple lines.",
+          },
         },
         required: ["body"],
       },
@@ -229,17 +231,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "save_thought": {
-        const body = (args.body ?? "").trim();
-        if (!body) return errorResult("body is required.");
+        const lines = (args.body ?? "")
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (!lines.length) return errorResult("body is required.");
         const user_id = await getOwnerUserId();
+        const { data: last } = await supabase
+          .from("think_pad_entries")
+          .select("position")
+          .order("position", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const base = last?.position ?? -1;
+        const rows = lines.map((body, i) => ({
+          user_id,
+          body,
+          source: "mcp",
+          position: base + i + 1,
+        }));
         const { data, error } = await supabase
           .from("think_pad_entries")
-          .insert({
-            user_id,
-            body,
-            title: args.title?.trim() || null,
-            source: "mcp",
-          })
+          .insert(rows)
           .select();
         if (error) return errorResult(error.message);
         return textResult(data);
