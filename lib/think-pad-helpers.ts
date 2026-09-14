@@ -44,10 +44,6 @@ export function renderLineHtml(body: string, titleToId: ReadonlyMap<string, stri
 	});
 }
 
-function escapeRegExp(s: string) {
-	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 /**
  * Renaming a page would otherwise silently turn every [[OldTitle]] pointing
  * at it into a dead link -- this rewrites them to [[NewTitle]] across every
@@ -61,7 +57,15 @@ export async function rewriteWikiLinks(
 	excludePageId: string,
 ): Promise<void> {
 	if (oldTitle === newTitle) return;
-	const pattern = new RegExp(`\\[\\[${escapeRegExp(oldTitle)}\\]\\]`, 'g');
+	// Plain string ops, not a global regex: a shared /g RegExp's .test() carries
+	// lastIndex state across calls (it only resets to 0 on a *failed* match), so
+	// reusing one across a .filter() over many lines can make a match on an
+	// earlier line cause a later line's check to start mid-string and miss a
+	// real match -- an easy way for rename propagation to silently skip pages.
+	// [[Title]] has no regex metacharacters to worry about, so there's no reason
+	// to reach for RegExp here at all.
+	const needle = `[[${oldTitle}]]`;
+	const replacement = `[[${newTitle}]]`;
 
 	const { data: lines } = await supabase
 		.from('think_pad_entries')
@@ -69,16 +73,19 @@ export async function rewriteWikiLinks(
 		.eq('user_id', userId)
 		.neq('page_id', excludePageId);
 
-	const touched = new Set<string>();
-	for (const line of lines ?? []) {
-		if (!pattern.test(line.body as string)) continue;
-		const rewritten = (line.body as string).replace(pattern, `[[${newTitle}]]`);
-		await supabase
-			.from('think_pad_entries')
-			.update({ body: rewritten, updated_at: new Date().toISOString() })
-			.eq('id', line.id);
-		touched.add(line.page_id as string);
-	}
+	const matches = (lines ?? []).filter((line) => (line.body as string).includes(needle));
+	await Promise.all(
+		matches.map((line) =>
+			supabase
+				.from('think_pad_entries')
+				.update({
+					body: (line.body as string).replaceAll(needle, replacement),
+					updated_at: new Date().toISOString(),
+				})
+				.eq('id', line.id),
+		),
+	);
+	const touched = new Set(matches.map((line) => line.page_id as string));
 	await Promise.all([...touched].map((pageId) => recomputeSearchText(supabase, pageId)));
 }
 
@@ -89,7 +96,10 @@ export async function backlinksFor(
 	title: string,
 	selfPageId: string,
 ): Promise<{ id: string; title: string }[]> {
-	const pattern = `%[[${title}]]%`;
+	// % and _ are LIKE/ILIKE wildcards in Postgres -- escape them so a title
+	// that happens to contain either is matched literally, not as a wildcard.
+	const escaped = title.replace(/[%_]/g, '\\$&');
+	const pattern = `%[[${escaped}]]%`;
 	const { data: lines } = await supabase
 		.from('think_pad_entries')
 		.select('page_id')
