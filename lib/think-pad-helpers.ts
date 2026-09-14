@@ -117,34 +117,14 @@ export async function backlinksFor(
 }
 
 /**
- * Flattens a page's title + every line's body + every table cell into
- * `think_pad_pages.search_text`; a DB trigger derives `search_tsv` from that
- * automatically. Called after any line or table mutation -- cheap at
- * personal-notes scale, same "recompute the whole thing" approach as
- * notekeep's reindexTableText.
+ * Flattens every line's body into `think_pad_pages.search_text`; a DB
+ * trigger derives `search_tsv` from that (plus the title) automatically.
+ * Called after any line mutation -- cheap at personal-notes scale, same
+ * "recompute the whole thing" approach notekeep used for its SQLite FTS5.
  */
 export async function recomputeSearchText(supabase: SupabaseClient, pageId: string): Promise<void> {
-	const [{ data: page }, { data: lines }, { data: table }] = await Promise.all([
-		supabase.from('think_pad_pages').select('title').eq('id', pageId).maybeSingle(),
-		supabase.from('think_pad_entries').select('body').eq('page_id', pageId),
-		supabase.from('think_pad_tables').select('id').eq('page_id', pageId).maybeSingle(),
-	]);
-
-	const parts: string[] = [];
-	for (const line of lines ?? []) {
-		if (line.body) parts.push(line.body as string);
-	}
-
-	if (table) {
-		const { data: rows } = await supabase.from('think_pad_table_rows').select('data').eq('table_id', table.id);
-		for (const row of rows ?? []) {
-			const data = row.data as Record<string, unknown>;
-			for (const value of Object.values(data)) {
-				if (value != null && value !== '') parts.push(String(value));
-			}
-		}
-	}
-
+	const { data: lines } = await supabase.from('think_pad_entries').select('body').eq('page_id', pageId);
+	const parts = (lines ?? []).map((line) => line.body as string).filter(Boolean);
 	await supabase
 		.from('think_pad_pages')
 		.update({ search_text: parts.join(' ') })

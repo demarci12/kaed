@@ -648,42 +648,8 @@ alter table public.think_pad_entries enable row level security;
 create policy "own think pad entries" on public.think_pad_entries
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- At most one table per page (a page "attaches" a database); columns are a
--- typed spec (text/number/date/select), rows carry their cell values as
--- jsonb keyed by column name. RLS goes through the owning page since these
--- rows have no user_id column of their own.
-create table if not exists public.think_pad_tables (
-  id uuid primary key default gen_random_uuid(),
-  page_id uuid not null unique references public.think_pad_pages(id) on delete cascade,
-  name text not null,
-  columns jsonb not null default '[]',
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.think_pad_table_rows (
-  id uuid primary key default gen_random_uuid(),
-  table_id uuid not null references public.think_pad_tables(id) on delete cascade,
-  position double precision not null default 0,
-  data jsonb not null default '{}',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists think_pad_table_rows_table_idx on public.think_pad_table_rows (table_id, position);
-
-alter table public.think_pad_tables enable row level security;
-alter table public.think_pad_table_rows enable row level security;
-
-create policy "own think pad tables" on public.think_pad_tables
-  for all using (exists (select 1 from public.think_pad_pages p where p.id = page_id and p.user_id = auth.uid()))
-  with check (exists (select 1 from public.think_pad_pages p where p.id = page_id and p.user_id = auth.uid()));
-
-create policy "own think pad table rows" on public.think_pad_table_rows
-  for all using (exists (
-    select 1 from public.think_pad_tables t join public.think_pad_pages p on p.id = t.page_id
-    where t.id = table_id and p.user_id = auth.uid()
-  ))
-  with check (exists (
-    select 1 from public.think_pad_tables t join public.think_pad_pages p on p.id = t.page_id
-    where t.id = table_id and p.user_id = auth.uid()
-  ));
+-- think_pad_tables / think_pad_table_rows (an attached-database feature, one
+-- table per page) existed here briefly and were dropped -- turned out
+-- unwanted (both DROP TABLEs succeeded against production, verified via
+-- information_schema.tables; unlike DROP COLUMN elsewhere in this file,
+-- this one wasn't blocked by the environment's safety classifier).

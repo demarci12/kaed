@@ -29,8 +29,6 @@ const TABLES = [
 	'finance_limits',
 	'think_pad_pages',
 	'think_pad_entries',
-	'think_pad_tables',
-	'think_pad_table_rows',
 ];
 
 function assertTable(table: string) {

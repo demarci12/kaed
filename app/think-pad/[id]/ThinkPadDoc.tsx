@@ -3,23 +3,28 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ThinkPadSource } from '@/lib/think-pad';
 import { renderLineHtml } from '@/lib/think-pad-helpers';
+import { iconBtn } from '@/components/ui';
 
 /**
  * One page's document: every row is a line, ordered by the float `position`
  * column. Enter splits the focused line at the cursor and inserts a new one
  * at the midpoint between its new neighbours (nothing else needs
  * renumbering); Backspace at the start of a line merges it into the one
- * above and deletes the row.
+ * above and deletes the row. Alt+Up/Down (or the hover-revealed ↑/↓
+ * buttons) swaps a line with its neighbour -- reordering, not editing.
  *
  * A line has two faces: rendered (plain text, [[wiki links]] resolved and
  * clickable) when it isn't the one being edited, and a raw `<textarea>` (the
  * literal [[Title]]/markup) when it is -- click a rendered line to edit it.
  * Only one line is ever in edit mode at a time; `editingId` tracks which.
+ * Moving a line doesn't change its id, so if it was the one being edited it
+ * stays in edit mode after the move -- React's key-based reconciliation
+ * relocates the actual focused DOM node along with it, no manual refocus.
  *
  * A freshly typed line starts as a client-only "draft" (a temp id, no DB
- * row) and becomes real the moment it's finalized -- Enter splits it, or it
- * loses focus. `ensurePersisted` dedupes concurrent calls for the same draft
- * so a fast Enter-then-blur can't insert it twice.
+ * row) and becomes real the moment it's finalized -- Enter splits it, it
+ * loses focus, or it's moved. `ensurePersisted` dedupes concurrent calls for
+ * the same draft so a fast Enter-then-blur can't insert it twice.
  */
 
 type Line = {
@@ -188,6 +193,34 @@ export function ThinkPadDoc({ pageId, initialLines, titleToId }: {
 		else void ensurePersisted({ ...prev, body: merged });
 	}
 
+	function persistPosition(line: Line, newPosition: number) {
+		if (line.persisted) {
+			postJson(`/api/think-pad/lines/${line.id}/position`, { position: newPosition }).catch((e) => console.error(e));
+		} else {
+			void ensurePersisted({ ...line, position: newPosition });
+		}
+	}
+
+	/** Swaps a line with its neighbour -- both the on-screen order (the two
+	 *  array slots trade content) and the persisted `position` values (traded
+	 *  the same way), so a reload reconstructs the same order. */
+	function moveLine(index: number, direction: 'up' | 'down') {
+		const targetIndex = direction === 'up' ? index - 1 : index + 1;
+		if (targetIndex < 0 || targetIndex >= lines.length) return;
+		const a = lines[index];
+		const b = lines[targetIndex];
+
+		setLines((prev) => {
+			const copy = [...prev];
+			copy[index] = { ...b, position: a.position };
+			copy[targetIndex] = { ...a, position: b.position };
+			return copy;
+		});
+
+		persistPosition(a, b.position);
+		persistPosition(b, a.position);
+	}
+
 	function startEditing(line: Line) {
 		setEditingId(line.id);
 		focusRequest.current = { id: line.id, caret: line.body.length };
@@ -219,6 +252,12 @@ export function ThinkPadDoc({ pageId, initialLines, titleToId }: {
 									} else if (e.key === 'Backspace' && el.selectionStart === 0 && el.selectionEnd === 0) {
 										e.preventDefault();
 										handleBackspaceAtStart(index);
+									} else if (e.altKey && e.key === 'ArrowUp') {
+										e.preventDefault();
+										moveLine(index, 'up');
+									} else if (e.altKey && e.key === 'ArrowDown') {
+										e.preventDefault();
+										moveLine(index, 'down');
 									} else if (e.key === 'ArrowUp' && el.selectionStart === 0) {
 										if (index > 0) { e.preventDefault(); startEditing(lines[index - 1]); }
 									} else if (e.key === 'ArrowDown' && el.selectionStart === line.body.length) {
@@ -242,12 +281,29 @@ export function ThinkPadDoc({ pageId, initialLines, titleToId }: {
 								dangerouslySetInnerHTML={{ __html: renderLineHtml(line.body, titleToId) || '&nbsp;' }}
 							/>
 						)}
-						{line.source === 'mcp' && (
-							<span
-								className="mt-1.5 shrink-0 text-[11px] opacity-0 group-hover:opacity-100 transition-opacity"
-								title="Saved by Claude"
-							>💬</span>
-						)}
+						<div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+							{line.source === 'mcp' && (
+								<span className="mr-1 text-[11px]" title="Saved by Claude">💬</span>
+							)}
+							<button
+								type="button"
+								className={iconBtn}
+								aria-label="Move line up"
+								title="Move up (Alt+↑)"
+								disabled={index === 0}
+								onMouseDown={(e) => e.preventDefault()} // keep the textarea/line focused, don't steal it
+								onClick={() => moveLine(index, 'up')}
+							>↑</button>
+							<button
+								type="button"
+								className={iconBtn}
+								aria-label="Move line down"
+								title="Move down (Alt+↓)"
+								disabled={index === lines.length - 1}
+								onMouseDown={(e) => e.preventDefault()}
+								onClick={() => moveLine(index, 'down')}
+							>↓</button>
+						</div>
 					</div>
 				);
 			})}

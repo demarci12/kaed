@@ -49,8 +49,6 @@ const TABLES = [
   "finance_limits",
   "think_pad_pages",
   "think_pad_entries",
-  "think_pad_tables",
-  "think_pad_table_rows",
 ];
 
 /**
@@ -64,24 +62,7 @@ async function recomputeSearchText(pageId) {
     .from("think_pad_entries")
     .select("body")
     .eq("page_id", pageId);
-  const { data: table } = await supabase
-    .from("think_pad_tables")
-    .select("id")
-    .eq("page_id", pageId)
-    .maybeSingle();
-
   const parts = (lines ?? []).map((l) => l.body).filter(Boolean);
-  if (table) {
-    const { data: rows } = await supabase
-      .from("think_pad_table_rows")
-      .select("data")
-      .eq("table_id", table.id);
-    for (const row of rows ?? []) {
-      for (const value of Object.values(row.data ?? {})) {
-        if (value != null && value !== "") parts.push(String(value));
-      }
-    }
-  }
   await supabase
     .from("think_pad_pages")
     .update({ search_text: parts.join(" ") })
