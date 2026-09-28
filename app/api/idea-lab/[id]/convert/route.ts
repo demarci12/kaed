@@ -19,7 +19,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 	const { id } = await params;
 
 	const back = (path: string) => NextResponse.redirect(new URL(path, request.url), { status: 303 });
-	const lab = (query: string) => back(`/idea-lab?view=worksheet&error=${encodeURIComponent(query)}#step-6`);
+	const lab = (query: string) => back(`/idea-lab?error=${encodeURIComponent(query)}#step-6`);
 
 	const { data: candidate } = await supabase.from('idea_candidates').select('*').eq('id', id).maybeSingle();
 	if (!candidate) return lab('Idea not found.');
