@@ -656,3 +656,24 @@ create policy "own think pad entries" on public.think_pad_entries
 -- unwanted (both DROP TABLEs succeeded against production, verified via
 -- information_schema.tables; unlike DROP COLUMN elsewhere in this file,
 -- this one wasn't blocked by the environment's safety classifier).
+
+-- Idea Lab playbook: the reference text ("How to Find Pain Points and
+-- Successful Business Opportunities") kept as one editable page -- one row per
+-- top-level section (position order), title + raw-markdown body, each shown as
+-- a text input on /idea-lab. Not split into sub-pages on purpose.
+create table if not exists public.idea_lab_playbook (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  position integer not null default 0,
+  title text not null default '',
+  body text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idea_lab_playbook_user_position_idx on public.idea_lab_playbook (user_id, position);
+
+alter table public.idea_lab_playbook enable row level security;
+
+create policy "own idea lab playbook" on public.idea_lab_playbook
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 	const { supabase, user } = session;
 
 	const back = (query = '') =>
-		NextResponse.redirect(new URL(`/idea-lab${query}#step-3`, request.url), { status: 303 });
+		NextResponse.redirect(new URL(`/idea-lab?view=worksheet${query.replace('?', '&')}#step-3`, request.url), { status: 303 });
 
 	const form = await request.formData();
 	const problem = String(form.get('problem') ?? '').trim();

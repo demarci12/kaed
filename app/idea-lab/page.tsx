@@ -6,6 +6,8 @@ import {
 } from '@/lib/idea-lab';
 import { btn, btnGhost, cx, FormError, PageHead } from '@/components/ui';
 import { StepBody } from './StepBody';
+import { PlaybookSection, type PlaybookRow } from './PlaybookSection';
+import Link from 'next/link';
 
 /**
  * The Idea Lab *is* the process. There is no candidate list standing in front
@@ -24,6 +26,34 @@ export default async function IdeaLabPage({
 	searchParams: Promise<{ error?: string; view?: string }>;
 }) {
 	const { supabase, user } = await requireOwner();
+
+	// Default view: the playbook, one page of editable text inputs. The
+	// 11-step worksheet (?view=worksheet, ?view=all) is kept intact behind it.
+	const { view: requestedView, error: playbookError } = await searchParams;
+	if (requestedView !== 'worksheet' && requestedView !== 'all') {
+		const { data: rows } = await supabase
+			.from('idea_lab_playbook')
+			.select('id, title, body')
+			.order('position', { ascending: true });
+		const sections = (rows ?? []) as PlaybookRow[];
+		return (
+			<section className="max-w-[860px]">
+				<PageHead
+					eyebrow="Personal"
+					title="Idea Lab."
+					lede="How to find pain points and successful business opportunities — one page, every section editable. Changes save when you leave a box."
+					actions={<Link href="/idea-lab?view=worksheet" className={btnGhost}>11-step worksheet →</Link>}
+				/>
+				{playbookError && <FormError>{playbookError}</FormError>}
+				<div className="mt-10 flex flex-col gap-10">
+					{sections.length
+						? sections.map((row, i) => <PlaybookSection key={row.id} row={row} index={i} />)
+						: <p className="text-sm text-muted">No playbook text yet.</p>}
+				</div>
+			</section>
+		);
+	}
+
 	const [{ error, view }, worksheet] = await Promise.all([
 		searchParams,
 		getOrCreateWorksheet(supabase, user.id),
@@ -53,7 +83,7 @@ export default async function IdeaLabPage({
 	};
 
 	const doneCount = IDEA_LAB_STEPS.filter(done).length;
-	const guided = view !== 'all';
+	const guided = view === 'worksheet';
 
 	// Clamp rather than trust: current_step is a plain column, and a stale
 	// value (or a shortened step list) shouldn't render an empty page.
@@ -105,7 +135,8 @@ export default async function IdeaLabPage({
 					),
 				)}
 				<span className="ml-1 text-xs text-muted tabular-nums">{doneCount}/{IDEA_LAB_STEPS.length} done</span>
-				<a href={guided ? '/idea-lab?view=all' : '/idea-lab'} className="ml-auto text-[13px] text-muted no-underline hover:text-ink">
+				<Link href="/idea-lab" className="text-[13px] text-muted no-underline hover:text-ink">← Playbook</Link>
+				<a href={guided ? '/idea-lab?view=all' : '/idea-lab?view=worksheet'} className="ml-auto text-[13px] text-muted no-underline hover:text-ink">
 					{guided ? 'See all 11 steps →' : '← Back to guided'}
 				</a>
 			</div>

@@ -14,22 +14,22 @@ export async function POST(request: Request) {
 	if (!session) return NextResponse.redirect(new URL('/login', request.url), { status: 303 });
 	const { supabase, user } = session;
 
-	const back = (query = '') => NextResponse.redirect(new URL(`/idea-lab${query}`, request.url), { status: 303 });
+	const back = (query = '?view=worksheet') => NextResponse.redirect(new URL(`/idea-lab${query}`, request.url), { status: 303 });
 
 	const form = await request.formData();
 	const step = Number(String(form.get('step') ?? ''));
 	if (!Number.isInteger(step) || step < 1 || step > IDEA_LAB_STEPS.length) {
-		return back('?error=Unknown step.');
+		return back('?view=worksheet&error=Unknown step.');
 	}
 
 	const worksheet = await getOrCreateWorksheet(supabase, user.id);
-	if (!worksheet) return back('?error=Could not open your worksheet.');
+	if (!worksheet) return back('?view=worksheet&error=Could not open your worksheet.');
 
 	// Not touching updated_at: moving between steps is navigation, not work,
 	// and letting it bump the timestamp would make an untouched worksheet look
 	// freshly edited every time you paged through it.
 	const { error } = await supabase.from('idea_lab').update({ current_step: step }).eq('id', worksheet.id);
-	if (error) return back(`?error=${encodeURIComponent(error.message)}`);
+	if (error) return back(`?view=worksheet&error=${encodeURIComponent(error.message)}`);
 
 	return back();
 }
