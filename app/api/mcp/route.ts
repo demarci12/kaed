@@ -1,7 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { recomputeSearchText } from '@/lib/think-pad-helpers';
+import { CMS_TOOLS, CMS_TOOL_NAMES, callCmsTool, type CmsToolArgs } from '@/lib/cms-mcp';
 
 export const dynamic = 'force-dynamic';
+// cms_write_next_post generates an article (about a minute).
+export const maxDuration = 300;
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,6 +32,9 @@ const TABLES = [
 	'finance_limits',
 	'think_pad_pages',
 	'think_pad_entries',
+	'cms_sites',
+	'cms_posts',
+	'cms_ideas',
 ];
 
 function assertTable(table: string) {
@@ -104,6 +110,7 @@ const TOOLS = [
 			required: ['body'],
 		},
 	},
+	...CMS_TOOLS,
 ];
 
 function toolResult(data: unknown) {
@@ -114,7 +121,7 @@ function toolError(message: string) {
 	return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
 }
 
-interface ToolArgs {
+interface ToolArgs extends CmsToolArgs {
 	table?: string;
 	columns?: string;
 	filters?: Record<string, unknown>;
@@ -143,6 +150,8 @@ async function callTool(name: string, args: ToolArgs) {
 	const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 
 	try {
+		if (CMS_TOOL_NAMES.includes(name)) return toolResult(await callCmsTool(supabase, name, args));
+
 		switch (name) {
 			case 'list_tables':
 				return toolResult(TABLES);

@@ -685,3 +685,70 @@ alter table public.idea_lab add column if not exists thinking text;
 
 -- Per-section personal notes shown under each playbook section (empty by default).
 alter table public.idea_lab_playbook add column if not exists notes text;
+
+-- Blog CMS (/cms): sites, the ideas queue that feeds the generator, and posts.
+-- Public read API: /api/cms/v1/* (per-site bearer key, sha256 stored). Media: public storage bucket 'cms-media'.
+create table if not exists public.cms_sites (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  slug text not null,
+  name text not null,
+  domain text,
+  language text not null default 'hu',
+  brand_context text,
+  deploy_hook_url text,
+  api_key_hash text,
+  api_key_prefix text,
+  active boolean not null default true,
+  auto_publish boolean not null default false,
+  schedule_days smallint[] not null default '{1,3}',
+  publish_hour smallint not null default 9 check (publish_hour between 0 and 23),
+  timezone text not null default 'Europe/Budapest',
+  buffer smallint not null default 2 check (buffer between 1 and 10),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, slug)
+);
+create index if not exists cms_sites_api_key_hash_idx on public.cms_sites (api_key_hash);
+
+create table if not exists public.cms_posts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  site_id uuid not null references public.cms_sites(id) on delete cascade,
+  idea_id uuid,
+  slug text not null,
+  title text not null,
+  description text,
+  excerpt text,
+  body_md text not null default '',
+  cover_image_url text,
+  cover_alt text,
+  keywords text[] not null default '{}',
+  status text not null default 'draft' check (status in ('draft', 'scheduled', 'published')),
+  publish_at timestamptz,
+  published_at timestamptz,
+  source text not null default 'manual' check (source in ('manual', 'ai')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (site_id, slug)
+);
+create index if not exists cms_posts_site_status_idx on public.cms_posts (site_id, status, publish_at);
+
+create table if not exists public.cms_ideas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  site_id uuid not null references public.cms_sites(id) on delete cascade,
+  idea text not null,
+  status text not null default 'queued' check (status in ('queued', 'generating', 'used', 'failed')),
+  post_id uuid references public.cms_posts(id) on delete set null,
+  error text,
+  created_at timestamptz not null default now()
+);
+create index if not exists cms_ideas_site_status_idx on public.cms_ideas (site_id, status, created_at);
+
+alter table public.cms_sites enable row level security;
+alter table public.cms_posts enable row level security;
+alter table public.cms_ideas enable row level security;
+create policy "own cms sites" on public.cms_sites for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own cms posts" on public.cms_posts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own cms ideas" on public.cms_ideas for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

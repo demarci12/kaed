@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { btnGhost, cx } from '@/components/ui';
-import { Markdown } from './Markdown';
+import { Markdown } from '@/components/Markdown';
 
 export interface PlaybookRow { id: string; title: string; body: string | null; notes: string | null }
 

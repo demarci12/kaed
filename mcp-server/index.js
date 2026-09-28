@@ -49,6 +49,9 @@ const TABLES = [
   "finance_limits",
   "think_pad_pages",
   "think_pad_entries",
+  "cms_sites",
+  "cms_posts",
+  "cms_ideas",
 ];
 
 /**
