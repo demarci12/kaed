@@ -682,3 +682,6 @@ create policy "own idea lab playbook" on public.idea_lab_playbook
 -- columns above are retired (nothing reads or writes them; their text was
 -- folded into `thinking`), as are idea_lab_evidence and idea_candidates.
 alter table public.idea_lab add column if not exists thinking text;
+
+-- Per-section personal notes shown under each playbook section (empty by default).
+alter table public.idea_lab_playbook add column if not exists notes text;

@@ -13,7 +13,7 @@ export default async function IdeaLabPage() {
 	const { supabase, user } = await requireOwner();
 	const [lab, { data: rows }] = await Promise.all([
 		getOrCreateWorksheet(supabase, user.id),
-		supabase.from('idea_lab_playbook').select('id, title, body').order('position', { ascending: true }),
+		supabase.from('idea_lab_playbook').select('id, title, body, notes').order('position', { ascending: true }),
 	]);
 	const sections = (rows ?? []) as PlaybookRow[];
 
@@ -36,7 +36,7 @@ export default async function IdeaLabPage() {
 
 			<div className="mt-16 pt-10 border-t border-line">
 				<p className="mt-0 mb-8 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted">Playbook</p>
-				<div className="flex flex-col gap-10">
+				<div className="flex flex-col gap-16">
 					{sections.length
 						? sections.map((row, i) => <PlaybookSection key={row.id} row={row} index={i} />)
 						: <p className="text-sm text-muted">No playbook text yet.</p>}
