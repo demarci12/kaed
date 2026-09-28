@@ -27,6 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 	let neighborQuery = supabase
 		.from('business_ideas')
 		.select('id, rank')
+		.is('archived_at', null)
 		.order('rank', { ascending: direction === 'down' })
 		.limit(1);
 

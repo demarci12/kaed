@@ -9,6 +9,7 @@ export interface BusinessIdea {
 	validation: string | null;
 	category: IdeaCategory | null;
 	rank: number;
+	archived_at: string | null;
 	created_at: string;
 	updated_at: string;
 }

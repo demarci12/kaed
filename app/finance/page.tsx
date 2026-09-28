@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import type { FinanceBudget, FinanceCategory, FinanceLimits, FinanceTransaction } from '@/lib/finance';
-import { Popup, PopupActions } from '@/components/Popup';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btn, btnGhost, cx, input, label, table, tableWrap, td, th, FormError, PageHead, Pill,
 } from '@/components/ui';
 import { QuickAdd } from './QuickAdd';
+import { NewTransactionPopup } from './NewTransactionPopup';
 
 const tile = 'flex flex-col gap-2 p-5 border border-line rounded-[14px] bg-paper';
 const tileLabel = 'text-xs font-semibold tracking-[0.06em] uppercase text-muted';
@@ -15,23 +15,6 @@ const control = 'w-full font-sans text-base text-ink bg-canvas border border-lin
 
 function formatAmount(n: number) {
 	return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function CategoryOptions({ categories }: { categories: FinanceCategory[] }) {
-	const byType = (t: FinanceCategory['type']) => categories.filter((c) => c.type === t);
-	return (
-		<>
-			<optgroup label="Income">
-				{byType('income').map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-			</optgroup>
-			<optgroup label="Expense">
-				{byType('expense').map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-			</optgroup>
-			<optgroup label="Saving">
-				{byType('saving').map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-			</optgroup>
-		</>
-	);
 }
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -143,37 +126,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 							Statistics
 							<span className="ml-1.5 px-[7px] py-px rounded-full bg-canvas border border-line text-[10px] font-semibold tracking-[0.04em] uppercase text-muted">Soon</span>
 						</button>
-						<Popup title="Add transaction" trigger={(open) => (
-							<button type="button" className={btn} onClick={open}>+ Add transaction</button>
-						)}>
-							{(close) => (
-								<form method="post" action="/api/finance/transactions/create">
-									<label className={label} htmlFor="type">Type</label>
-									<select id="type" name="type" required defaultValue="expense" className={control}>
-										<option value="expense">Expense</option>
-										<option value="income">Income</option>
-										<option value="saving">Saving</option>
-									</select>
-
-									<label className={label} htmlFor="amount">Amount</label>
-									<input id="amount" name="amount" type="number" step="0.01" min="0.01" required className={input} />
-
-									<label className={label} htmlFor="category_id">Category</label>
-									<select id="category_id" name="category_id" defaultValue="" className={control}>
-										<option value="">No category</option>
-										<CategoryOptions categories={typedCategories} />
-									</select>
-
-									<label className={label} htmlFor="occurred_on">Date</label>
-									<input id="occurred_on" name="occurred_on" type="date" className={input} />
-
-									<label className={label} htmlFor="note">Note</label>
-									<input id="note" name="note" type="text" maxLength={200} placeholder="Optional" className={input} />
-
-									<PopupActions onCancel={close} submitLabel="Add" />
-								</form>
-							)}
-						</Popup>
+						<NewTransactionPopup categories={typedCategories} />
 					</>
 				}
 			/>

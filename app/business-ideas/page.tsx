@@ -3,16 +3,17 @@ import { HEADLINE_SIGNAL_TYPES } from '@/lib/projects';
 import type { BusinessIdea } from '@/lib/business-ideas';
 import { NewIdeaPopup } from './NewIdeaPopup';
 import { IdeaList, type IdeaListItem } from './IdeaList';
-import { FormError, PageHead } from '@/components/ui';
+import Link from 'next/link';
+import { chipMuted, FormError, PageHead } from '@/components/ui';
 
 export default async function BusinessIdeasPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
 	const { supabase } = await requireOwner();
 	const { error } = await searchParams;
 
-	const { data: ideas } = await supabase
-		.from('business_ideas')
-		.select('*')
-		.order('rank', { ascending: true });
+	const [{ data: ideas }, { count: archivedCount }] = await Promise.all([
+		supabase.from('business_ideas').select('*').is('archived_at', null).order('rank', { ascending: true }),
+		supabase.from('business_ideas').select('id', { count: 'exact', head: true }).not('archived_at', 'is', null),
+	]);
 
 	const typedIdeas = (ideas ?? []) as BusinessIdea[];
 
@@ -64,6 +65,10 @@ export default async function BusinessIdeasPage({ searchParams }: { searchParams
 			/>
 
 			{error && <FormError>{error}</FormError>}
+
+			{!!archivedCount && (
+				<Link href="/business-ideas/archive" className={chipMuted}>Archived ({archivedCount})</Link>
+			)}
 
 			<IdeaList items={items} />
 		</section>

@@ -100,10 +100,12 @@ export default async function BusinessIdeaDetailPage({
 
 				<div className="flex items-center gap-3.5 mt-2 flex-wrap md:flex-nowrap">
 					<button type="submit" className={cx(btn, wide)}>Save changes</button>
+					<button type="submit" form="archive-idea" className={cx(btnGhost, wide)}>{typed.archived_at ? 'Restore idea' : 'Archive idea'}</button>
 					<button type="submit" form="delete-idea" className={cx(btnDanger, wide)}>Delete idea</button>
 				</div>
 			</form>
 
+			<form id="archive-idea" method="post" action={`/api/business-ideas/${typed.id}/${typed.archived_at ? 'restore' : 'archive'}`} />
 			<form id="delete-idea" method="post" action={`/api/business-ideas/${typed.id}/delete`} />
 		</section>
 	);

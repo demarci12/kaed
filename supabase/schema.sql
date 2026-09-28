@@ -177,6 +177,9 @@ create table if not exists public.business_ideas (
   updated_at timestamptz not null default now()
 );
 
+-- Hidden from /business-ideas (shown on /business-ideas/archive) without deleting; null = active.
+alter table public.business_ideas add column if not exists archived_at timestamptz;
+
 alter table public.business_ideas enable row level security;
 
 create policy "own business ideas" on public.business_ideas

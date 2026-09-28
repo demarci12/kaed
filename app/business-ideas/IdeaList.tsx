@@ -74,6 +74,16 @@ export function IdeaList({ items }: { items: IdeaListItem[] }) {
 		);
 	}
 
+	function archive(id: string) {
+		mutate(
+			list.filter((it) => it.idea.id !== id),
+			() => fetch(`/api/business-ideas/${id}/archive`, {
+				method: 'POST',
+				headers: { Accept: 'application/json' },
+			}),
+		);
+	}
+
 	function move(id: string, direction: 'up' | 'down') {
 		const i = list.findIndex((it) => it.idea.id === id);
 		const j = direction === 'up' ? i - 1 : i + 1;
@@ -117,6 +127,7 @@ export function IdeaList({ items }: { items: IdeaListItem[] }) {
 							onMove={move}
 							onRank={rank}
 							onDelete={remove}
+							onArchive={archive}
 						/>
 					))
 				) : (
@@ -127,7 +138,7 @@ export function IdeaList({ items }: { items: IdeaListItem[] }) {
 	);
 }
 
-function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete }: {
+function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchive }: {
 	item: IdeaListItem;
 	index: number;
 	total: number;
@@ -135,6 +146,7 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete }: {
 	onMove: (id: string, direction: 'up' | 'down') => void;
 	onRank: (id: string, position: number) => void;
 	onDelete: (id: string) => void;
+	onArchive: (id: string) => void;
 }) {
 	const { idea, linkedProject, signalCount } = item;
 
@@ -162,6 +174,14 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete }: {
 						busy={busy}
 						onMove={(direction) => onMove(idea.id, direction)}
 					/>
+					<button
+						type="button"
+						className={iconBtn}
+						aria-label="Archive business idea"
+						title="Archive"
+						disabled={busy}
+						onClick={() => onArchive(idea.id)}
+					>⤓</button>
 					<button
 						type="button"
 						className={deleteBtn}

@@ -17,6 +17,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 	const { data: ideas, error: fetchError } = await supabase
 		.from('business_ideas')
 		.select('id')
+		.is('archived_at', null)
 		.order('rank', { ascending: true });
 
 	if (fetchError) {

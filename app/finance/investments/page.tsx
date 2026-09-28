@@ -3,11 +3,11 @@ import { requireOwner } from '@/lib/auth';
 import { fetchPrices, positionMetrics, type Investment } from '@/lib/investments';
 import { InlineEdit } from '@/components/InlineEdit';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
-import { Popup, PopupActions } from '@/components/Popup';
 import {
 	btn, btnGhost, cx, input, label, table, tableWrap, td, th, thNum, FormError, PageHead,
 } from '@/components/ui';
 import { AutoRefresh, RefreshButton } from './Refresh';
+import { NewHoldingPopup } from './NewHoldingPopup';
 
 // Every derived figure comes from positionMetrics(); nothing is recomputed here.
 const huf = (n: number) => Math.round(n).toLocaleString('hu-HU');
@@ -66,30 +66,7 @@ export default async function InvestmentsPage({
 				actions={
 					<>
 						<Link href="/finance" className={btnGhost}>← Finance</Link>
-						<Popup title="Add holding" trigger={(open) => (
-							<button type="button" className={btn} onClick={open}>+ Add holding</button>
-						)}>
-							{(close) => (
-								<form method="post" action="/api/finance/investments/create">
-									<label className={label} htmlFor="symbol">Symbol</label>
-									<input id="symbol" name="symbol" type="text" required maxLength={20} placeholder="ONDO" className={input} />
-
-									<label className={label} htmlFor="cmc_slug">CoinMarketCap slug (optional)</label>
-									<input id="cmc_slug" name="cmc_slug" type="text" maxLength={60} placeholder="sigma-sol" className={input} />
-
-									<label className={label} htmlFor="quantity">Quantity</label>
-									<input id="quantity" name="quantity" type="number" step="any" min="0" required className={input} />
-
-									<label className={label} htmlFor="cost_basis_huf">Invested (HUF)</label>
-									<input id="cost_basis_huf" name="cost_basis_huf" type="number" step="any" min="0" required className={input} />
-
-									<label className={label} htmlFor="goal_price_usd">Goal price (USD)</label>
-									<input id="goal_price_usd" name="goal_price_usd" type="number" step="any" min="0" className={input} />
-
-									<PopupActions onCancel={close} submitLabel="Add holding" />
-								</form>
-							)}
-						</Popup>
+						<NewHoldingPopup />
 					</>
 				}
 			/>
