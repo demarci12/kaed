@@ -677,3 +677,8 @@ alter table public.idea_lab_playbook enable row level security;
 
 create policy "own idea lab playbook" on public.idea_lab_playbook
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Idea Lab thinking space: the free-form text box on /idea-lab. The 11-step
+-- columns above are retired (nothing reads or writes them; their text was
+-- folded into `thinking`), as are idea_lab_evidence and idea_candidates.
+alter table public.idea_lab add column if not exists thinking text;
