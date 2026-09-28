@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
 	const { error } = await supabase
 		.from('cms_ideas')
-		.insert(lines.map((idea) => ({ user_id: user.id, site_id: siteId, idea: idea.slice(0, 1000) })));
+		.insert(lines.map((idea) => ({ user_id: user.id, site_id: siteId, idea: idea.slice(0, 20000) })));
 	if (error) return back(`?error=${encodeURIComponent(error.message)}`);
 	return back();
 }

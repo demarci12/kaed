@@ -167,7 +167,7 @@ export async function callCmsTool(db: SupabaseClient, name: string, args: CmsToo
 			const site = await findSite(db, args.site);
 			const ideas = (args.ideas ?? []).map((i) => String(i).trim()).filter(Boolean).slice(0, 100);
 			if (!ideas.length) throw new Error('ideas must contain at least one non-empty string.');
-			const { error } = await db.from('cms_ideas').insert(ideas.map((idea) => ({ user_id: site.user_id, site_id: site.id, idea: idea.slice(0, 1000) })));
+			const { error } = await db.from('cms_ideas').insert(ideas.map((idea) => ({ user_id: site.user_id, site_id: site.id, idea: idea.slice(0, 20000) })));
 			if (error) throw new Error(error.message);
 			return { site: site.slug, added: ideas.length };
 		}

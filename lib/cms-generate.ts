@@ -49,6 +49,7 @@ function systemPrompt(site: CmsSite) {
 			'- Never invent statistics, prices, legal intervals, certifications, awards, testimonials or claims about the business. Where a number or regulation matters, stay general and tell the reader to check the current rules or ask a professional.',
 			'- End with a brief, low-pressure call to action pointing to the business (no fake urgency).',
 			'- Do not include the title as an H1 in the body.',
+			'- If the brief contains source material (a manual excerpt, a table of codes or facts, a draft with front matter), treat it as authoritative: build the article from those facts only, keep every code/value/step accurate, and never add codes, specifications or procedures that are not in it. Reuse its title, slug and description if present (tightened to the length limits).',
 		].join('\n'),
 	].join('\n\n');
 }
