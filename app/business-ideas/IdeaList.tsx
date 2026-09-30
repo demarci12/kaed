@@ -263,14 +263,14 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchiv
 						aria-label="Archive business idea"
 						title="Archive"
 						disabled={busy}
-						onClick={() => onArchive(idea.id)}
+						onClick={() => { if (confirm(`Archive "${idea.title}"? You can restore it from the archive.`)) onArchive(idea.id); }}
 					>⤓</button>
 					<button
 						type="button"
 						className={deleteBtn}
 						aria-label="Delete business idea"
 						disabled={busy}
-						onClick={() => onDelete(idea.id)}
+						onClick={() => { if (confirm(`Delete "${idea.title}" permanently? This cannot be undone.`)) onDelete(idea.id); }}
 					>×</button>
 				</div>
 			</div>

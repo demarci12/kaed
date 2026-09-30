@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { requireOwner } from '@/lib/auth';
 import { HEADLINE_SIGNAL_TYPES } from '@/lib/projects';
 import type { BusinessIdea } from '@/lib/business-ideas';
+import { ConfirmSubmit } from '../ConfirmSubmit';
 import { btn, btnDanger, btnGhost, cx, FormError } from '@/components/ui';
 
 const fieldLabel = 'text-xs font-semibold tracking-[0.06em] uppercase text-muted';
@@ -100,8 +101,10 @@ export default async function BusinessIdeaDetailPage({
 
 				<div className="flex items-center gap-3.5 mt-2 flex-wrap md:flex-nowrap">
 					<button type="submit" className={cx(btn, wide)}>Save changes</button>
-					<button type="submit" form="archive-idea" className={cx(btnGhost, wide)}>{typed.archived_at ? 'Restore idea' : 'Archive idea'}</button>
-					<button type="submit" form="delete-idea" className={cx(btnDanger, wide)}>Delete idea</button>
+					{typed.archived_at
+						? <button type="submit" form="archive-idea" className={cx(btnGhost, wide)}>Restore idea</button>
+						: <ConfirmSubmit form="archive-idea" className={cx(btnGhost, wide)} message="Archive this idea? You can restore it from the archive.">Archive idea</ConfirmSubmit>}
+					<ConfirmSubmit form="delete-idea" className={cx(btnDanger, wide)} message="Delete this idea permanently? This cannot be undone.">Delete idea</ConfirmSubmit>
 				</div>
 			</form>
 
