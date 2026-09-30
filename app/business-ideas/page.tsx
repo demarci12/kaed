@@ -4,7 +4,7 @@ import type { BusinessIdea } from '@/lib/business-ideas';
 import { NewIdeaPopup } from './NewIdeaPopup';
 import { IdeaList, type IdeaListItem } from './IdeaList';
 import Link from 'next/link';
-import { chipMuted, FormError, PageHead } from '@/components/ui';
+import { btnGhost, FormError, PageHead } from '@/components/ui';
 
 export default async function BusinessIdeasPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
 	const { supabase } = await requireOwner();
@@ -61,14 +61,16 @@ export default async function BusinessIdeasPage({ searchParams }: { searchParams
 				eyebrow="Personal"
 				title="Business idea register."
 				lede="Ideas worth evaluating as businesses — the pain point they solve, who has it, and what's been done to validate it."
-				actions={<NewIdeaPopup />}
+				actions={
+					<>
+						<Link href="/business-ideas/archive" className={btnGhost}>Archive{archivedCount ? ` (${archivedCount})` : ''}</Link>
+						<NewIdeaPopup />
+					</>
+				}
 			/>
 
 			{error && <FormError>{error}</FormError>}
 
-			{!!archivedCount && (
-				<Link href="/business-ideas/archive" className={chipMuted}>Archived ({archivedCount})</Link>
-			)}
 
 			<IdeaList items={items} />
 		</section>
