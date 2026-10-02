@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { requireUser } from '@/lib/auth';
+import { isMember, requireUser } from '@/lib/auth';
+import { serviceClient } from '@/lib/cms';
 import type { FinanceBudget, FinanceCategory, FinanceLimits, FinanceTransaction } from '@/lib/finance';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
@@ -18,14 +19,15 @@ function formatAmount(n: number) {
 }
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-	const { supabase } = await requireUser();
+	const { supabase, user } = await requireUser();
+	const owner = !isMember(user);
 	const sp = await searchParams;
 
 	const now = new Date();
 	const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
 	// One round trip, not four -- see the Promise.all rule in CLAUDE.md.
-	const [{ data: transactions }, { data: categories }, { data: currentBudgets }, { data: limits }] = await Promise.all([
+	const [{ data: transactions }, { data: categories }, { data: currentBudgets }, { data: limits }, bankInbox] = await Promise.all([
 		supabase
 			.from('finance_transactions')
 			.select('*')
@@ -34,7 +36,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 		supabase.from('finance_categories').select('*').order('name', { ascending: true }),
 		supabase.from('finance_budgets').select('*').eq('month', currentMonth),
 		supabase.from('finance_limits').select('*').limit(1).maybeSingle(),
+		// Bank data is owner-only (service role, RLS has no policies), so members never query it.
+		owner
+			? serviceClient().from('bank_transactions').select('id', { count: 'exact', head: true }).eq('status', 'inbox')
+			: Promise.resolve(null),
 	]);
+	const bankInboxCount = bankInbox?.count ?? 0;
 
 	const typedTransactions = (transactions ?? []) as FinanceTransaction[];
 	const typedCategories = (categories ?? []) as FinanceCategory[];
@@ -120,6 +127,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 				lede="Shared income and spending — every transaction visible to both of you."
 				actions={
 					<>
+						{owner && (
+							<Link href="/finance/banks" className={btnGhost}>
+								Banks
+								{bankInboxCount > 0 && <span className="ml-1.5 px-[7px] py-px rounded-full bg-ink text-white text-[10px] font-semibold tabular-nums">{bankInboxCount}</span>}
+							</Link>
+						)}
 						<Link href="/finance/budget" className={btnGhost}>Budget planning →</Link>
 						<Link href="/finance/settings" className={btnGhost}>Settings</Link>
 						<button type="button" disabled aria-disabled="true" className={cx(btnGhost, 'pointer-events-none opacity-45 cursor-not-allowed')}>

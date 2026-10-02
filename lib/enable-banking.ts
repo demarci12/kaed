@@ -73,3 +73,69 @@ export interface EbAspsp { name: string; country: string; psu_types?: string[]; 
 
 export const getApplication = () => ebFetch<EbApplication>('/application');
 export const listBanks = (country: string) => ebFetch<{ aspsps: EbAspsp[] }>('/aspsps', { query: { country } });
+
+// ── Authorisation + data ────────────────────────────────────────────────────
+
+export interface EbAccount {
+	uid: string;
+	identification_hash: string;
+	account_id?: { iban?: string; other?: { identification?: string } } | null;
+	name?: string | null;
+	currency?: string | null;
+}
+
+export interface EbSession {
+	session_id: string;
+	accounts: EbAccount[];
+	access: { valid_until: string };
+}
+
+export interface EbTransaction {
+	entry_reference?: string | null;
+	transaction_id?: string | null;
+	transaction_amount: { amount: string; currency: string };
+	/** CRDT = money in, DBIT = money out. */
+	credit_debit_indicator: 'CRDT' | 'DBIT' | string;
+	status?: string;
+	booking_date?: string | null;
+	value_date?: string | null;
+	transaction_date?: string | null;
+	creditor?: { name?: string | null } | null;
+	debtor?: { name?: string | null } | null;
+	remittance_information?: string[] | null;
+	note?: string | null;
+	merchant_category_code?: string | null;
+}
+
+/** Starts consent. `state` comes back on the redirect, so we use it to find our row. */
+export const startAuth = (input: { bank: string; country: string; state: string; redirectUrl: string; validUntil: Date }) =>
+	ebFetch<{ url: string; authorization_id: string }>('/auth', {
+		method: 'POST',
+		body: {
+			access: { valid_until: input.validUntil.toISOString() },
+			aspsp: { name: input.bank, country: input.country },
+			state: input.state,
+			redirect_url: input.redirectUrl,
+			psu_type: 'personal',
+		},
+	});
+
+export const createSession = (code: string) => ebFetch<EbSession>('/sessions', { method: 'POST', body: { code } });
+export const deleteSession = (sessionId: string) => ebFetch<unknown>(`/sessions/${sessionId}`, { method: 'DELETE' });
+
+/** Booked transactions only, following continuation_key until the bank runs out. */
+export async function fetchTransactions(accountUid: string, dateFrom: string): Promise<EbTransaction[]> {
+	const out: EbTransaction[] = [];
+	let key: string | undefined;
+	// Hard cap so a misbehaving bank that keeps returning a key can't loop forever.
+	for (let page = 0; page < 20; page++) {
+		const res = await ebFetch<{ transactions: EbTransaction[]; continuation_key?: string | null }>(
+			`/accounts/${accountUid}/transactions`,
+			{ query: { date_from: dateFrom, transaction_status: 'BOOK', continuation_key: key } },
+		);
+		out.push(...(res.transactions ?? []));
+		if (!res.continuation_key) break;
+		key = res.continuation_key;
+	}
+	return out;
+}

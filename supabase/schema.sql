@@ -752,3 +752,69 @@ alter table public.cms_ideas enable row level security;
 create policy "own cms sites" on public.cms_sites for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own cms posts" on public.cms_posts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own cms ideas" on public.cms_ideas for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Bank sync (Enable Banking). Owner-only and server-only: RLS is on with NO
+-- policies, so the anon/authenticated roles can read nothing; every access
+-- goes through the service-role client after an owner check (lib/banking.ts).
+-- Deliberately not shared with the household `member` role like finance_*.
+-- ─────────────────────────────────────────────────────────────────────────
+
+-- One row per bank link. The row is created 'pending' when consent starts and
+-- its id is the OAuth `state`, so the callback finds it. Reconnecting an
+-- expired bank reuses the same row, which keeps imported history attached.
+create table if not exists public.bank_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  bank_name text not null,
+  country text not null,
+  status text not null default 'pending' check (status in ('pending', 'active', 'expired', 'error')),
+  session_id text,
+  -- [{ uid, identification_hash, iban, name, currency }]. `uid` is only valid
+  -- inside this session; identification_hash is the stable account identity.
+  accounts jsonb not null default '[]'::jsonb,
+  valid_until timestamptz,
+  last_synced_at timestamptz,
+  last_error text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.bank_transactions (
+  id uuid primary key default gen_random_uuid(),
+  connection_id uuid not null references public.bank_connections(id) on delete cascade,
+  account_hash text not null,
+  account_label text,
+  -- entry_reference / transaction_id from the bank, or a hash of the row's
+  -- fields when the bank sends neither. Unique per account => re-syncing and
+  -- reconnecting can never duplicate a transaction.
+  dedupe_key text not null,
+  booked_on date not null,
+  amount numeric(14, 2) not null check (amount >= 0),
+  direction text not null check (direction in ('in', 'out')),
+  currency text not null,
+  counterparty text,
+  -- Normalised counterparty used to match bank_rules.
+  counterparty_key text,
+  remittance text,
+  status text not null default 'inbox' check (status in ('inbox', 'imported', 'ignored')),
+  finance_transaction_id uuid references public.finance_transactions(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (account_hash, dedupe_key)
+);
+
+create index if not exists bank_transactions_status_idx on public.bank_transactions (status, booked_on desc);
+
+-- "Tesco -> Groceries" so the next one from that counterparty files itself.
+create table if not exists public.bank_rules (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  counterparty_key text not null unique,
+  category_id uuid references public.finance_categories(id) on delete cascade,
+  ignore boolean not null default false,
+  created_at timestamptz not null default now(),
+  check (ignore or category_id is not null)
+);
+
+alter table public.bank_connections enable row level security;
+alter table public.bank_transactions enable row level security;
+alter table public.bank_rules enable row level security;
