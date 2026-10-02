@@ -30,3 +30,6 @@ pnpm-debug.log*
 .vercel
 .env*
 tsconfig.tsbuildinfo
+
+# Enable Banking private key
+.secrets/

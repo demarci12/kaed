@@ -36,7 +36,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 					<main className="flex-1 py-8 md:py-16">{children}</main>
 					<footer className="flex items-center justify-between gap-4 max-md:flex-col max-md:items-start py-6 border-t border-line text-[13px] text-muted">
 						<span>KAED — built by Marton Deak</span>
-						<span>© {new Date().getFullYear()}</span>
+						<span className="flex items-center gap-4">
+							<Link href="/privacy" className="text-muted no-underline hover:text-ink">Privacy</Link>
+							<Link href="/terms" className="text-muted no-underline hover:text-ink">Terms</Link>
+							<span>© {new Date().getFullYear()}</span>
+						</span>
 					</footer>
 				</div>
 			</body>
