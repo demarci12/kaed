@@ -3,12 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { btn, btnGhost, cx } from '@/components/ui';
+import { useSuggest } from './Suggest';
 
 interface Result { added: number; filed: number; error?: string }
 
 /** Syncs one bank (`ids` of one) or all of them in turn. Manual only: PSD2 allows few unattended fetches a day. */
 export function SyncButton({ ids, ghost, label = 'Sync now' }: { ids: string[]; ghost?: boolean; label?: string }) {
 	const router = useRouter();
+	const suggest = useSuggest();
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 
@@ -29,6 +31,8 @@ export function SyncButton({ ids, ghost, label = 'Sync now' }: { ids: string[]; 
 				errors.push('Network error.');
 			}
 		}
+		// New rows arrived: let Claude pre-fill their categories (runs after the sync has saved them).
+		if (added > 0) void suggest?.run();
 		setBusy(false);
 		setMessage(errors.length ? errors[0] : `${added} new, ${filed} filed automatically.`);
 		router.refresh();

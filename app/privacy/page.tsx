@@ -39,8 +39,10 @@ export default function PrivacyPage() {
 				<h2>Where it is stored and who it is shared with</h2>
 				<p>
 					Data is stored in a Supabase (PostgreSQL) database and served by Vercel. Bank data is fetched through
-					Enable Banking (Enable Banking Oy), a licensed account information service provider. Data is not sold,
-					not used for advertising, and not shared with anyone else.
+					Enable Banking (Enable Banking Oy), a licensed account information service provider. To suggest a budget
+					category, the counterparty name, payment reference and amount of a transaction (never account
+					numbers or logins) are sent to Anthropic, which processes them only to return that suggestion. Data
+					is not sold, not used for advertising, and not shared with anyone else.
 				</p>
 			</div>
 

@@ -7,8 +7,8 @@ import { ConfirmSubmit } from '@/app/business-ideas/ConfirmSubmit';
 import { btnGhost, card, cardHead, cardTitle, chipMuted, cx, Empty, FormError, PageHead, table, tableWrap, td, th } from '@/components/ui';
 import { BankPicker } from './BankPicker';
 import { SyncButton } from './SyncButton';
+import { FileForm, SuggestButton, SuggestProvider } from './Suggest';
 
-const control = 'min-w-0 font-sans text-sm text-ink bg-canvas border border-line rounded-lg px-2.5 py-1.5 outline-none focus:border-ink';
 const INBOX_LIMIT = 100;
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,7 +27,7 @@ export default async function BanksPage({ searchParams }: { searchParams: Promis
 	const connections = (conns ?? []) as BankConnection[];
 	const rows = (inbox ?? []) as BankTransaction[];
 	const cats = (categories ?? []) as FinanceCategory[];
-	const byType = (t: FinanceCategory['type']) => cats.filter((c) => c.type === t);
+	const options = cats.map((c) => ({ id: c.id, name: c.name, type: c.type }));
 
 	// Suggested HUF amount per row; foreign-currency rows get the booking-date ECB rate, editable before filing.
 	const hufSuggestions = await Promise.all(rows.map((r) => toHuf(Number(r.amount), r.currency, r.booked_on)));
@@ -35,6 +35,7 @@ export default async function BanksPage({ searchParams }: { searchParams: Promis
 	const syncable = connections.filter((c) => c.status === 'active').map((c) => c.id);
 
 	return (
+		<SuggestProvider>
 		<section className="max-w-[1080px]">
 			<PageHead
 				eyebrow="Household"
@@ -43,6 +44,7 @@ export default async function BanksPage({ searchParams }: { searchParams: Promis
 				actions={
 					<>
 						<Link href="/finance" className={btnGhost}>← Finance</Link>
+						<SuggestButton />
 						<SyncButton ids={syncable} label="Sync all" />
 					</>
 				}
@@ -111,7 +113,6 @@ export default async function BanksPage({ searchParams }: { searchParams: Promis
 						{rows.length ? rows.map((r, i) => {
 							const foreign = r.currency !== HOME_CURRENCY;
 							const huf = hufSuggestions[i];
-							const formId = `tx-${r.id}`;
 							return (
 								<tr key={r.id}>
 									<td className={cx(td, 'whitespace-nowrap tabular-nums')}>{r.booked_on}</td>
@@ -124,23 +125,7 @@ export default async function BanksPage({ searchParams }: { searchParams: Promis
 										{r.direction === 'in' ? '+' : '−'}{fmt(Number(r.amount))} {r.currency}
 									</td>
 									<td className={td}>
-										<form id={formId} method="post" action={`/api/banking/transactions/${r.id}/assign`} className="flex flex-wrap items-center gap-2">
-											<select name="category_id" required defaultValue="" className={cx(control, 'min-w-36')}>
-												<option value="" disabled>Category…</option>
-												{(['expense', 'income', 'saving'] as const).map((t) => (
-													<optgroup key={t} label={t[0].toUpperCase() + t.slice(1)}>
-														{byType(t).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-													</optgroup>
-												))}
-											</select>
-											<label className="flex items-center gap-1 text-xs text-muted">
-												<input name="huf_amount" type="number" step="0.01" min="0.01" required defaultValue={huf ?? ''} placeholder="HUF" className={cx(control, 'w-24')} />
-												{foreign ? 'HUF (converted)' : 'HUF'}
-											</label>
-											<label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" name="remember" defaultChecked /> Remember</label>
-											<button type="submit" className={btnGhost}>File</button>
-											<button type="submit" formAction={`/api/banking/transactions/${r.id}/ignore`} formNoValidate className="bg-transparent border-0 p-0 text-xs text-muted underline cursor-pointer hover:text-ink">Ignore</button>
-										</form>
+										<FileForm txId={r.id} categories={options} defaultHuf={huf} foreign={foreign} />
 									</td>
 								</tr>
 							);
@@ -152,5 +137,6 @@ export default async function BanksPage({ searchParams }: { searchParams: Promis
 			</div>
 			<p className="mt-3 text-xs text-muted">“Ignore” is for transfers between your own accounts and anything that shouldn’t count. “Remember” makes the next transaction from the same counterparty file itself on sync.</p>
 		</section>
+		</SuggestProvider>
 	);
 }
