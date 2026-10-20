@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import { OPEN_POINT_STATUS_LABELS, type OpenPoint } from '@/lib/open-points';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
-	btnGhost, card, cardDate, cardFoot, cardHead, cardTitle, deleteBtn, Empty, FormError, PageHead, Pill,
+	btnGhost, card, cardDate, cardHead, cardTitle, deleteBtn, Empty, iconBtn, FormError, PageHead, Pill,
 } from '@/components/ui';
 
 export default async function OplArchivePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -37,6 +38,13 @@ export default async function OplArchivePage({ searchParams }: { searchParams: P
 								<Link href={`/opl/${point.id}`} className={cardTitle}>{point.title || 'Untitled'}</Link>
 								<RemoveButton
 									id={point.id}
+									endpoint={`/api/open-points/${point.id}/restore`}
+									className={iconBtn}
+									ariaLabel="Restore"
+									title="Restore"
+								>↺</RemoveButton>
+								<RemoveButton
+									id={point.id}
 									endpoint={`/api/open-points/${point.id}/delete`}
 									className={`${deleteBtn} shrink-0`}
 									ariaLabel="Delete permanently"
@@ -44,19 +52,12 @@ export default async function OplArchivePage({ searchParams }: { searchParams: P
 								>×</RemoveButton>
 							</div>
 
-							<Pill value={point.status}>{OPEN_POINT_STATUS_LABELS[point.status]}</Pill>
-
-							<div className={`${cardFoot} justify-between`}>
+							<CardDetails>
+								<Pill value={point.status}>{OPEN_POINT_STATUS_LABELS[point.status]}</Pill>
 								<span className={cardDate}>
 									Archived {point.archived_at ? new Date(point.archived_at).toLocaleDateString() : ''}
 								</span>
-								<RemoveButton
-									id={point.id}
-									endpoint={`/api/open-points/${point.id}/restore`}
-									className={btnGhost}
-									ariaLabel="Restore"
-								>↺ Restore</RemoveButton>
-							</div>
+							</CardDetails>
 						</CardItem>
 					))
 				) : (

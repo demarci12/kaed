@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import { painScore, PAIN_SOURCE_LABELS, SCORE_MAX, type PainPoint } from '@/lib/painhunter';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
-	btnGhost, cardCompact, cardDate, chipMuted, deleteBtn, Empty, FormError, PageHead, Pill, scoreBadge, table, tableWrap,
+	btnGhost, cardCompact, cardDate, chipMuted, deleteBtn, Empty, FormError, iconBtn, PageHead, Pill, scoreBadge, table, tableWrap,
 	tdCompact, tdScore, thCompact, thScore,
 } from '@/components/ui';
 
@@ -25,6 +26,9 @@ export default async function PainhunterArchivePage({ searchParams }: { searchPa
 	};
 	const restore = (p: PainPoint) => (
 		<RemoveButton id={p.id} endpoint={`/api/painhunter/${p.id}/restore`} className={btnGhost} ariaLabel="Restore">↺ Restore</RemoveButton>
+	);
+	const restoreIcon = (p: PainPoint) => (
+		<RemoveButton id={p.id} endpoint={`/api/painhunter/${p.id}/restore`} className={iconBtn} ariaLabel="Restore" title="Restore">↺</RemoveButton>
 	);
 	const del = (p: PainPoint) => (
 		<RemoveButton id={p.id} endpoint={`/api/painhunter/${p.id}/delete`} className={deleteBtn} ariaLabel="Delete permanently" confirm="Delete this pain for good?">×</RemoveButton>
@@ -77,18 +81,17 @@ export default async function PainhunterArchivePage({ searchParams }: { searchPa
 						{pains.map((pain) => (
 							<CardItem key={pain.id} as="article" id={pain.id} className={cardCompact}>
 								<div className="flex items-start gap-2.5">
-									<span className="mt-0.5">{badge(pain)}</span>
 									<span className="flex-1 min-w-0 font-serif text-base font-semibold leading-snug">{pain.title}</span>
-									{del(pain)}
+									<span className="inline-flex items-center gap-1 shrink-0">{restoreIcon(pain)}{del(pain)}</span>
 								</div>
-								<div className="flex flex-wrap items-center gap-1.5">
-									<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>
-									{pain.context && <span className={chipMuted}>{pain.context}</span>}
-								</div>
-								<div className="flex items-center justify-between gap-3">
+								<CardDetails>
+									<div className="flex flex-wrap items-center gap-1.5">
+										{badge(pain)}
+										<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>
+										{pain.context && <span className={chipMuted}>{pain.context}</span>}
+									</div>
 									<span className={cardDate}>Archived {archivedOn(pain)}</span>
-									{restore(pain)}
-								</div>
+								</CardDetails>
 							</CardItem>
 						))}
 					</div>

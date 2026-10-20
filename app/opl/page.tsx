@@ -112,45 +112,45 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 									</div>
 								</div>
 
-								<div className="flex gap-2 flex-wrap items-center">
-									<InlineEdit
-										value={point.status}
-										field="status"
-										id={point.id}
-										endpoint="/api/open-points"
-										kind="select"
-										options={STATUS_OPTIONS}
-										className="cursor-pointer"
-										display={<Pill value={point.status}>{OPEN_POINT_STATUS_LABELS[point.status]}</Pill>}
-									/>
-
-									<InlineEdit
-										value={linkValue(point)}
-										field="link"
-										id={point.id}
-										endpoint="/api/open-points"
-										kind="select"
-										options={linkOptions}
-										className="cursor-pointer"
-										display={
-											goal ? (
-												<span className={chip}>Goal · {goal.title}</span>
-											) : project ? (
-												<span className={chip}>Project · {project.title}</span>
-											) : (
-												<span className={chipMuted}>No link</span>
-											)
-										}
-									/>
-
-									{point.status !== 'closed' && (
-										<form method="post" action={`/api/open-points/${point.id}/close`} className="m-0 ml-auto">
-											<button type="submit" className={chip}>✓ Done</button>
-										</form>
-									)}
-								</div>
-
 								<CardDetails preview={point.body}>
+									<div className="flex gap-2 flex-wrap items-center">
+										<InlineEdit
+											value={point.status}
+											field="status"
+											id={point.id}
+											endpoint="/api/open-points"
+											kind="select"
+											options={STATUS_OPTIONS}
+											className="cursor-pointer"
+											display={<Pill value={point.status}>{OPEN_POINT_STATUS_LABELS[point.status]}</Pill>}
+										/>
+
+										<InlineEdit
+											value={linkValue(point)}
+											field="link"
+											id={point.id}
+											endpoint="/api/open-points"
+											kind="select"
+											options={linkOptions}
+											className="cursor-pointer"
+											display={
+												goal ? (
+													<span className={chip}>Goal · {goal.title}</span>
+												) : project ? (
+													<span className={chip}>Project · {project.title}</span>
+												) : (
+													<span className={chipMuted}>No link</span>
+												)
+											}
+										/>
+
+										{point.status !== 'closed' && (
+											<form method="post" action={`/api/open-points/${point.id}/close`} className="m-0 ml-auto">
+												<button type="submit" className={chip}>✓ Done</button>
+											</form>
+										)}
+									</div>
+
 									<div className="min-w-0">
 										<span className={cardLabel}>Description</span>
 										<InlineEdit
@@ -194,11 +194,11 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 											</Link>
 										)}
 									</div>
-								</CardDetails>
 
-								<div className={`${cardFoot} justify-end`}>
-									<span className={cardDate}>{new Date(point.created_at).toLocaleDateString()}</span>
-								</div>
+									<div className={`${cardFoot} justify-end`}>
+										<span className={cardDate}>{new Date(point.created_at).toLocaleDateString()}</span>
+									</div>
+								</CardDetails>
 							</CardItem>
 						);
 					})

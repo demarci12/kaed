@@ -109,21 +109,21 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 										/>
 									</div>
 								</div>
-							</CardDetails>
 
-							<div className={cardFoot}>
-								<InlineEdit
-									value={project.status}
-									field="status"
-									id={project.id}
-									endpoint="/api/projects"
-									kind="select"
-									options={STATUS_OPTIONS}
-									className="cursor-pointer"
-									display={<Pill value={project.status}>{STATUS_LABELS[project.status]}</Pill>}
-								/>
-								<span className={cardDate}>{new Date(project.created_at).toLocaleDateString()}</span>
-							</div>
+								<div className={cardFoot}>
+									<InlineEdit
+										value={project.status}
+										field="status"
+										id={project.id}
+										endpoint="/api/projects"
+										kind="select"
+										options={STATUS_OPTIONS}
+										className="cursor-pointer"
+										display={<Pill value={project.status}>{STATUS_LABELS[project.status]}</Pill>}
+									/>
+									<span className={cardDate}>{new Date(project.created_at).toLocaleDateString()}</span>
+								</div>
+							</CardDetails>
 						</CardItem>
 					))
 				) : (

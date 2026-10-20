@@ -53,22 +53,22 @@ export default async function SpecificKnowledgePage({ searchParams }: { searchPa
 								>×</RemoveButton>
 							</div>
 
-							<InlineEdit
-								value={item.kind ?? ''}
-								field="kind"
-								id={item.id}
-								endpoint="/api/knowledge-cards"
-								kind="select"
-								options={KIND_OPTIONS}
-								className="inline-block self-start cursor-pointer"
-								display={
-									item.kind
-										? <Pill value={item.kind}>{KNOWLEDGE_KIND_LABELS[item.kind]}</Pill>
-										: <span className={chipMuted}>Pick kind</span>
-								}
-							/>
-
 							<CardDetails preview={item.body}>
+								<InlineEdit
+									value={item.kind ?? ''}
+									field="kind"
+									id={item.id}
+									endpoint="/api/knowledge-cards"
+									kind="select"
+									options={KIND_OPTIONS}
+									className="inline-block self-start cursor-pointer"
+									display={
+										item.kind
+											? <Pill value={item.kind}>{KNOWLEDGE_KIND_LABELS[item.kind]}</Pill>
+											: <span className={chipMuted}>Pick kind</span>
+									}
+								/>
+
 								<div className="min-w-0">
 									<span className={cardLabel}>What it is</span>
 									<InlineEdit
@@ -92,11 +92,11 @@ export default async function SpecificKnowledgePage({ searchParams }: { searchPa
 										className={`block ${cardValue}`}
 									/>
 								</div>
-							</CardDetails>
 
-							<div className={`${cardFoot} justify-end`}>
-								<span className={cardDate}>{new Date(item.created_at).toLocaleDateString()}</span>
-							</div>
+								<div className={`${cardFoot} justify-end`}>
+									<span className={cardDate}>{new Date(item.created_at).toLocaleDateString()}</span>
+								</div>
+							</CardDetails>
 						</CardItem>
 					))
 				) : (

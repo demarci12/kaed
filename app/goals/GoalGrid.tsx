@@ -125,11 +125,11 @@ export function GoalGrid({ goals }: { goals: Goal[] }) {
 								className={`block ${cardValue}`}
 							/>
 						</div>
-					</CardDetails>
 
-					<div className={`${cardFoot} justify-end`}>
-						<span className={cardDate}>{new Date(goal.created_at).toLocaleDateString()}</span>
-					</div>
+						<div className={`${cardFoot} justify-end`}>
+							<span className={cardDate}>{new Date(goal.created_at).toLocaleDateString()}</span>
+						</div>
+					</CardDetails>
 				</article>
 			))}
 		</div>

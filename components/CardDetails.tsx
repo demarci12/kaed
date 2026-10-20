@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import { cardDetailsSummary } from './ui';
 
 /**
- * Collapsed-by-default section for a card's long fields, so a grid of cards
- * stays scannable: title, status and the headline chips up front, the rest one
- * click away. A native <details>, so it needs no JS and works from Server and
+ * Collapsed-by-default section holding everything on a card except its title,
+ * so a grid of cards stays scannable: the head row (title plus its icon
+ * actions) up front, every pill, chip, score, date and long field one click
+ * away. A native <details>, so it needs no JS and works from Server and
  * Client Components alike; the content stays mounted while closed, so inline
  * edits inside it behave exactly as before.
  *

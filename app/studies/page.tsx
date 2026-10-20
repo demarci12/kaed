@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import { STUDY_SOURCE_LABELS, STUDY_STATUS_LABELS, type Study } from '@/lib/studies';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btn, card, cardDate, cardFoot, cardGrid, cardHead, cardTitle, chipMuted, deleteBtn, Empty, FormError, PageHead, Pill,
@@ -63,21 +64,23 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 								>×</RemoveButton>
 							</div>
 
-							<div className="flex items-center gap-2 flex-wrap">
-								<Pill value={s.status}>{STUDY_STATUS_LABELS[s.status]}</Pill>
-								<span className={chipMuted}>{STUDY_SOURCE_LABELS[s.source_type]}</span>
-								{s.status === 'summarized' && (
-									<span className={chipMuted}>{countByStudy.get(s.id) ?? 0} takeaways</span>
-								)}
-							</div>
+							<CardDetails preview={s.url}>
+								<div className="flex items-center gap-2 flex-wrap">
+									<Pill value={s.status}>{STUDY_STATUS_LABELS[s.status]}</Pill>
+									<span className={chipMuted}>{STUDY_SOURCE_LABELS[s.source_type]}</span>
+									{s.status === 'summarized' && (
+										<span className={chipMuted}>{countByStudy.get(s.id) ?? 0} takeaways</span>
+									)}
+								</div>
 
-							<a href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm text-muted truncate hover:text-ink">
-								{s.url}
-							</a>
+								<a href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm text-muted truncate hover:text-ink">
+									{s.url}
+								</a>
 
-							<div className={`${cardFoot} justify-end`}>
-								<span className={cardDate}>{new Date(s.created_at).toLocaleDateString()}</span>
-							</div>
+								<div className={`${cardFoot} justify-end`}>
+									<span className={cardDate}>{new Date(s.created_at).toLocaleDateString()}</span>
+								</div>
+							</CardDetails>
 						</CardItem>
 					))
 				) : (

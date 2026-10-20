@@ -7,6 +7,7 @@ import {
 } from '@/lib/system-design';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import { NewActorPopup, NewGoalPopup, NewRequirementPopup, NewUseCasePopup } from './Popups';
 import {
@@ -81,7 +82,10 @@ export default async function SystemDesignDetailPage({
 									<InlineEdit value={goal.title} field="title" id={goal.id} endpoint="/api/system-design/goals" className={cardTitle} />
 									<RemoveButton id={goal.id} endpoint={`/api/system-design/goals/${goal.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete goal">×</RemoveButton>
 								</div>
-								<InlineEdit value={goal.description ?? ''} field="description" id={goal.id} endpoint="/api/system-design/goals" kind="textarea" className={`block ${cardValue}`} />
+
+								<CardDetails preview={goal.description}>
+									<InlineEdit value={goal.description ?? ''} field="description" id={goal.id} endpoint="/api/system-design/goals" kind="textarea" className={`block ${cardValue}`} />
+								</CardDetails>
 							</CardItem>
 						))
 					) : (
@@ -103,19 +107,23 @@ export default async function SystemDesignDetailPage({
 									<InlineEdit value={actor.name} field="name" id={actor.id} endpoint="/api/system-design/actors" className={cardTitle} />
 									<RemoveButton id={actor.id} endpoint={`/api/system-design/actors/${actor.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete actor">×</RemoveButton>
 								</div>
-								<div>
-									<InlineEdit
-										value={actor.kind}
-										field="kind"
-										id={actor.id}
-										endpoint="/api/system-design/actors"
-										kind="select"
-										options={actorKindOptions}
-										className="inline-block cursor-pointer"
-										display={<Pill value={actor.kind}>{ACTOR_KIND_LABELS[actor.kind]}</Pill>}
-									/>
-								</div>
-								<InlineEdit value={actor.description ?? ''} field="description" id={actor.id} endpoint="/api/system-design/actors" kind="textarea" className={`block ${cardValue}`} />
+
+								<CardDetails preview={actor.description}>
+									<div>
+										<InlineEdit
+											value={actor.kind}
+											field="kind"
+											id={actor.id}
+											endpoint="/api/system-design/actors"
+											kind="select"
+											options={actorKindOptions}
+											className="inline-block cursor-pointer"
+											display={<Pill value={actor.kind}>{ACTOR_KIND_LABELS[actor.kind]}</Pill>}
+										/>
+									</div>
+
+									<InlineEdit value={actor.description ?? ''} field="description" id={actor.id} endpoint="/api/system-design/actors" kind="textarea" className={`block ${cardValue}`} />
+								</CardDetails>
 							</CardItem>
 						))
 					) : (
@@ -137,33 +145,37 @@ export default async function SystemDesignDetailPage({
 									<InlineEdit value={useCase.title} field="title" id={useCase.id} endpoint="/api/system-design/use-cases" className={cardTitle} />
 									<RemoveButton id={useCase.id} endpoint={`/api/system-design/use-cases/${useCase.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete use case">×</RemoveButton>
 								</div>
-								<div>
-									<InlineEdit
-										value={useCase.actor_id ?? ''}
-										field="actor_id"
-										id={useCase.id}
-										endpoint="/api/system-design/use-cases"
-										kind="select"
-										options={actorSelectOptions}
-										className="inline-block cursor-pointer"
-										display={
-											useCase.actor_id && actorById.has(useCase.actor_id)
-												? <span className={chip}>{actorById.get(useCase.actor_id)!.name}</span>
-												: <span className={chipMuted}>No actor</span>
-										}
-									/>
-								</div>
-								{([
-									['Description', 'description', useCase.description],
-									['Preconditions', 'preconditions', useCase.preconditions],
-									['Main flow', 'main_flow', useCase.main_flow],
-									['Postconditions', 'postconditions', useCase.postconditions],
-								] as [string, string, string | null][]).map(([text, field, value]) => (
-									<div key={field} className="min-w-0">
-										<span className={cardLabel}>{text}</span>
-										<InlineEdit value={value ?? ''} field={field} id={useCase.id} endpoint="/api/system-design/use-cases" kind="textarea" className={`block ${cardValue}`} />
+
+								<CardDetails preview={useCase.description}>
+									<div>
+										<InlineEdit
+											value={useCase.actor_id ?? ''}
+											field="actor_id"
+											id={useCase.id}
+											endpoint="/api/system-design/use-cases"
+											kind="select"
+											options={actorSelectOptions}
+											className="inline-block cursor-pointer"
+											display={
+												useCase.actor_id && actorById.has(useCase.actor_id)
+													? <span className={chip}>{actorById.get(useCase.actor_id)!.name}</span>
+													: <span className={chipMuted}>No actor</span>
+											}
+										/>
 									</div>
-								))}
+
+									{([
+										['Description', 'description', useCase.description],
+										['Preconditions', 'preconditions', useCase.preconditions],
+										['Main flow', 'main_flow', useCase.main_flow],
+										['Postconditions', 'postconditions', useCase.postconditions],
+									] as [string, string, string | null][]).map(([text, field, value]) => (
+										<div key={field} className="min-w-0">
+											<span className={cardLabel}>{text}</span>
+											<InlineEdit value={value ?? ''} field={field} id={useCase.id} endpoint="/api/system-design/use-cases" kind="textarea" className={`block ${cardValue}`} />
+										</div>
+									))}
+								</CardDetails>
 							</CardItem>
 						))
 					) : (
@@ -185,45 +197,50 @@ export default async function SystemDesignDetailPage({
 									<InlineEdit value={requirement.title} field="title" id={requirement.id} endpoint="/api/system-design/requirements" className={cardTitle} />
 									<RemoveButton id={requirement.id} endpoint={`/api/system-design/requirements/${requirement.id}/delete`} className={`${deleteBtn} shrink-0`} ariaLabel="Delete requirement">×</RemoveButton>
 								</div>
-								<div className="flex gap-2 flex-wrap">
-									<InlineEdit
-										value={requirement.kind}
-										field="kind"
-										id={requirement.id}
-										endpoint="/api/system-design/requirements"
-										kind="select"
-										options={requirementKindOptions}
-										className="inline-block cursor-pointer"
-										display={<Pill value={requirement.kind}>{REQUIREMENT_KIND_LABELS[requirement.kind]}</Pill>}
-									/>
-									<InlineEdit
-										value={requirement.priority}
-										field="priority"
-										id={requirement.id}
-										endpoint="/api/system-design/requirements"
-										kind="select"
-										options={requirementPriorityOptions}
-										className="inline-block cursor-pointer"
-										display={<Pill value={requirement.priority}>{REQUIREMENT_PRIORITY_LABELS[requirement.priority]}</Pill>}
-									/>
-								</div>
-								<div>
-									<InlineEdit
-										value={requirement.use_case_id ?? ''}
-										field="use_case_id"
-										id={requirement.id}
-										endpoint="/api/system-design/requirements"
-										kind="select"
-										options={useCaseSelectOptions}
-										className="inline-block cursor-pointer"
-										display={
-											requirement.use_case_id && useCaseById.has(requirement.use_case_id)
-												? <span className={chip}>{useCaseById.get(requirement.use_case_id)!.title}</span>
-												: <span className={chipMuted}>No use case</span>
-										}
-									/>
-								</div>
-								<InlineEdit value={requirement.description ?? ''} field="description" id={requirement.id} endpoint="/api/system-design/requirements" kind="textarea" className={cx('block', cardValue)} />
+
+								<CardDetails preview={requirement.description}>
+									<div className="flex gap-2 flex-wrap">
+										<InlineEdit
+											value={requirement.kind}
+											field="kind"
+											id={requirement.id}
+											endpoint="/api/system-design/requirements"
+											kind="select"
+											options={requirementKindOptions}
+											className="inline-block cursor-pointer"
+											display={<Pill value={requirement.kind}>{REQUIREMENT_KIND_LABELS[requirement.kind]}</Pill>}
+										/>
+										<InlineEdit
+											value={requirement.priority}
+											field="priority"
+											id={requirement.id}
+											endpoint="/api/system-design/requirements"
+											kind="select"
+											options={requirementPriorityOptions}
+											className="inline-block cursor-pointer"
+											display={<Pill value={requirement.priority}>{REQUIREMENT_PRIORITY_LABELS[requirement.priority]}</Pill>}
+										/>
+									</div>
+
+									<div>
+										<InlineEdit
+											value={requirement.use_case_id ?? ''}
+											field="use_case_id"
+											id={requirement.id}
+											endpoint="/api/system-design/requirements"
+											kind="select"
+											options={useCaseSelectOptions}
+											className="inline-block cursor-pointer"
+											display={
+												requirement.use_case_id && useCaseById.has(requirement.use_case_id)
+													? <span className={chip}>{useCaseById.get(requirement.use_case_id)!.title}</span>
+													: <span className={chipMuted}>No use case</span>
+											}
+										/>
+									</div>
+
+									<InlineEdit value={requirement.description ?? ''} field="description" id={requirement.id} endpoint="/api/system-design/requirements" kind="textarea" className={cx('block', cardValue)} />
+								</CardDetails>
 							</CardItem>
 						))
 					) : (

@@ -277,24 +277,24 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchiv
 				</div>
 			</div>
 
-			<div>
-				<InlineEdit
-					value={idea.category ?? ''}
-					field="category"
-					id={idea.id}
-					endpoint="/api/business-ideas"
-					kind="select"
-					options={CATEGORY_OPTIONS}
-					className="inline-block cursor-pointer"
-					display={
-						idea.category
-							? <Pill value={idea.category}>{IDEA_CATEGORY_PILL_LABELS[idea.category]}</Pill>
-							: <Pill value="">Pick category</Pill>
-					}
-				/>
-			</div>
-
 			<CardDetails preview={idea.pain_point}>
+				<div>
+					<InlineEdit
+						value={idea.category ?? ''}
+						field="category"
+						id={idea.id}
+						endpoint="/api/business-ideas"
+						kind="select"
+						options={CATEGORY_OPTIONS}
+						className="inline-block cursor-pointer"
+						display={
+							idea.category
+								? <Pill value={idea.category}>{IDEA_CATEGORY_PILL_LABELS[idea.category]}</Pill>
+								: <Pill value="">Pick category</Pill>
+						}
+					/>
+				</div>
+
 				<div className="min-w-0">
 					<span className={cardLabel}>Pain point</span>
 					<InlineEdit value={idea.pain_point ?? ''} field="pain_point" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
@@ -309,27 +309,27 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchiv
 					<span className={cardLabel}>Validation</span>
 					<InlineEdit value={idea.validation ?? ''} field="validation" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
 				</div>
-			</CardDetails>
 
-			<div className={cardFoot}>
-				<div className="flex flex-wrap items-center gap-1.5">
-					{linkedProject ? (
-						<Link className={chip} href={`/projects/${linkedProject.id}`}>
-							→ {linkedProject.title} · {signalCount} signal{signalCount === 1 ? '' : 's'}
-						</Link>
-					) : (
-						<span className={chipMuted}>Not started as a project</span>
-					)}
-					{painCount > 0 ? (
-						<Link className={chip} href={`/painhunter?idea=${idea.id}`}>
-							{painCount} pain{painCount === 1 ? '' : 's'}
-						</Link>
-					) : (
-						<span className={chipMuted}>No pains linked</span>
-					)}
+				<div className={cardFoot}>
+					<div className="flex flex-wrap items-center gap-1.5">
+						{linkedProject ? (
+							<Link className={chip} href={`/projects/${linkedProject.id}`}>
+								→ {linkedProject.title} · {signalCount} signal{signalCount === 1 ? '' : 's'}
+							</Link>
+						) : (
+							<span className={chipMuted}>Not started as a project</span>
+						)}
+						{painCount > 0 ? (
+							<Link className={chip} href={`/painhunter?idea=${idea.id}`}>
+								{painCount} pain{painCount === 1 ? '' : 's'}
+							</Link>
+						) : (
+							<span className={chipMuted}>No pains linked</span>
+						)}
+					</div>
+					<span className={cardDate}>{new Date(idea.created_at).toLocaleDateString()}</span>
 				</div>
-				<span className={cardDate}>{new Date(idea.created_at).toLocaleDateString()}</span>
-			</div>
+			</CardDetails>
 		</article>
 	);
 }

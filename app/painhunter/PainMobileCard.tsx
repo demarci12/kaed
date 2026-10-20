@@ -13,8 +13,9 @@ import { ScoreSelect } from './ScoreSelect';
 const ENDPOINT = '/api/painhunter';
 
 /**
- * The small-screen version of a pain: title, source, context and the five
- * score dropdowns up front, everything else behind a collapsed "Details".
+ * The small-screen version of a pain: just the title (and archive/delete) up
+ * front; the total, source, context, the five scores and the rest sit behind a
+ * collapsed "Details".
  */
 export function PainMobileCard({ pain, linked, linkOptions, top }: {
 	pain: PainPoint;
@@ -27,10 +28,6 @@ export function PainMobileCard({ pain, linked, linkOptions, top }: {
 	return (
 		<CardItem as="article" id={pain.id} className={cardCompact}>
 			<div className="flex items-start gap-2.5">
-				<span
-					className={cx(scoreBadge, 'mt-0.5', top && 'border-ink text-ink')}
-					title={score != null ? `Score ${score} of ${SCORE_MAX}` : 'Score all five to rank this pain'}
-				>{score ?? '–'}</span>
 				<InlineEdit
 					value={pain.title}
 					field="title"
@@ -57,42 +54,46 @@ export function PainMobileCard({ pain, linked, linkOptions, top }: {
 				</span>
 			</div>
 
-			<div className="flex flex-wrap items-center gap-1.5">
-				<InlineEdit
-					value={pain.source}
-					field="source"
-					id={pain.id}
-					endpoint={ENDPOINT}
-					kind="select"
-					options={SOURCE_OPTIONS}
-					className="inline-block cursor-pointer"
-					display={<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>}
-				/>
-				<InlineEdit
-					value={pain.context ?? ''}
-					field="context"
-					id={pain.id}
-					endpoint={ENDPOINT}
-					className="inline-block cursor-text"
-					placeholder="Add context"
-					display={<span className={cx(chipMuted, 'max-w-[10rem] truncate align-middle')}>{pain.context || 'Add context'}</span>}
-				/>
-				{top && <span className={chip}>★ Top 3</span>}
-			</div>
-
-			<div className="grid grid-cols-3 gap-x-1 gap-y-2 justify-items-center">
-				{SCORES.map(({ key, label, hint, levels }) => (
-					<div key={key} className="flex flex-col items-center gap-0.5" title={hint}>
-						<span className="text-[10px] text-muted">{label}</span>
-						<ScoreSelect id={pain.id} field={`score_${key}`} value={pain[`score_${key}` as const]} label={`${label} score`} hint={hint} levels={levels} />
-					</div>
-				))}
-			</div>
-
 			<CardDetails
 				label={linked.length ? `Details · ${linked.length} idea${linked.length === 1 ? '' : 's'}` : 'Details'}
 				preview={pain.details}
 			>
+				<div className="flex flex-wrap items-center gap-1.5">
+					<span
+						className={cx(scoreBadge, top && 'border-ink text-ink')}
+						title={score != null ? `Score ${score} of ${SCORE_MAX}` : 'Score all five to rank this pain'}
+					>{score ?? '–'}</span>
+					<InlineEdit
+						value={pain.source}
+						field="source"
+						id={pain.id}
+						endpoint={ENDPOINT}
+						kind="select"
+						options={SOURCE_OPTIONS}
+						className="inline-block cursor-pointer"
+						display={<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>}
+					/>
+					<InlineEdit
+						value={pain.context ?? ''}
+						field="context"
+						id={pain.id}
+						endpoint={ENDPOINT}
+						className="inline-block cursor-text"
+						placeholder="Add context"
+						display={<span className={cx(chipMuted, 'max-w-[10rem] truncate align-middle')}>{pain.context || 'Add context'}</span>}
+					/>
+					{top && <span className={chip}>★ Top 3</span>}
+				</div>
+
+				<div className="grid grid-cols-3 gap-x-1 gap-y-2 justify-items-center">
+					{SCORES.map(({ key, label, hint, levels }) => (
+						<div key={key} className="flex flex-col items-center gap-0.5" title={hint}>
+							<span className="text-[10px] text-muted">{label}</span>
+							<ScoreSelect id={pain.id} field={`score_${key}`} value={pain[`score_${key}` as const]} label={`${label} score`} hint={hint} levels={levels} />
+						</div>
+					))}
+				</div>
+
 				<PainDetails pain={pain} linked={linked} linkOptions={linkOptions} />
 			</CardDetails>
 		</CardItem>
