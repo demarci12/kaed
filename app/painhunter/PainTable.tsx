@@ -19,7 +19,7 @@ export type PainTableRow = {
  */
 export function PainTable({ rows }: { rows: PainTableRow[] }) {
 	return (
-		<CardList className="mt-8">
+		<CardList className="mt-4">
 			<div className={`${tableWrap} hidden lg:block`}>
 				<table className={`${table} min-w-[880px]`}>
 					<thead>

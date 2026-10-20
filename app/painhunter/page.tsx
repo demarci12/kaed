@@ -5,8 +5,9 @@ import {
 	PAIN_SOURCE_LABELS, PAIN_SOURCES, type PainPoint, type PainSource,
 } from '@/lib/painhunter';
 import {
-	btn, btnGhost, cardLabel, chip, chipActive, chipMuted, cx, Empty, FormError, input, PageHead,
+	btn, btnGhost, chipActive, cx, Empty, FormError, input, PageHead, segmented, segmentedActive, segmentedItem,
 } from '@/components/ui';
+import { FilterSelect } from './FilterSelect';
 import { NewPainPopup } from './NewPainPopup';
 import { PainTable } from './PainTable';
 import { PainhunterGuide } from './PainhunterGuide';
@@ -106,45 +107,55 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 				<button type="submit" className={btn}>Add to journal</button>
 			</form>
 
-			<PainhunterGuide counts={sourceTotals} />
-
-			<div className="mt-6 flex flex-wrap items-center gap-1.5">
-				<span className={chipMuted}>{active.length} pain{active.length === 1 ? '' : 's'}</span>
-				<span className={chipMuted} title="Distinct days with a journal entry in the last 30 days">Journal {journalDays(all)}/30 days</span>
-				<span className={chipMuted} title="Pains with all five scores filled in">{scored} scored</span>
-			</div>
-
 			{active.length > 0 && (
-				<div className="mt-6 flex flex-col gap-2.5">
-					<FilterRow label="Source">
-						<Link href={href({ source: '' })} className={filters.source ? chip : chipActive}>All</Link>
-						{sourceCounts.map(([s, n]) => (
-							<Link key={s} href={href({ source: s })} className={filters.source === s ? chipActive : chip}>
-								{PAIN_SOURCE_LABELS[s]} · {n}
-							</Link>
-						))}
-					</FilterRow>
+				<div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-2">
+					<FilterSelect
+						label="Source"
+						active={Boolean(filters.source)}
+						value={href({})}
+						options={[
+							{ href: href({ source: '' }), label: 'All sources' },
+							...sourceCounts.map(([s, n]) => ({ href: href({ source: s }), label: `${PAIN_SOURCE_LABELS[s]} · ${n}` })),
+						]}
+					/>
 					{contexts.length > 0 && (
-						<FilterRow label="Context">
-							<Link href={href({ context: '' })} className={filters.context ? chip : chipActive}>All</Link>
-							{contexts.map((c) => (
-								<Link key={c.key} href={href({ context: c.key })} className={filters.context === c.key ? chipActive : chip}>
-									{c.label} · {c.count}
-								</Link>
-							))}
-						</FilterRow>
+						<FilterSelect
+							label="Context"
+							active={Boolean(filters.context)}
+							value={href({})}
+							options={[
+								{ href: href({ context: '' }), label: 'All contexts' },
+								...contexts.map((c) => ({ href: href({ context: c.key }), label: `${c.label} · ${c.count}` })),
+							]}
+						/>
 					)}
-					<FilterRow label="Sort">
-						<Link href={href({ sort: '' })} className={filters.sort ? chip : chipActive}>Best score</Link>
-						<Link href={href({ sort: 'new' })} className={filters.sort ? chipActive : chip}>Newest</Link>
-					</FilterRow>
 					{filters.idea && (
-						<FilterRow label="Idea">
-							<Link href={href({ idea: '' })} className={chipActive} title="Clear filter">
-								{ideaById.get(filters.idea)?.title} ×
-							</Link>
-						</FilterRow>
+						<Link href={href({ idea: '' })} className={chipActive} title="Clear filter">
+							{ideaById.get(filters.idea)?.title} ×
+						</Link>
 					)}
+					{filtered && (
+						<Link
+							href={href({ source: '', context: '', idea: '' })}
+							className="px-1 text-xs text-muted underline-offset-2 hover:text-ink hover:underline"
+						>
+							Clear
+						</Link>
+					)}
+
+					<div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2">
+						<p className="m-0 text-xs text-muted tabular-nums">
+							{active.length} pain{active.length === 1 ? '' : 's'}
+							<span aria-hidden="true"> · </span>
+							<span title="Pains with all five scores filled in">{scored} scored</span>
+							<span aria-hidden="true"> · </span>
+							<span title="Distinct days with a journal entry in the last 30 days">Journal {journalDays(all)}/30 days</span>
+						</p>
+						<div className={segmented} role="group" aria-label="Sort">
+							<Link href={href({ sort: '' })} className={filters.sort ? segmentedItem : segmentedActive}>Best score</Link>
+							<Link href={href({ sort: 'new' })} className={filters.sort ? segmentedActive : segmentedItem}>Newest</Link>
+						</div>
+					</div>
 				</div>
 			)}
 
@@ -164,19 +175,12 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 					})}
 				/>
 			) : (
-				<div className="mt-8">
+				<div className={filtered ? 'mt-4' : 'mt-8'}>
 					<Empty>{filtered ? 'No pains match these filters.' : 'No pains logged yet. Start with what annoyed you today.'}</Empty>
 				</div>
 			)}
-		</section>
-	);
-}
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="flex flex-wrap items-center gap-1.5">
-			<span className={cx(cardLabel, 'w-16 shrink-0')}>{label}</span>
-			{children}
-		</div>
+			<PainhunterGuide counts={sourceTotals} />
+		</section>
 	);
 }

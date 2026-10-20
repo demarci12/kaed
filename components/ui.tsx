@@ -48,7 +48,14 @@ export const chip = 'inline-block px-2.5 py-1 rounded-full border border-line bg
 export const chipMuted = 'inline-block px-2.5 py-1 rounded-full border border-line bg-canvas text-xs text-muted';
 export const chipActive = 'inline-block px-2.5 py-1 rounded-full border border-ink bg-ink text-xs text-white no-underline';
 
-export const tableWrap = 'overflow-x-auto border border-line rounded-2xl bg-paper';
+/* Compact filter bar: dropdown pills and a two-way toggle, one row tall. */
+export const filterSelect =
+	'h-7 max-w-[11rem] pl-2.5 pr-1.5 rounded-full border bg-canvas text-xs text-ink cursor-pointer outline-none transition-colors hover:border-ink focus:border-ink';
+export const segmented = 'inline-flex p-0.5 rounded-full border border-line bg-canvas text-xs';
+export const segmentedItem = 'px-2.5 py-0.5 rounded-full text-muted no-underline transition-colors hover:text-ink';
+export const segmentedActive = 'px-2.5 py-0.5 rounded-full bg-ink text-white no-underline';
+
+export const tableWrap ='overflow-x-auto border border-line rounded-2xl bg-paper';
 export const table = 'w-full border-collapse text-sm';
 export const th = 'text-left px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted border-b border-line';
 export const thNum = 'text-right px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted border-b border-line whitespace-nowrap';
