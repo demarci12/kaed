@@ -20,6 +20,7 @@ export type IdeaListItem = {
 	idea: BusinessIdea;
 	linkedProject: { id: string; title: string } | null;
 	signalCount: number;
+	painCount: number;
 };
 
 /**
@@ -209,7 +210,7 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchiv
 	onDrop: () => void;
 	onDragEnd: () => void;
 }) {
-	const { idea, linkedProject, signalCount } = item;
+	const { idea, linkedProject, signalCount, painCount } = item;
 
 	return (
 		<article
@@ -308,13 +309,22 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchiv
 			</div>
 
 			<div className={cardFoot}>
-				{linkedProject ? (
-					<Link className={chip} href={`/projects/${linkedProject.id}`}>
-						→ {linkedProject.title} · {signalCount} signal{signalCount === 1 ? '' : 's'}
-					</Link>
-				) : (
-					<span className={chipMuted}>Not started as a project</span>
-				)}
+				<div className="flex flex-wrap items-center gap-1.5">
+					{linkedProject ? (
+						<Link className={chip} href={`/projects/${linkedProject.id}`}>
+							→ {linkedProject.title} · {signalCount} signal{signalCount === 1 ? '' : 's'}
+						</Link>
+					) : (
+						<span className={chipMuted}>Not started as a project</span>
+					)}
+					{painCount > 0 ? (
+						<Link className={chip} href={`/painhunter?idea=${idea.id}`}>
+							{painCount} pain{painCount === 1 ? '' : 's'}
+						</Link>
+					) : (
+						<span className={chipMuted}>No pains linked</span>
+					)}
+				</div>
 				<span className={cardDate}>{new Date(idea.created_at).toLocaleDateString()}</span>
 			</div>
 		</article>

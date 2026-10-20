@@ -818,3 +818,56 @@ create table if not exists public.bank_rules (
 alter table public.bank_connections enable row level security;
 alter table public.bank_transactions enable row level security;
 alter table public.bank_rules enable row level security;
+
+-- Painhunter (/painhunter): the pain-point log that feeds the business idea
+-- register. One row per problem noticed (frustration journal, "someone should
+-- build X", an interview, money already being spent, ...), scored 1-5 on pain,
+-- frequency, money, access and fit. Sorted by total score, no manual rank.
+-- Archive (archived_at) works like business_ideas.
+create table if not exists public.pain_points (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  details text,
+  who text,
+  workaround text,
+  source text not null default 'journal' check (source in (
+    'journal', 'build-test', 'interview', 'money', 'why-now', 'boring', 'funded-gap'
+  )),
+  context text check (context is null or context in (
+    'work', 'home', 'university', 'government', 'bank', 'doctor', 'other'
+  )),
+  noticed_on date not null default current_date,
+  score_pain smallint check (score_pain between 1 and 5),
+  score_frequency smallint check (score_frequency between 1 and 5),
+  score_money smallint check (score_money between 1 and 5),
+  score_access smallint check (score_access between 1 and 5),
+  score_fit smallint check (score_fit between 1 and 5),
+  archived_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists pain_points_user_archived_idx on public.pain_points (user_id, archived_at);
+
+alter table public.pain_points enable row level security;
+
+create policy "own pain points" on public.pain_points
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Many-to-many: a pain can inspire several ideas, and an idea is usually
+-- backed by several pains (the patterns that show up after a month of logging).
+create table if not exists public.pain_point_ideas (
+  pain_point_id uuid not null references public.pain_points(id) on delete cascade,
+  business_idea_id uuid not null references public.business_ideas(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (pain_point_id, business_idea_id)
+);
+
+create index if not exists pain_point_ideas_idea_idx on public.pain_point_ideas (business_idea_id);
+
+alter table public.pain_point_ideas enable row level security;
+
+create policy "own pain point ideas" on public.pain_point_ideas
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

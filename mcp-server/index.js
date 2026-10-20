@@ -39,6 +39,8 @@ const TABLES = [
   "clients",
   "client_notes",
   "business_ideas",
+  "pain_points",
+  "pain_point_ideas",
   "system_actors",
   "system_goals",
   "system_use_cases",

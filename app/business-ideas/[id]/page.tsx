@@ -4,7 +4,8 @@ import { requireOwner } from '@/lib/auth';
 import { HEADLINE_SIGNAL_TYPES } from '@/lib/projects';
 import type { BusinessIdea } from '@/lib/business-ideas';
 import { ConfirmSubmit } from '../ConfirmSubmit';
-import { btn, btnDanger, btnGhost, cx, FormError } from '@/components/ui';
+import { painScore, PAIN_SOURCE_LABELS, SCORE_MAX, type PainPoint } from '@/lib/painhunter';
+import { btn, btnDanger, btnGhost, cx, FormError, Pill, scoreBadge } from '@/components/ui';
 
 const fieldLabel = 'text-xs font-semibold tracking-[0.06em] uppercase text-muted';
 const fieldBox =
@@ -23,11 +24,14 @@ export default async function BusinessIdeaDetailPage({
 
 	const typed = idea as BusinessIdea;
 
-	const { data: linkedProject } = await supabase
-		.from('projects')
-		.select('id, title')
-		.eq('business_idea_id', typed.id)
-		.maybeSingle();
+	const [{ data: linkedProject }, { data: painLinks }] = await Promise.all([
+		supabase.from('projects').select('id, title').eq('business_idea_id', typed.id).maybeSingle(),
+		supabase.from('pain_point_ideas').select('pain_points!inner(*)').eq('business_idea_id', typed.id).is('pain_points.archived_at', null),
+	]);
+
+	const pains = ((painLinks ?? []) as unknown as { pain_points: PainPoint }[])
+		.map((l) => l.pain_points)
+		.sort((a, b) => (painScore(b) ?? -1) - (painScore(a) ?? -1) || b.created_at.localeCompare(a.created_at));
 
 	let headlineSignalCount = 0;
 	if (linkedProject) {
@@ -67,6 +71,34 @@ export default async function BusinessIdeaDetailPage({
 						<input type="hidden" name="return_to" value={`/business-ideas/${typed.id}`} />
 						<button type="submit" className={cx(btn, wide)}>Start working on this →</button>
 					</form>
+				)}
+			</div>
+
+			<div className="mt-10">
+				<div className="flex items-baseline justify-between gap-3 flex-wrap">
+					<p className={cx(fieldLabel, 'm-0')}>Pain points behind this idea{pains.length ? ` · ${pains.length}` : ''}</p>
+					<Link className="text-[13px] text-muted no-underline hover:text-ink" href={pains.length ? `/painhunter?idea=${typed.id}` : '/painhunter'}>
+						{pains.length ? 'Open in Painhunter →' : 'Find pains in Painhunter →'}
+					</Link>
+				</div>
+				{pains.length ? (
+					<ul className="mt-3 mb-0 p-0 list-none flex flex-col gap-2">
+						{pains.map((pain) => {
+							const score = painScore(pain);
+							return (
+								<li key={pain.id} className="flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] border border-line bg-paper">
+									<span
+										className={scoreBadge}
+										title={score != null ? `Score ${score} of ${SCORE_MAX}` : 'Not fully scored'}
+									>{score ?? '–'}</span>
+									<span className="flex-1 min-w-0 text-sm">{pain.title}</span>
+									<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>
+								</li>
+							);
+						})}
+					</ul>
+				) : (
+					<p className="mt-3 mb-0 text-sm text-muted">No pains linked yet. Link the problems that make this worth building.</p>
 				)}
 			</div>
 

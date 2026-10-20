@@ -10,10 +10,17 @@ export default async function BusinessIdeasPage({ searchParams }: { searchParams
 	const { supabase } = await requireOwner();
 	const { error } = await searchParams;
 
-	const [{ data: ideas }, { count: archivedCount }] = await Promise.all([
+	const [{ data: ideas }, { count: archivedCount }, { data: painLinks }] = await Promise.all([
 		supabase.from('business_ideas').select('*').is('archived_at', null).order('rank', { ascending: true }),
 		supabase.from('business_ideas').select('id', { count: 'exact', head: true }).not('archived_at', 'is', null),
+		// Only pains still on /painhunter, so the count matches what the chip links to.
+		supabase.from('pain_point_ideas').select('business_idea_id, pain_points!inner(archived_at)').is('pain_points.archived_at', null),
 	]);
+
+	const painCountByIdeaId = new Map<string, number>();
+	for (const l of (painLinks ?? []) as { business_idea_id: string }[]) {
+		painCountByIdeaId.set(l.business_idea_id, (painCountByIdeaId.get(l.business_idea_id) ?? 0) + 1);
+	}
 
 	const typedIdeas = (ideas ?? []) as BusinessIdea[];
 
@@ -53,6 +60,7 @@ export default async function BusinessIdeasPage({ searchParams }: { searchParams
 		idea,
 		linkedProject: linkedProjectByIdeaId.get(idea.id) ?? null,
 		signalCount: signalCountByIdeaId.get(idea.id) ?? 0,
+		painCount: painCountByIdeaId.get(idea.id) ?? 0,
 	}));
 
 	return (

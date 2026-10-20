@@ -27,6 +27,8 @@ export const cardActions = 'flex items-center gap-1.5 ml-auto shrink-0';
 export const cardLabel = 'text-[11px] font-semibold tracking-[0.06em] uppercase text-muted';
 export const cardValue = 'm-0 py-2 px-2.5 rounded-lg border border-transparent text-sm leading-relaxed text-ink whitespace-pre-wrap';
 export const cardFoot = 'flex items-center justify-between gap-3 mt-auto pt-1';
+export const scoreBadge =
+	'inline-flex items-center justify-center min-w-[26px] h-[26px] px-1.5 shrink-0 rounded-full border border-line bg-canvas text-xs font-semibold tabular-nums text-muted';
 export const cardDate = 'text-xs text-muted tabular-nums whitespace-nowrap';
 
 export const iconBtn =
@@ -36,6 +38,7 @@ export const deleteBtn =
 
 export const chip = 'inline-block px-2.5 py-1 rounded-full border border-line bg-canvas text-xs text-ink no-underline';
 export const chipMuted = 'inline-block px-2.5 py-1 rounded-full border border-line bg-canvas text-xs text-muted';
+export const chipActive = 'inline-block px-2.5 py-1 rounded-full border border-ink bg-ink text-xs text-white no-underline';
 
 export const tableWrap = 'overflow-x-auto border border-line rounded-2xl bg-paper';
 export const table = 'w-full border-collapse text-sm';
@@ -71,6 +74,9 @@ const PILL: Record<string, string> = {
 	pending: 'bg-warn-bg text-warn', summarized: 'bg-positive-bg text-positive', failed: 'bg-negative-bg text-negative',
 	delivery: 'bg-info-bg text-info', marketing: 'bg-accent-bg text-accent', sales: 'bg-positive-bg text-positive',
 	market_research: 'bg-warn-bg text-warn',
+	journal: 'bg-info-bg text-info', 'build-test': 'bg-warn-bg text-warn', interview: 'bg-accent-bg text-accent',
+	money: 'bg-positive-bg text-positive', 'why-now': 'bg-accent-bg text-accent', boring: 'bg-warn-bg text-warn',
+	'funded-gap': 'bg-info-bg text-info',
 };
 
 export function Pill({ value, children }: { value: string; children: ReactNode }) {
