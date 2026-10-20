@@ -1,7 +1,7 @@
 import { createFieldRoute } from '@/lib/field-route';
-import { PAIN_SOURCES, SCORE_FIELDS } from '@/lib/painhunter';
+import { PAIN_SOURCES, SCORE_FIELDS, SCORE_LEVELS } from '@/lib/painhunter';
 
-const SCORE_VALUES = ['1', '2', '3', '4', '5'];
+const SCORE_VALUES = Array.from({ length: SCORE_LEVELS }, (_, i) => String(i + 1));
 
 export const POST = createFieldRoute({
 	table: 'pain_points',
@@ -16,7 +16,7 @@ export const POST = createFieldRoute({
 		source: { kind: 'enum', values: PAIN_SOURCES, message: 'Invalid source.', required: true },
 		context: { kind: 'text' },
 		...Object.fromEntries(
-			SCORE_FIELDS.map((f) => [f, { kind: 'enum', values: SCORE_VALUES, message: 'A score is 1 to 5.' } as const]),
+			SCORE_FIELDS.map((f) => [f, { kind: 'enum', values: SCORE_VALUES, message: `A score is 1 to ${SCORE_LEVELS}.` } as const]),
 		),
 	},
 	// The enum kind stores the raw string; the score columns are smallints.

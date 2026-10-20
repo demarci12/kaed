@@ -54,16 +54,20 @@ export const PAIN_SOURCE_OPTION_LABELS: Record<PainSource, string> = {
 
 export const PAIN_SOURCES = Object.keys(PAIN_SOURCE_LABELS) as PainSource[];
 
-export const SCORES: { key: ScoreKey; label: string; hint: string }[] = [
-	{ key: 'pain', label: 'Pain', hint: 'Do people complain about it without being asked?' },
-	{ key: 'frequency', label: 'Freq.', hint: 'How often does it happen: daily, weekly, yearly?' },
-	{ key: 'money', label: 'Money', hint: 'Does anyone already pay to solve it?' },
-	{ key: 'access', label: 'Access', hint: 'Can you reach 20 people who have this problem?' },
-	{ key: 'fit', label: 'Fit', hint: 'Do you care about it, could you work on it for 5+ years?' },
+/** Each score has three levels, stored as 1-3: `levels` are their words, low to high. */
+export const SCORE_LEVELS = 3;
+
+export const SCORES: { key: ScoreKey; label: string; hint: string; levels: readonly [string, string, string] }[] = [
+	{ key: 'pain', label: 'Pain', hint: 'Do people complain about it without being asked?', levels: ['Mild', 'Annoying', 'Severe'] },
+	{ key: 'frequency', label: 'Freq.', hint: 'How often does it happen: daily, weekly, yearly?', levels: ['Yearly', 'Weekly', 'Daily'] },
+	{ key: 'money', label: 'Money', hint: 'Does anyone already pay to solve it?', levels: ['Little', 'Some', 'Lots'] },
+	{ key: 'access', label: 'Access', hint: 'Can you reach 20 people who have this problem?', levels: ['Hard', 'Possible', 'Easy'] },
+	{ key: 'fit', label: 'Fit', hint: 'Do you care about it, could you work on it for 5+ years?', levels: ['Low', 'Good', 'Perfect'] },
 ];
 
 export const SCORE_FIELDS = SCORES.map((s) => `score_${s.key}`);
-export const SCORE_MAX = SCORES.length * 5;
+/** Highest possible total: every score at its top level. */
+export const SCORE_MAX = SCORES.length * SCORE_LEVELS;
 
 /**
  * Total of the five scores, or null until all five are filled in -- a half

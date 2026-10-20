@@ -21,14 +21,12 @@ export function PainTable({ rows }: { rows: PainTableRow[] }) {
 	return (
 		<CardList className="mt-4">
 			<div className={`${tableWrap} hidden lg:block`}>
-				<table className={`${table} min-w-[880px]`}>
+				<table className={`${table} min-w-[940px]`}>
 					<thead>
 						<tr>
 							<th className="w-8 border-b border-line" aria-label="Details" />
 							<th className={thScore} title="Total of the five scores">Total</th>
 							<th className={thCompact}>Pain</th>
-							<th className={thCompact}>Source</th>
-							<th className={thCompact}>Context</th>
 							{SCORES.map(({ key, label, hint }) => (
 								<th key={key} className={thScore} title={hint}>{label}</th>
 							))}

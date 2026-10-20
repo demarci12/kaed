@@ -100,7 +100,7 @@ export const GUIDE_AVOID = {
 
 export const GUIDE_FILTER = {
 	title: `How to filter the list`,
-	lead: `Score each problem from 1 to 5 on:`,
+	lead: `Rate each problem low, medium or high on:`,
 	criteria: [
 		{ term: `Pain`, text: `do people complain about it without being asked?` },
 		{ term: `Frequency`, text: `how often does it happen: daily, weekly, yearly?` },

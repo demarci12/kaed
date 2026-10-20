@@ -65,7 +65,7 @@ export const thScore = 'text-center px-1 py-3 text-[11px] font-semibold tracking
 export const tdCompact = 'px-3 py-2.5 border-b border-line';
 export const tdScore = 'px-1 py-2.5 border-b border-line text-center';
 export const scoreSelect =
-	'w-12 h-8 rounded-lg border border-line bg-canvas text-sm text-center tabular-nums text-ink cursor-pointer outline-none transition-colors hover:border-ink focus:border-ink disabled:opacity-50';
+	'w-[5.5rem] h-8 px-1.5 rounded-lg border border-line bg-canvas text-xs text-ink cursor-pointer outline-none transition-colors hover:border-ink focus:border-ink disabled:opacity-50';
 export const tdNum = 'px-4 py-2.5 border-b border-line text-right tabular-nums whitespace-nowrap';
 
 export const input =

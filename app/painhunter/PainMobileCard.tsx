@@ -80,11 +80,11 @@ export function PainMobileCard({ pain, linked, linkOptions, top }: {
 				{top && <span className={chip}>★ Top 3</span>}
 			</div>
 
-			<div className="grid grid-cols-5 gap-1 justify-items-center">
-				{SCORES.map(({ key, label, hint }) => (
+			<div className="grid grid-cols-3 gap-x-1 gap-y-2 justify-items-center">
+				{SCORES.map(({ key, label, hint, levels }) => (
 					<div key={key} className="flex flex-col items-center gap-0.5" title={hint}>
 						<span className="text-[10px] text-muted">{label}</span>
-						<ScoreSelect id={pain.id} field={`score_${key}`} value={pain[`score_${key}` as const]} label={`${label} score`} hint={hint} />
+						<ScoreSelect id={pain.id} field={`score_${key}`} value={pain[`score_${key}` as const]} label={`${label} score`} hint={hint} levels={levels} />
 					</div>
 				))}
 			</div>

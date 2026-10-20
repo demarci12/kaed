@@ -13,14 +13,14 @@ import { ScoreSelect } from './ScoreSelect';
 
 const ENDPOINT = '/api/painhunter';
 
-/** Columns in the main line: expand, total, pain, source, context, five scores, ideas, actions. */
-export const PAIN_COLUMNS = 5 + SCORES.length + 3;
+/** Columns in the main line: expand, total, pain (with source and context under it), five scores, ideas, actions. */
+export const PAIN_COLUMNS = 3 + SCORES.length + 2;
 
 export const SOURCE_OPTIONS: [string, string][] = PAIN_SOURCES.map((s) => [s, PAIN_SOURCE_OPTION_LABELS[s]]);
 
 /**
- * One pain as a line in the desktop table: score total, the pain, where it
- * came from and the five scores as dropdowns. Everything else is in a detail
+ * One pain as a line in the desktop table: score total, the pain with where it
+ * came from under it, and the five scores as dropdowns. Everything else is in a detail
  * line under it, opened with the chevron.
  */
 export function PainRow({ pain, linked, linkOptions, top }: {
@@ -64,33 +64,31 @@ export function PainRow({ pain, linked, linkOptions, top }: {
 						endpoint={ENDPOINT}
 						className="block font-serif text-base font-semibold leading-snug text-ink"
 					/>
+					<div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+						<InlineEdit
+							value={pain.source}
+							field="source"
+							id={pain.id}
+							endpoint={ENDPOINT}
+							kind="select"
+							options={SOURCE_OPTIONS}
+							className="inline-block cursor-pointer whitespace-nowrap"
+							display={<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>}
+						/>
+						<InlineEdit
+							value={pain.context ?? ''}
+							field="context"
+							id={pain.id}
+							endpoint={ENDPOINT}
+							className="inline-block cursor-text"
+							placeholder="Add context"
+							display={<span className={cx(chipMuted, 'max-w-[9rem] truncate align-middle')} title={pain.context ?? undefined}>{pain.context || 'Add context'}</span>}
+						/>
+					</div>
 				</td>
-				<td className={cx(tdCompact, edge)}>
-					<InlineEdit
-						value={pain.source}
-						field="source"
-						id={pain.id}
-						endpoint={ENDPOINT}
-						kind="select"
-						options={SOURCE_OPTIONS}
-						className="inline-block cursor-pointer whitespace-nowrap"
-						display={<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>}
-					/>
-				</td>
-				<td className={cx(tdCompact, edge)}>
-					<InlineEdit
-						value={pain.context ?? ''}
-						field="context"
-						id={pain.id}
-						endpoint={ENDPOINT}
-						className="inline-block cursor-text"
-						placeholder="Add context"
-						display={<span className={cx(chipMuted, 'max-w-[9rem] truncate align-middle')} title={pain.context ?? undefined}>{pain.context || 'Add context'}</span>}
-					/>
-				</td>
-				{SCORES.map(({ key, label, hint }) => (
+				{SCORES.map(({ key, label, hint, levels }) => (
 					<td key={key} className={cx(tdScore, edge)}>
-						<ScoreSelect id={pain.id} field={`score_${key}`} value={pain[`score_${key}` as const]} label={`${label} score`} hint={hint} />
+						<ScoreSelect id={pain.id} field={`score_${key}`} value={pain[`score_${key}` as const]} label={`${label} score`} hint={hint} levels={levels} />
 					</td>
 				))}
 				<td className={cx(tdCompact, edge)}>

@@ -5,16 +5,19 @@ import { useEffect, useState } from 'react';
 import { cx, scoreSelect } from '@/components/ui';
 
 /**
- * One always-visible 1-5 dropdown for a score. Saves on change through the
+ * One always-visible dropdown for a score, worded low to high (Mild, Annoying,
+ * Severe). The stored value is the level, 1-3. Saves on change through the
  * pain's field endpoint, then refreshes so the total and the ranking catch up
  * -- same contract as InlineEdit, minus the click-to-reveal step.
  */
-export function ScoreSelect({ id, field, value, label, hint }: {
+export function ScoreSelect({ id, field, value, label, hint, levels }: {
 	id: string;
 	field: string;
 	value: number | null;
 	label: string;
 	hint: string;
+	/** The level words, lowest first. */
+	levels: readonly string[];
 }) {
 	const router = useRouter();
 	const [current, setCurrent] = useState(value == null ? '' : String(value));
@@ -49,14 +52,14 @@ export function ScoreSelect({ id, field, value, label, hint }: {
 	return (
 		<select
 			aria-label={label}
-			title={error ?? hint}
+			title={error ?? `${hint} ${levels[0]} to ${levels[levels.length - 1]}.`}
 			value={current}
 			disabled={saving}
 			onChange={(e) => change(e.target.value)}
 			className={cx(scoreSelect, !current && 'text-muted', error && 'border-[--color-negative-line]')}
 		>
 			<option value="">–</option>
-			{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+			{levels.map((word, i) => <option key={word} value={i + 1}>{word}</option>)}
 		</select>
 	);
 }
