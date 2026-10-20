@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { BusinessIdea } from '@/lib/business-ideas';
 import { IDEA_CATEGORY_PILL_LABELS } from '@/lib/idea-categories';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardDetails } from '@/components/CardDetails';
 import { RankBadge, RankControls } from './RankControls';
 import {
 	card, cardActions, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
@@ -293,20 +294,22 @@ function IdeaCard({ item, index, total, busy, onMove, onRank, onDelete, onArchiv
 				/>
 			</div>
 
-			<div className="min-w-0">
-				<span className={cardLabel}>Pain point</span>
-				<InlineEdit value={idea.pain_point ?? ''} field="pain_point" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
-			</div>
+			<CardDetails preview={idea.pain_point}>
+				<div className="min-w-0">
+					<span className={cardLabel}>Pain point</span>
+					<InlineEdit value={idea.pain_point ?? ''} field="pain_point" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
+				</div>
 
-			<div className="min-w-0">
-				<span className={cardLabel}>Target market</span>
-				<InlineEdit value={idea.target_market ?? ''} field="target_market" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
-			</div>
+				<div className="min-w-0">
+					<span className={cardLabel}>Target market</span>
+					<InlineEdit value={idea.target_market ?? ''} field="target_market" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
+				</div>
 
-			<div className="min-w-0">
-				<span className={cardLabel}>Validation</span>
-				<InlineEdit value={idea.validation ?? ''} field="validation" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
-			</div>
+				<div className="min-w-0">
+					<span className={cardLabel}>Validation</span>
+					<InlineEdit value={idea.validation ?? ''} field="validation" id={idea.id} endpoint="/api/business-ideas" kind="textarea" className={`block ${cardValue}`} />
+				</div>
+			</CardDetails>
 
 			<div className={cardFoot}>
 				<div className="flex flex-wrap items-center gap-1.5">

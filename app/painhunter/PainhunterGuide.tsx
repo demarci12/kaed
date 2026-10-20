@@ -8,13 +8,13 @@ import { card, cardHead, cardTitle, chip, chipMuted, guideList, guideText, guide
 const grid = 'grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]';
 
 /**
- * Open by default so the method is in front of you every time you log a pain;
- * collapse it with the header. A native <details> keeps this a Server
- * Component. Each method links to the pains found that way.
+ * Closed by default; open it from the header when you want the method in
+ * front of you. A native <details> keeps this a Server Component. Each method
+ * links to the pains found that way.
  */
 export function PainhunterGuide({ counts }: { counts: Partial<Record<PainSource, number>> }) {
 	return (
-		<details open className="group mt-8">
+		<details className="group mt-8">
 			<summary className="flex items-center justify-between gap-3 px-5 py-3 rounded-2xl border border-line bg-paper cursor-pointer list-none [&::-webkit-details-marker]:hidden">
 				<span>
 					<span className="font-serif text-lg font-semibold">Where to look</span>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import { NewProjectPopup } from './NewProjectPopup';
 import {
@@ -71,42 +72,44 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 								</div>
 							</div>
 
-							<div className="min-w-0">
-								<span className={cardLabel}>Description</span>
-								<InlineEdit
-									value={project.description ?? ''}
-									field="description"
-									id={project.id}
-									endpoint="/api/projects"
-									kind="textarea"
-									className={`block ${cardValue}`}
-								/>
-							</div>
+							<CardDetails preview={project.description}>
+								<div className="min-w-0">
+									<span className={cardLabel}>Description</span>
+									<InlineEdit
+										value={project.description ?? ''}
+										field="description"
+										id={project.id}
+										endpoint="/api/projects"
+										kind="textarea"
+										className={`block ${cardValue}`}
+									/>
+								</div>
 
-							<div className="grid grid-cols-2 gap-3">
-								<div className="min-w-0">
-									<span className={cardLabel}>Start</span>
-									<InlineEdit
-										value={project.start_date ?? ''}
-										field="start_date"
-										id={project.id}
-										endpoint="/api/projects"
-										kind="date"
-										className={`block tabular-nums ${cardValue}`}
-									/>
+								<div className="grid grid-cols-2 gap-3">
+									<div className="min-w-0">
+										<span className={cardLabel}>Start</span>
+										<InlineEdit
+											value={project.start_date ?? ''}
+											field="start_date"
+											id={project.id}
+											endpoint="/api/projects"
+											kind="date"
+											className={`block tabular-nums ${cardValue}`}
+										/>
+									</div>
+									<div className="min-w-0">
+										<span className={cardLabel}>Target end</span>
+										<InlineEdit
+											value={project.target_end_date ?? ''}
+											field="target_end_date"
+											id={project.id}
+											endpoint="/api/projects"
+											kind="date"
+											className={`block tabular-nums ${cardValue}`}
+										/>
+									</div>
 								</div>
-								<div className="min-w-0">
-									<span className={cardLabel}>Target end</span>
-									<InlineEdit
-										value={project.target_end_date ?? ''}
-										field="target_end_date"
-										id={project.id}
-										endpoint="/api/projects"
-										kind="date"
-										className={`block tabular-nums ${cardValue}`}
-									/>
-								</div>
-							</div>
+							</CardDetails>
 
 							<div className={cardFoot}>
 								<InlineEdit

@@ -4,6 +4,7 @@ import { OPEN_POINT_STATUS_LABELS, type OpenPoint, type OpenPointNote } from '@/
 import type { Goal } from '@/lib/goals';
 import type { Project } from '@/lib/projects';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btn, card, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
@@ -149,49 +150,51 @@ export default async function OplPage({ searchParams }: { searchParams: Promise<
 									)}
 								</div>
 
-								<div className="min-w-0">
-									<span className={cardLabel}>Description</span>
-									<InlineEdit
-										value={point.body ?? ''}
-										field="body"
-										id={point.id}
-										endpoint="/api/open-points"
-										kind="textarea"
-										className={`block ${cardValue}`}
-										placeholder="Write something…"
-									/>
-								</div>
-
-								<div className="min-w-0">
-									<span className={cardLabel}>Contributors</span>
-									<InlineEdit
-										value={point.contributors ?? ''}
-										field="contributors"
-										id={point.id}
-										endpoint="/api/open-points"
-										className={`block ${cardValue}`}
-										placeholder="Unassigned."
-									/>
-								</div>
-
-								<div className="min-w-0">
-									<div className="flex items-center justify-between gap-2">
-										<span className={cardLabel}>Latest note</span>
-										<NewNotePopup pointId={point.id} />
+								<CardDetails preview={point.body}>
+									<div className="min-w-0">
+										<span className={cardLabel}>Description</span>
+										<InlineEdit
+											value={point.body ?? ''}
+											field="body"
+											id={point.id}
+											endpoint="/api/open-points"
+											kind="textarea"
+											className={`block ${cardValue}`}
+											placeholder="Write something…"
+										/>
 									</div>
-									{latestNote ? (
-										<Link href={`/opl/${point.id}`} className={`block ${cardValue} no-underline hover:bg-canvas`}>
-											<span className="block text-xs text-muted tabular-nums mb-1">
-												{new Date(latestNote.created_at).toLocaleString()}
-											</span>
-											{latestNote.note}
-										</Link>
-									) : (
-										<Link href={`/opl/${point.id}`} className={`block ${cardValue} no-underline`}>
-											<span className="text-muted">No notes yet.</span>
-										</Link>
-									)}
-								</div>
+
+									<div className="min-w-0">
+										<span className={cardLabel}>Contributors</span>
+										<InlineEdit
+											value={point.contributors ?? ''}
+											field="contributors"
+											id={point.id}
+											endpoint="/api/open-points"
+											className={`block ${cardValue}`}
+											placeholder="Unassigned."
+										/>
+									</div>
+
+									<div className="min-w-0">
+										<div className="flex items-center justify-between gap-2">
+											<span className={cardLabel}>Latest note</span>
+											<NewNotePopup pointId={point.id} />
+										</div>
+										{latestNote ? (
+											<Link href={`/opl/${point.id}`} className={`block ${cardValue} no-underline hover:bg-canvas`}>
+												<span className="block text-xs text-muted tabular-nums mb-1">
+													{new Date(latestNote.created_at).toLocaleString()}
+												</span>
+												{latestNote.note}
+											</Link>
+										) : (
+											<Link href={`/opl/${point.id}`} className={`block ${cardValue} no-underline`}>
+												<span className="text-muted">No notes yet.</span>
+											</Link>
+										)}
+									</div>
+								</CardDetails>
 
 								<div className={`${cardFoot} justify-end`}>
 									<span className={cardDate}>{new Date(point.created_at).toLocaleDateString()}</span>

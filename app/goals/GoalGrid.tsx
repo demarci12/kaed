@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Goal } from '@/lib/goals';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardDetails } from '@/components/CardDetails';
 import {
 	card, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
 	cx, deleteBtn, Empty,
@@ -112,17 +113,19 @@ export function GoalGrid({ goals }: { goals: Goal[] }) {
 						>×</button>
 					</div>
 
-					<div className="min-w-0">
-						<span className={cardLabel}>Description</span>
-						<InlineEdit
-							value={goal.description ?? ''}
-							field="description"
-							id={goal.id}
-							endpoint="/api/goals"
-							kind="textarea"
-							className={`block ${cardValue}`}
-						/>
-					</div>
+					<CardDetails preview={goal.description}>
+						<div className="min-w-0">
+							<span className={cardLabel}>Description</span>
+							<InlineEdit
+								value={goal.description ?? ''}
+								field="description"
+								id={goal.id}
+								endpoint="/api/goals"
+								kind="textarea"
+								className={`block ${cardValue}`}
+							/>
+						</div>
+					</CardDetails>
 
 					<div className={`${cardFoot} justify-end`}>
 						<span className={cardDate}>{new Date(goal.created_at).toLocaleDateString()}</span>

@@ -1,6 +1,7 @@
 import { requireOwner } from '@/lib/auth';
 import { KNOWLEDGE_KIND_LABELS, type KnowledgeCard } from '@/lib/knowledge';
 import { InlineEdit } from '@/components/InlineEdit';
+import { CardDetails } from '@/components/CardDetails';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	card, cardDate, cardFoot, cardGrid, cardHead, cardLabel, cardTitle, cardValue,
@@ -67,29 +68,31 @@ export default async function SpecificKnowledgePage({ searchParams }: { searchPa
 								}
 							/>
 
-							<div className="min-w-0">
-								<span className={cardLabel}>What it is</span>
-								<InlineEdit
-									value={item.body ?? ''}
-									field="body"
-									id={item.id}
-									endpoint="/api/knowledge-cards"
-									kind="textarea"
-									className={`block ${cardValue}`}
-								/>
-							</div>
+							<CardDetails preview={item.body}>
+								<div className="min-w-0">
+									<span className={cardLabel}>What it is</span>
+									<InlineEdit
+										value={item.body ?? ''}
+										field="body"
+										id={item.id}
+										endpoint="/api/knowledge-cards"
+										kind="textarea"
+										className={`block ${cardValue}`}
+									/>
+								</div>
 
-							<div className="min-w-0">
-								<span className={cardLabel}>Evidence</span>
-								<InlineEdit
-									value={item.evidence ?? ''}
-									field="evidence"
-									id={item.id}
-									endpoint="/api/knowledge-cards"
-									kind="textarea"
-									className={`block ${cardValue}`}
-								/>
-							</div>
+								<div className="min-w-0">
+									<span className={cardLabel}>Evidence</span>
+									<InlineEdit
+										value={item.evidence ?? ''}
+										field="evidence"
+										id={item.id}
+										endpoint="/api/knowledge-cards"
+										kind="textarea"
+										className={`block ${cardValue}`}
+									/>
+								</div>
+							</CardDetails>
 
 							<div className={`${cardFoot} justify-end`}>
 								<span className={cardDate}>{new Date(item.created_at).toLocaleDateString()}</span>

@@ -4,12 +4,11 @@ import {
 	compareByNewest, compareByScore, contextGroups, contextKey, isPainSource, journalDays, painScore,
 	PAIN_SOURCE_LABELS, PAIN_SOURCES, type PainPoint, type PainSource,
 } from '@/lib/painhunter';
-import { CardList } from '@/components/CardList';
 import {
-	btn, btnGhost, cardGrid, cardLabel, chip, chipActive, chipMuted, cx, Empty, FormError, input, PageHead,
+	btn, btnGhost, cardLabel, chip, chipActive, chipMuted, cx, Empty, FormError, input, PageHead,
 } from '@/components/ui';
 import { NewPainPopup } from './NewPainPopup';
-import { PainCard } from './PainCard';
+import { PainTable } from './PainTable';
 import { PainhunterGuide } from './PainhunterGuide';
 
 type Search = { error?: string; source?: string; context?: string; idea?: string; sort?: string };
@@ -149,27 +148,26 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 				</div>
 			)}
 
-			<CardList className={cardGrid}>
-				{visible.length ? (
-					visible.map((pain) => {
+			{visible.length ? (
+				<PainTable
+					rows={visible.map((pain) => {
 						const linkedIds = ideaIdsByPain.get(pain.id) ?? [];
-						return (
-							<PainCard
-								key={pain.id}
-								pain={pain}
-								top={topIds.has(pain.id)}
-								linked={linkedIds.flatMap((id) => {
-									const idea = ideaById.get(id);
-									return idea ? [{ id, title: idea.title, archived: Boolean(idea.archived_at) }] : [];
-								})}
-								linkOptions={activeIdeas.filter((i) => !linkedIds.includes(i.id)).map(({ id, title }) => ({ id, title }))}
-							/>
-						);
-					})
-				) : (
+						return {
+							pain,
+							top: topIds.has(pain.id),
+							linked: linkedIds.flatMap((id) => {
+								const idea = ideaById.get(id);
+								return idea ? [{ id, title: idea.title, archived: Boolean(idea.archived_at) }] : [];
+							}),
+							linkOptions: activeIdeas.filter((i) => !linkedIds.includes(i.id)).map(({ id, title }) => ({ id, title })),
+						};
+					})}
+				/>
+			) : (
+				<div className="mt-8">
 					<Empty>{filtered ? 'No pains match these filters.' : 'No pains logged yet. Start with what annoyed you today.'}</Empty>
-				)}
-			</CardList>
+				</div>
+			)}
 		</section>
 	);
 }

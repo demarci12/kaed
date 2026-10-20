@@ -20,6 +20,10 @@ export const btnDanger =
 
 export const card =
     'flex flex-col gap-2.5 p-5 bg-paper border border-line rounded-2xl min-w-0';
+export const cardCompact =
+	'flex flex-col gap-2 p-3.5 bg-paper border border-line rounded-2xl min-w-0';
+export const cardDetailsSummary =
+	'flex items-center gap-1.5 py-1 cursor-pointer list-none text-xs text-muted transition-colors hover:text-ink [&::-webkit-details-marker]:hidden';
 export const cardGrid = 'mt-10 grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]';
 export const cardHead = 'flex items-start justify-between gap-3 flex-wrap';
 export const cardTitle = 'flex-[1_1_10rem] min-w-0 font-serif text-[19px] font-semibold leading-tight text-ink no-underline';
@@ -49,6 +53,12 @@ export const table = 'w-full border-collapse text-sm';
 export const th = 'text-left px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted border-b border-line';
 export const thNum = 'text-right px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted border-b border-line whitespace-nowrap';
 export const td = 'px-4 py-2.5 border-b border-line';
+export const thCompact = 'text-left px-3 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted border-b border-line whitespace-nowrap';
+export const thScore = 'text-center px-1 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted border-b border-line whitespace-nowrap';
+export const tdCompact = 'px-3 py-2.5 border-b border-line';
+export const tdScore = 'px-1 py-2.5 border-b border-line text-center';
+export const scoreSelect =
+	'w-12 h-8 rounded-lg border border-line bg-canvas text-sm text-center tabular-nums text-ink cursor-pointer outline-none transition-colors hover:border-ink focus:border-ink disabled:opacity-50';
 export const tdNum = 'px-4 py-2.5 border-b border-line text-right tabular-nums whitespace-nowrap';
 
 export const input =
