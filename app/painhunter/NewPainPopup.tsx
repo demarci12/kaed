@@ -2,9 +2,7 @@
 
 import { Popup, PopupActions } from '@/components/Popup';
 import { btn, input, label, textarea } from '@/components/ui';
-import {
-	PAIN_CONTEXT_LABELS, PAIN_CONTEXTS, PAIN_SOURCE_OPTION_LABELS, PAIN_SOURCES,
-} from '@/lib/painhunter';
+import { PAIN_SOURCE_OPTION_LABELS, PAIN_SOURCES } from '@/lib/painhunter';
 
 export function NewPainPopup() {
 	return (
@@ -23,10 +21,7 @@ export function NewPainPopup() {
 					</select>
 
 					<label className={label} htmlFor="context">Context</label>
-					<select className={input} id="context" name="context" defaultValue="">
-						<option value="">Not set</option>
-						{PAIN_CONTEXTS.map((c) => <option key={c} value={c}>{PAIN_CONTEXT_LABELS[c]}</option>)}
-					</select>
+					<input className={input} id="context" name="context" type="text" maxLength={80} placeholder="Work, home, university, a bank, the doctor..." />
 
 					<label className={label} htmlFor="who">Who has it</label>
 					<textarea className={textarea} id="who" name="who" rows={2} placeholder="Role, industry, company size -- someone you could reach." />

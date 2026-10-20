@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
 import {
-	compareByNewest, compareByScore, isPainContext, isPainSource, journalDays, painScore,
-	PAIN_CONTEXT_LABELS, PAIN_CONTEXTS, PAIN_SOURCE_LABELS, PAIN_SOURCES, type PainPoint,
+	compareByNewest, compareByScore, contextGroups, contextKey, isPainSource, journalDays, painScore,
+	PAIN_SOURCE_LABELS, PAIN_SOURCES, type PainPoint, type PainSource,
 } from '@/lib/painhunter';
 import { CardList } from '@/components/CardList';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui';
 import { NewPainPopup } from './NewPainPopup';
 import { PainCard } from './PainCard';
+import { PainhunterGuide } from './PainhunterGuide';
 
 type Search = { error?: string; source?: string; context?: string; idea?: string; sort?: string };
 
@@ -40,7 +41,7 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 
 	const filters = {
 		source: sp.source && isPainSource(sp.source) ? sp.source : '',
-		context: sp.context && isPainContext(sp.context) ? sp.context : '',
+		context: sp.context && contextGroups(active).some((g) => g.key === sp.context) ? sp.context : '',
 		idea: sp.idea && ideaById.has(sp.idea) ? sp.idea : '',
 		sort: sp.sort === 'new' ? 'new' : '',
 	};
@@ -54,7 +55,7 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 
 	const visible = active
 		.filter((p) => !filters.source || p.source === filters.source)
-		.filter((p) => !filters.context || p.context === filters.context)
+		.filter((p) => !filters.context || contextKey(p.context) === filters.context)
 		.filter((p) => !filters.idea || painIdsByIdea.get(filters.idea)?.has(p.id))
 		.sort(filters.sort === 'new' ? compareByNewest : compareByScore);
 
@@ -63,7 +64,8 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 	);
 
 	const sourceCounts = PAIN_SOURCES.map((s) => [s, active.filter((p) => p.source === s).length] as const).filter(([, n]) => n);
-	const contextCounts = PAIN_CONTEXTS.map((c) => [c, active.filter((p) => p.context === c).length] as const).filter(([, n]) => n);
+	const contexts = contextGroups(active);
+	const sourceTotals: Partial<Record<PainSource, number>> = Object.fromEntries(sourceCounts);
 	const scored = active.filter((p) => painScore(p) != null).length;
 	const activeIdeas = ideas.filter((i) => !i.archived_at);
 
@@ -94,14 +96,20 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 					aria-label="Today's frustration"
 					placeholder="What was slow, manual, annoying or expensive today?"
 				/>
-				<select className={cx(input, 'sm:w-auto')} name="context" aria-label="Context" defaultValue="">
-					<option value="">Context</option>
-					{PAIN_CONTEXTS.map((c) => <option key={c} value={c}>{PAIN_CONTEXT_LABELS[c]}</option>)}
-				</select>
+				<input
+					className={cx(input, 'flex-[0_1_11rem] min-w-0 w-auto')}
+					name="context"
+					type="text"
+					maxLength={80}
+					aria-label="Context"
+					placeholder="Context: work, home, bank..."
+				/>
 				<button type="submit" className={btn}>Add to journal</button>
 			</form>
 
-			<div className="mt-4 flex flex-wrap items-center gap-1.5">
+			<PainhunterGuide counts={sourceTotals} />
+
+			<div className="mt-6 flex flex-wrap items-center gap-1.5">
 				<span className={chipMuted}>{active.length} pain{active.length === 1 ? '' : 's'}</span>
 				<span className={chipMuted} title="Distinct days with a journal entry in the last 30 days">Journal {journalDays(all)}/30 days</span>
 				<span className={chipMuted} title="Pains with all five scores filled in">{scored} scored</span>
@@ -117,12 +125,12 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 							</Link>
 						))}
 					</FilterRow>
-					{contextCounts.length > 0 && (
+					{contexts.length > 0 && (
 						<FilterRow label="Context">
 							<Link href={href({ context: '' })} className={filters.context ? chip : chipActive}>All</Link>
-							{contextCounts.map(([c, n]) => (
-								<Link key={c} href={href({ context: c })} className={filters.context === c ? chipActive : chip}>
-									{PAIN_CONTEXT_LABELS[c]} · {n}
+							{contexts.map((c) => (
+								<Link key={c.key} href={href({ context: c.key })} className={filters.context === c.key ? chipActive : chip}>
+									{c.label} · {c.count}
 								</Link>
 							))}
 						</FilterRow>

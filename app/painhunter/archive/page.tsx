@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth';
-import { painScore, PAIN_CONTEXT_LABELS, PAIN_SOURCE_LABELS, SCORE_MAX, type PainPoint } from '@/lib/painhunter';
+import { painScore, PAIN_SOURCE_LABELS, SCORE_MAX, type PainPoint } from '@/lib/painhunter';
 import { CardItem, CardList, RemoveButton } from '@/components/CardList';
 import {
 	btnGhost, card, cardDate, cardFoot, cardGrid, cardHead, cardTitle, chipMuted, deleteBtn, Empty, FormError, PageHead,
@@ -50,7 +50,7 @@ export default async function PainhunterArchivePage({ searchParams }: { searchPa
 
 								<div className="flex flex-wrap items-center gap-1.5">
 									<Pill value={pain.source}>{PAIN_SOURCE_LABELS[pain.source]}</Pill>
-									{pain.context && <span className={chipMuted}>{PAIN_CONTEXT_LABELS[pain.context]}</span>}
+									{pain.context && <span className={chipMuted}>{pain.context}</span>}
 								</div>
 
 								<div className={`${cardFoot} justify-between`}>

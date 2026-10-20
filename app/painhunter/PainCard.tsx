@@ -5,15 +5,13 @@ import {
 	scoreBadge, btnGhost, cardFoot,
 } from '@/components/ui';
 import {
-	PAIN_CONTEXT_LABELS, PAIN_CONTEXTS, PAIN_SOURCE_LABELS, PAIN_SOURCE_OPTION_LABELS, PAIN_SOURCES,
-	painScore, SCORE_MAX, SCORES, type PainPoint,
+	PAIN_SOURCE_LABELS, PAIN_SOURCE_OPTION_LABELS, PAIN_SOURCES, painScore, SCORE_MAX, SCORES, type PainPoint,
 } from '@/lib/painhunter';
 import { IdeaLinks, type LinkedIdea } from './IdeaLinks';
 
 const ENDPOINT = '/api/painhunter';
 
 const SOURCE_OPTIONS: [string, string][] = PAIN_SOURCES.map((s) => [s, PAIN_SOURCE_OPTION_LABELS[s]]);
-const CONTEXT_OPTIONS: [string, string][] = [['', 'No context'], ...PAIN_CONTEXTS.map((c): [string, string] => [c, PAIN_CONTEXT_LABELS[c]])];
 const SCORE_OPTIONS: [string, string][] = [['', '–'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']];
 
 function Field({ label, field, pain, value }: { label: string; field: string; pain: PainPoint; value: string | null }) {
@@ -77,10 +75,9 @@ export function PainCard({ pain, linked, linkOptions, top }: {
 					field="context"
 					id={pain.id}
 					endpoint={ENDPOINT}
-					kind="select"
-					options={CONTEXT_OPTIONS}
-					className="inline-block cursor-pointer"
-					display={<span className={chipMuted}>{pain.context ? PAIN_CONTEXT_LABELS[pain.context] : 'Add context'}</span>}
+					className="inline-block cursor-text"
+					placeholder="Add context"
+					display={<span className={chipMuted}>{pain.context || 'Add context'}</span>}
 				/>
 				<InlineEdit
 					value={pain.noticed_on}

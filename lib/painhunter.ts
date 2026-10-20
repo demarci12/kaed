@@ -7,8 +7,6 @@ export type PainSource =
 	| 'boring'
 	| 'funded-gap';
 
-export type PainContext = 'work' | 'home' | 'university' | 'government' | 'bank' | 'doctor' | 'other';
-
 export type ScoreKey = 'pain' | 'frequency' | 'money' | 'access' | 'fit';
 
 export interface PainPoint {
@@ -19,7 +17,8 @@ export interface PainPoint {
 	who: string | null;
 	workaround: string | null;
 	source: PainSource;
-	context: PainContext | null;
+	/** Free text: where it happens (work, home, a bank, ...). */
+	context: string | null;
 	noticed_on: string;
 	score_pain: number | null;
 	score_frequency: number | null;
@@ -53,18 +52,7 @@ export const PAIN_SOURCE_OPTION_LABELS: Record<PainSource, string> = {
 	'funded-gap': 'Gap in what is funded',
 };
 
-export const PAIN_CONTEXT_LABELS: Record<PainContext, string> = {
-	work: 'Work',
-	home: 'Home',
-	university: 'University',
-	government: 'Government',
-	bank: 'Bank',
-	doctor: 'Doctor',
-	other: 'Other',
-};
-
 export const PAIN_SOURCES = Object.keys(PAIN_SOURCE_LABELS) as PainSource[];
-export const PAIN_CONTEXTS = Object.keys(PAIN_CONTEXT_LABELS) as PainContext[];
 
 export const SCORES: { key: ScoreKey; label: string; hint: string }[] = [
 	{ key: 'pain', label: 'Pain', hint: 'Do people complain about it without being asked?' },
@@ -117,6 +105,20 @@ export function isPainSource(v: string): v is PainSource {
 	return (PAIN_SOURCES as string[]).includes(v);
 }
 
-export function isPainContext(v: string): v is PainContext {
-	return (PAIN_CONTEXTS as string[]).includes(v);
+/** Case-insensitive identity of a free-text context ("Work" and "work " are one). */
+export function contextKey(context: string | null): string {
+	return (context ?? '').trim().toLowerCase();
+}
+
+/** Distinct contexts in use, most common first; the first spelling seen labels the group. */
+export function contextGroups(pains: PainPoint[]): { key: string; label: string; count: number }[] {
+	const groups = new Map<string, { key: string; label: string; count: number }>();
+	for (const p of pains) {
+		const key = contextKey(p.context);
+		if (!key) continue;
+		const g = groups.get(key);
+		if (g) g.count++;
+		else groups.set(key, { key, label: p.context!.trim(), count: 1 });
+	}
+	return [...groups.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }

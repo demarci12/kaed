@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getOwnerSession } from '@/lib/auth';
-import { isPainContext, isPainSource, todayInBudapest } from '@/lib/painhunter';
+import { isPainSource, todayInBudapest } from '@/lib/painhunter';
 
 export async function POST(request: Request) {
 	const session = await getOwnerSession();
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
 	if (!title) return fail('Describe the pain first.');
 	if (!isPainSource(source)) return fail('Invalid source.');
-	if (context && !isPainContext(context)) return fail('Invalid context.');
+	if (context.length > 80) return fail('Context is too long (80 characters max).');
 	if (noticedOn && !/^\d{4}-\d{2}-\d{2}$/.test(noticedOn)) return fail('Invalid date.');
 
 	const { error } = await supabase.from('pain_points').insert({

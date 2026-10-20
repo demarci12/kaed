@@ -31,6 +31,10 @@ export const scoreBadge =
 	'inline-flex items-center justify-center min-w-[26px] h-[26px] px-1.5 shrink-0 rounded-full border border-line bg-canvas text-xs font-semibold tabular-nums text-muted';
 export const cardDate = 'text-xs text-muted tabular-nums whitespace-nowrap';
 
+export const guideTitle = 'm-0 font-serif text-[19px] font-semibold leading-tight text-ink';
+export const guideText = 'm-0 text-sm leading-relaxed text-ink';
+export const guideList = 'm-0 pl-5 flex flex-col gap-1.5 text-sm leading-relaxed text-ink list-disc marker:text-muted';
+
 export const iconBtn =
 	'inline-flex items-center justify-center w-[22px] h-[22px] shrink-0 rounded-md border border-transparent bg-transparent text-muted text-xs leading-none cursor-pointer transition-colors hover:border-ink hover:text-ink disabled:opacity-35 disabled:cursor-default';
 export const deleteBtn =

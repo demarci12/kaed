@@ -834,9 +834,7 @@ create table if not exists public.pain_points (
   source text not null default 'journal' check (source in (
     'journal', 'build-test', 'interview', 'money', 'why-now', 'boring', 'funded-gap'
   )),
-  context text check (context is null or context in (
-    'work', 'home', 'university', 'government', 'bank', 'doctor', 'other'
-  )),
+  context text,
   noticed_on date not null default current_date,
   score_pain smallint check (score_pain between 1 and 5),
   score_frequency smallint check (score_frequency between 1 and 5),
@@ -847,6 +845,10 @@ create table if not exists public.pain_points (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- `context` started as a fixed list; it is free text now (work, home, a bank, ...).
+-- Drops the old check on databases that already ran the first version.
+alter table public.pain_points drop constraint if exists pain_points_context_check;
 
 create index if not exists pain_points_user_archived_idx on public.pain_points (user_id, archived_at);
 
