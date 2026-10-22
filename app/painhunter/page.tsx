@@ -5,11 +5,12 @@ import {
 	PAIN_SOURCE_LABELS, PAIN_SOURCES, type PainPoint, type PainSource,
 } from '@/lib/painhunter';
 import {
-	btn, btnGhost, chipActive, cx, Empty, FormError, input, PageHead, segmented, segmentedActive, segmentedItem,
+	btnGhost, chipActive, Empty, FormError, PageHead, segmented, segmentedActive, segmentedItem,
 } from '@/components/ui';
 import { FilterSelect } from './FilterSelect';
 import { NewPainPopup } from './NewPainPopup';
 import { PainTable } from './PainTable';
+import { QuickAddPain } from './QuickAddPain';
 import { PainhunterGuide } from './PainhunterGuide';
 
 type Search = { error?: string; source?: string; context?: string; idea?: string; sort?: string };
@@ -85,27 +86,7 @@ export default async function PainhunterPage({ searchParams }: { searchParams: P
 
 			{sp.error && <FormError>{sp.error}</FormError>}
 
-			<form method="post" action="/api/painhunter/create" className="mt-8 flex gap-2.5 flex-wrap">
-				<input type="hidden" name="source" value="journal" />
-				<input
-					className={cx(input, 'flex-[1_1_18rem] min-w-0 w-auto')}
-					name="title"
-					type="text"
-					required
-					maxLength={200}
-					aria-label="Today's frustration"
-					placeholder="What was slow, manual, annoying or expensive today?"
-				/>
-				<input
-					className={cx(input, 'flex-[0_1_11rem] min-w-0 w-auto')}
-					name="context"
-					type="text"
-					maxLength={80}
-					aria-label="Context"
-					placeholder="Context: work, home, bank..."
-				/>
-				<button type="submit" className={btn}>Add to journal</button>
-			</form>
+			<QuickAddPain />
 
 			{active.length > 0 && (
 				<div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-2">

@@ -7,13 +7,24 @@ import { getOwnerSession } from '@/lib/auth';
  * rest (validation, category) is for the idea page.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+	const wantsJson = (request.headers.get('accept') ?? '').includes('application/json');
+
 	const session = await getOwnerSession();
-	if (!session) return NextResponse.redirect(new URL('/login', request.url), { status: 303 });
+	if (!session) {
+		return wantsJson
+			? NextResponse.json({ ok: false, error: 'Not signed in.' }, { status: 401 })
+			: NextResponse.redirect(new URL('/login', request.url), { status: 303 });
+	}
 	const { supabase, user } = session;
 	const { id } = await params;
 
-	const back = (path: string) => NextResponse.redirect(new URL(path, request.url), { status: 303 });
-	const fail = (message: string) => back(`/painhunter?error=${encodeURIComponent(message)}`);
+	// Plain form: redirect. Async caller: the same destination as JSON, to navigate to without a reload.
+	const back = (path: string) =>
+		wantsJson ? NextResponse.json({ ok: true, redirectTo: path }) : NextResponse.redirect(new URL(path, request.url), { status: 303 });
+	const fail = (message: string) =>
+		wantsJson
+			? NextResponse.json({ ok: false, error: message }, { status: 400 })
+			: back(`/painhunter?error=${encodeURIComponent(message)}`);
 
 	const { data: pain } = await supabase
 		.from('pain_points')

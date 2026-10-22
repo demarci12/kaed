@@ -57,11 +57,11 @@ export function Popup({ trigger, title, children, defaultOpen = false }: {
 	);
 }
 
-export function PopupActions({ onCancel, submitLabel }: { onCancel: () => void; submitLabel: string }) {
+export function PopupActions({ onCancel, submitLabel, busy = false }: { onCancel: () => void; submitLabel: string; busy?: boolean }) {
 	return (
 		<div className="flex justify-end gap-2.5 mt-6 flex-wrap">
 			<button type="button" className={btnGhost} onClick={onCancel}>Cancel</button>
-			<button type="submit" className={btn}>{submitLabel}</button>
+			<button type="submit" className={btn} disabled={busy}>{busy ? 'Saving…' : submitLabel}</button>
 		</div>
 	);
 }

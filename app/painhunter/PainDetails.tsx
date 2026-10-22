@@ -1,7 +1,8 @@
 import { InlineEdit } from '@/components/InlineEdit';
-import { btnGhost, cardLabel, cardValue } from '@/components/ui';
+import { cardLabel, cardValue } from '@/components/ui';
 import type { PainPoint } from '@/lib/painhunter';
 import { IdeaLinks, type LinkedIdea } from './IdeaLinks';
+import { PromoteButton } from './PromoteButton';
 
 const ENDPOINT = '/api/painhunter';
 
@@ -51,11 +52,7 @@ export function PainDetails({ pain, linked, linkOptions }: {
 						<IdeaLinks painId={pain.id} linked={linked} options={linkOptions} />
 					</div>
 				</div>
-				{linked.length === 0 && (
-					<form method="post" action={`${ENDPOINT}/${pain.id}/promote`} className="m-0 self-end">
-						<button type="submit" className={btnGhost}>→ Make it a business idea</button>
-					</form>
-				)}
+				{linked.length === 0 && <PromoteButton painId={pain.id} />}
 			</div>
 		</>
 	);
