@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cardLabel, cx, FormError, scoreBadge, scoreSelect, segmented, segmentedActive, segmentedItem, textarea } from '@/components/ui';
 import {
-	ANCHORS, anchorScope, CANVAS, DECISIONS, EMPTY_ANSWER, GATE_VALIDATED, isFinished, NOTE_MAX, phasesFor, progress,
+	ANCHORS, anchorScope, CANVAS, DECISIONS, EMPTY_ANSWER, GATE_VALIDATED, isFinished, NOTE_MAX, PHASES, phasesFor, progress,
 	SCORE_AXES, scoreAverage, type Anchor, type Answer, type Scope, type Status, type Step,
 } from '@/lib/playbook';
 
@@ -44,6 +44,11 @@ export function Playbook({ scope, ideaId, initial, you }: {
 }) {
 	const phases = useMemo(() => phasesFor(scope), [scope]);
 	const steps = useMemo(() => phases.flatMap((p) => p.steps), [phases]);
+	/** Phases that belong entirely to the other kind of run: shown dimmed, so the whole path is visible. */
+	const elsewhere = useMemo(
+		() => PHASES.filter((p) => p.steps.every((s) => s.scope !== scope)),
+		[scope],
+	);
 	const [answers, setAnswers] = useState<Answers>(initial);
 	const answersRef = useRef(answers);
 	answersRef.current = answers;
@@ -155,6 +160,13 @@ export function Playbook({ scope, ideaId, initial, you }: {
 							</button>
 						);
 					})}
+					{elsewhere.map((p) => (
+						<span
+							key={p.id}
+							title={`${p.title} — ${scope === 'you' ? 'pick a business idea to work on this' : 'answered once, under You'}`}
+							className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-dashed border-line px-2 text-xs tabular-nums text-muted opacity-60"
+						>{p.id}</span>
+					))}
 				</nav>
 			</div>
 
@@ -224,6 +236,26 @@ export function Playbook({ scope, ideaId, initial, you }: {
 					</section>
 				);
 			})}
+
+			{elsewhere.length > 0 && (
+				<div className="mt-6">
+					<p className="m-0 text-sm text-muted">
+						{scope === 'you'
+							? 'The rest of the path is worked per business idea. Pick an idea above to start phase 3.'
+							: 'These phases are about you, so they are answered once, under You.'}
+					</p>
+					{elsewhere.map((p) => (
+						<section key={p.id} className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-line px-4 py-3 opacity-70">
+							<span className={scoreBadge}>{p.id}</span>
+							<span className="min-w-0 flex-1">
+								<span className="block font-serif text-base font-semibold leading-tight text-ink">{p.title}</span>
+								<span className="block truncate text-xs text-muted">{p.goal}</span>
+							</span>
+							<span className="shrink-0 text-xs tabular-nums text-muted">{p.steps.length} steps{scope === 'you' ? ' per idea' : ''}</span>
+						</section>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }
