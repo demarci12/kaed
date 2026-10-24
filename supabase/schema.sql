@@ -873,3 +873,41 @@ alter table public.pain_point_ideas enable row level security;
 
 create policy "own pain point ideas" on public.pain_point_ideas
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Think Pad (/think-pad) is now the business-starter playbook; the wiki tables
+-- above (think_pad_pages / think_pad_entries) are no longer used by the app.
+-- The steps themselves live in lib/playbook.ts -- these two tables only hold
+-- the answers. One run per business idea, plus one personal run with
+-- idea_id null (phases 0-2: mindset, setup, finding problems).
+create table if not exists public.playbook_runs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  idea_id uuid references public.business_ideas(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists playbook_runs_you_idx on public.playbook_runs (user_id) where idea_id is null;
+create unique index if not exists playbook_runs_idea_idx on public.playbook_runs (user_id, idea_id) where idea_id is not null;
+
+alter table public.playbook_runs enable row level security;
+
+create policy "own playbook runs" on public.playbook_runs
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- One row per answered step. status: todo/doing/done/skip for a normal step,
+-- go/pivot/kill for a decision step. data holds the four 1-10 scores of step 24.
+create table if not exists public.playbook_answers (
+  run_id uuid not null references public.playbook_runs(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  step smallint not null check (step between 1 and 999),
+  status text not null default 'todo' check (status in ('todo', 'doing', 'done', 'skip', 'go', 'pivot', 'kill')),
+  note text,
+  data jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (run_id, step)
+);
+
+alter table public.playbook_answers enable row level security;
+
+create policy "own playbook answers" on public.playbook_answers
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -7,7 +7,7 @@ import {
 import {
 	btnGhost, chipActive, Empty, FormError, PageHead, segmented, segmentedActive, segmentedItem,
 } from '@/components/ui';
-import { FilterSelect } from './FilterSelect';
+import { FilterSelect } from '@/components/FilterSelect';
 import { NewPainPopup } from './NewPainPopup';
 import { PainTable } from './PainTable';
 import { QuickAddPain } from './QuickAddPain';

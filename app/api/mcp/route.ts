@@ -1,5 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { recomputeSearchText } from '@/lib/think-pad-helpers';
+import { createClient } from '@supabase/supabase-js';
 import { CMS_TOOLS, CMS_TOOL_NAMES, callCmsTool, type CmsToolArgs } from '@/lib/cms-mcp';
 
 export const dynamic = 'force-dynamic';
@@ -32,8 +31,8 @@ const TABLES = [
 	'finance_transactions',
 	'finance_budgets',
 	'finance_limits',
-	'think_pad_pages',
-	'think_pad_entries',
+	'playbook_runs',
+	'playbook_answers',
 	'cms_sites',
 	'cms_posts',
 	'cms_ideas',
@@ -100,18 +99,6 @@ const TOOLS = [
 			required: ['table', 'filters'],
 		},
 	},
-	{
-		name: 'save_thought',
-		description:
-			"Append a thought, note, idea, or reflection to the user's Think Pad (kaed.hu/think-pad) -- lands at the bottom of a running \"Inbox\" page, created on first use, same as if they'd typed it there. Call this whenever they ask you to save, jot down, log, or remember something, or wrap up a reflective conversation they want captured. Pass their words close to verbatim in `body` -- don't summarize unless asked to. Multiple lines (separated by \\n) land as separate lines in the doc, in order.",
-		inputSchema: {
-			type: 'object',
-			properties: {
-				body: { type: 'string', description: 'The thought itself. Use \\n to save it as multiple lines.' },
-			},
-			required: ['body'],
-		},
-	},
 	...CMS_TOOLS,
 ];
 
@@ -131,21 +118,6 @@ interface ToolArgs extends CmsToolArgs {
 	order_by?: string;
 	ascending?: boolean;
 	limit?: number;
-	body?: string;
-}
-
-/**
- * There's exactly one real owner account (the shared `member` role is
- * finance-only, same check as `isMember` in lib/auth.ts) -- looking it up here
- * means tools like `save_thought` never need the chat session to know or pass
- * a user id.
- */
-async function getOwnerUserId(supabase: SupabaseClient): Promise<string> {
-	const { data, error } = await supabase.auth.admin.listUsers();
-	if (error) throw new Error(error.message);
-	const owner = data.users.find((u) => u.user_metadata?.role !== 'member');
-	if (!owner) throw new Error('No owner account found.');
-	return owner.id;
 }
 
 async function callTool(name: string, args: ToolArgs) {
@@ -191,51 +163,6 @@ async function callTool(name: string, args: ToolArgs) {
 					return toolError('filters must be a non-empty object');
 				const { data, error } = await supabase.from(args.table!).delete().match(args.filters).select();
 				if (error) return toolError(error.message);
-				return toolResult(data);
-			}
-
-			case 'save_thought': {
-				const lines = (args.body ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
-				if (!lines.length) return toolError('body is required.');
-				const user_id = await getOwnerUserId(supabase);
-
-				// Everything dictated to Claude lands on one running "Inbox" page
-				// (created on first use) -- a chat session never has to know or
-				// choose which Think Pad page to append to.
-				let { data: inbox } = await supabase
-					.from('think_pad_pages')
-					.select('id')
-					.eq('user_id', user_id)
-					.eq('title', 'Inbox')
-					.maybeSingle();
-				if (!inbox) {
-					const { data: created, error: createError } = await supabase
-						.from('think_pad_pages')
-						.insert({ user_id, title: 'Inbox' })
-						.select('id')
-						.single();
-					if (createError) return toolError(createError.message);
-					inbox = created;
-				}
-
-				const { data: last } = await supabase
-					.from('think_pad_entries')
-					.select('position')
-					.eq('page_id', inbox.id)
-					.order('position', { ascending: false })
-					.limit(1)
-					.maybeSingle();
-				const base = (last?.position as number | undefined) ?? -1;
-				const rows = lines.map((body, i) => ({
-					user_id,
-					page_id: inbox.id,
-					body,
-					source: 'mcp',
-					position: base + i + 1,
-				}));
-				const { data, error } = await supabase.from('think_pad_entries').insert(rows).select();
-				if (error) return toolError(error.message);
-				await recomputeSearchText(supabase, inbox.id);
 				return toolResult(data);
 			}
 
