@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { CMS_TOOLS, CMS_TOOL_NAMES, callCmsTool, type CmsToolArgs } from '@/lib/cms-mcp';
+import { WORK_TOOLS, WORK_TOOL_NAMES, callWorkTool, type WorkToolArgs } from '@/lib/work-mcp';
 
 export const dynamic = 'force-dynamic';
 // cms_write_next_post generates an article (about a minute).
@@ -33,6 +34,9 @@ const TABLES = [
 	'finance_limits',
 	'playbook_runs',
 	'playbook_answers',
+	'work_tasks',
+	'work_comments',
+	'work_logs',
 	'cms_sites',
 	'cms_posts',
 	'cms_ideas',
@@ -100,6 +104,7 @@ const TOOLS = [
 		},
 	},
 	...CMS_TOOLS,
+	...WORK_TOOLS,
 ];
 
 function toolResult(data: unknown) {
@@ -110,7 +115,7 @@ function toolError(message: string) {
 	return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
 }
 
-interface ToolArgs extends CmsToolArgs {
+interface ToolArgs extends CmsToolArgs, WorkToolArgs {
 	table?: string;
 	columns?: string;
 	filters?: Record<string, unknown>;
@@ -125,6 +130,7 @@ async function callTool(name: string, args: ToolArgs) {
 
 	try {
 		if (CMS_TOOL_NAMES.includes(name)) return toolResult(await callCmsTool(supabase, name, args));
+		if (WORK_TOOL_NAMES.includes(name)) return toolResult(await callWorkTool(supabase, name, args));
 
 		switch (name) {
 			case 'list_tables':

@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 const GROUPS: NavGroup[] = [
+	{ label: 'Work', links: [['/work', 'Tickets']] },
 	{ label: 'Delivery', links: [['/painhunter', 'Painhunter'], ['/business-ideas', 'Business ideas'], ['/projects', 'Projects'], ['/system-design', 'System design']] },
 	{ label: 'Personal', links: [['/think-pad', 'Think Pad'], ['/idea-lab', 'Idea Lab'], ['/studies', 'Studies'], ['/freedom', 'Freedom'], ['/goals', 'Goals'], ['/specific-knowledge', 'Specific knowledge']] },
 	{ label: 'Sales & Marketing', links: [['/clients', 'CRM'], ['/cms', 'Blog CMS']] },
