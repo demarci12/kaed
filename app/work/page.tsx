@@ -1,5 +1,6 @@
 import { PageHead } from '@/components/ui';
 import { requireOwner } from '@/lib/auth';
+import { jiraConfig } from '@/lib/jira';
 import { todayInBudapest, weekStart, type WorkTask } from '@/lib/work';
 import { withStats } from '@/lib/work-server';
 import { AutomationGuide } from './AutomationGuide';
@@ -16,6 +17,7 @@ export default async function WorkPage() {
 	]);
 
 	const tasks = await withStats(supabase, (rows ?? []) as WorkTask[]);
+	const jira = jiraConfig();
 	const logs = (logRows ?? []) as { logged_on: string; hours: number | string }[];
 	const sum = (list: typeof logs) => Math.round(list.reduce((a, l) => a + Number(l.hours), 0) * 100) / 100;
 
@@ -26,7 +28,12 @@ export default async function WorkPage() {
 				title="Work."
 				lede="Your day-to-day tickets as an open point list. Click any cell to edit it, open a row for the description, comments and time log, or paste rows in from Jira or Excel."
 			/>
-			<TaskGrid initial={tasks} hoursToday={sum(logs.filter((l) => l.logged_on === today))} hoursWeek={sum(logs)} />
+			<TaskGrid
+				initial={tasks}
+				hoursToday={sum(logs.filter((l) => l.logged_on === today))}
+				hoursWeek={sum(logs)}
+				jira={{ configured: Boolean(jira), host: jira?.host ?? null }}
+			/>
 			<AutomationGuide />
 		</section>
 	);

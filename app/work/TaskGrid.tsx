@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { btnGhost, cx, FormError, segmented, segmentedActive, segmentedItem } from '@/components/ui';
+import { btnGhost, chip, chipActive, chipMuted, cx, FormError, segmented, segmentedActive, segmentedItem } from '@/components/ui';
 import {
 	formatHours, JIRA_KEY, PRIORITY_LABELS, STATUS_LABELS, TASK_PRIORITIES, TASK_STATUSES, todayInBudapest, weekStart,
 	type TaskPriority, type TaskStatus, type WorkTaskRow,
@@ -77,7 +77,13 @@ const defaultOrder = (a: WorkTaskRow, b: WorkTaskRow) =>
  * Every change saves in the background (optimistic, rolled back with a message
  * if it fails); the row opens into description, comments and time log.
  */
-export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTaskRow[]; hoursToday: number; hoursWeek: number }) {
+export function TaskGrid({ initial, hoursToday, hoursWeek, jira }: {
+	initial: WorkTaskRow[];
+	hoursToday: number;
+	hoursWeek: number;
+	/** Whether the server has Jira settings; the host is shown, never the credentials. */
+	jira: { configured: boolean; host: string | null };
+}) {
 	const router = useRouter();
 	const [tasks, setTasks] = useState(initial);
 	const tasksRef = useRef(tasks);
@@ -99,10 +105,21 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 	const [ghost, setGhost] = useState('');
 	const [adding, setAdding] = useState(false);
 	const [notice, setNotice] = useState<string | null>(null);
+	// Writes to Jira are opt-in and remembered on this device: off until you switch it on.
+	const [push, setPush] = useState(false);
+	useEffect(() => {
+		try { setPush(localStorage.getItem('kaed-work-jira-push') === '1'); } catch { /* storage blocked: stays off */ }
+	}, []);
+	const pushing = push && jira.configured;
 	const wrapRef = useRef<HTMLDivElement>(null);
 	const ghostRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => setToday(todayInBudapest()), []);
+
+	const flash = useCallback((message: string, ms = 5000) => {
+		setNotice(message);
+		window.setTimeout(() => setNotice((n) => (n === message ? null : n)), ms);
+	}, []);
 
 	const counts = useMemo(() => ({
 		active: tasks.filter((t) => t.status !== 'done').length,
@@ -117,7 +134,7 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 		return [...list].sort(sort ? (a, b) => sort.dir * compare(a, b, sort.key) : defaultOrder);
 	}, [tasks, view, query, sort]);
 
-	const patch = useCallback(async (id: string, fields: Partial<WorkTaskRow>) => {
+	const patch = useCallback(async (id: string, fields: Partial<WorkTaskRow>, toJira = false) => {
 		const before = tasksRef.current.find((t) => t.id === id);
 		if (!before) return;
 		const settled = fields.status ? { done_at: fields.status === 'done' ? new Date().toISOString() : null } : {};
@@ -127,16 +144,17 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 			const res = await fetch(`/api/work/tasks/${id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(fields),
+				body: JSON.stringify(toJira ? { ...fields, jira: true } : fields),
 			});
-			const payload = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+			const payload = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; jira?: { ok: boolean; note?: string; error?: string } } | null;
 			if (!res.ok || payload?.ok === false) throw new Error(payload?.error || 'Could not save.');
+			if (payload?.jira) flash(payload.jira.ok ? `Jira: ${payload.jira.note}.` : `Saved here, not sent to Jira: ${payload.jira.error}.`, payload.jira.ok ? 5000 : 10000);
 		} catch (e) {
 			const undo = Object.fromEntries([...Object.keys(fields), 'done_at'].map((k) => [k, before[k as keyof WorkTaskRow]]));
 			setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...undo } : t)));
 			setError(e instanceof Error ? e.message : 'Could not save.');
 		}
-	}, []);
+	}, [flash]);
 
 	async function addRow(text: string) {
 		const raw = text.trim();
@@ -144,7 +162,12 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 		const [first, ...rest] = raw.split(/\s+/);
 		const key = first.replace(/[:,;]+$/, '').toUpperCase();
 		// "KB-123 Fix the thing" (as Jira shows it): the key goes in its own cell.
-		const body = JIRA_KEY.test(key) && rest.length ? { jira_key: key, title: rest.join(' ') } : { title: raw };
+		const isKey = JIRA_KEY.test(key);
+		const body = isKey && rest.length
+			? { jira_key: key, title: rest.join(' ') }
+			// Just a key: read the title and description from Jira when it is connected.
+			: isKey ? (jira.configured ? { jira_key: key, pull: true } : { jira_key: key, title: key })
+			: { title: raw };
 		setAdding(true);
 		setError(null);
 		try {
@@ -183,6 +206,10 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 		setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...s } : t)));
 	}, []);
 
+	const setTitle = useCallback((id: string, title: string) => {
+		setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, title } : t)));
+	}, []);
+
 	const changeHours = useCallback((day: string, delta: number) => {
 		const now = todayInBudapest();
 		setHours((h) => ({
@@ -190,6 +217,27 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 			week: day >= weekStart(now) && day <= now ? Math.max(0, Math.round((h.week + delta) * 100) / 100) : h.week,
 		}));
 	}, []);
+
+	function togglePush() {
+		const next = !push;
+		setPush(next);
+		try { localStorage.setItem('kaed-work-jira-push', next ? '1' : '0'); } catch { /* ignore */ }
+		flash(next ? 'Comments, hours and status changes on rows with a Jira key are now also sent to Jira.' : 'Jira is left alone: changes stay here.');
+	}
+
+	async function testJira() {
+		flash('Checking Jira…');
+		try {
+			const res = await fetch('/api/work/jira');
+			const r = (await res.json().catch(() => null)) as { configured?: boolean; reachable?: boolean; host?: string; user?: string; error?: string } | null;
+			if (!r) flash('Could not check Jira.');
+			else if (!r.configured) flash('Jira is not set up on the server yet.');
+			else if (r.reachable) flash(`Jira connected: ${r.host}, signed in as ${r.user}.`, 8000);
+			else flash(r.error ?? 'Could not reach Jira.', 10000);
+		} catch {
+			flash('Could not check Jira.');
+		}
+	}
 
 	function onImported(r: Imported) {
 		if (r.reload) {
@@ -200,8 +248,7 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 				return [...ts.map((t) => byId.get(t.id) ?? t), ...r.tasks.filter((t) => !ts.some((x) => x.id === t.id))];
 			});
 		}
-		setNotice(`Imported: ${r.created} new, ${r.updated} updated${r.skipped ? `, ${r.skipped} skipped` : ''}.`);
-		window.setTimeout(() => setNotice(null), 5000);
+		flash(`Imported: ${r.created} new, ${r.updated} updated${r.skipped ? `, ${r.skipped} skipped` : ''}.`);
 	}
 
 	async function copyTable() {
@@ -212,11 +259,10 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 		];
 		try {
 			await navigator.clipboard.writeText(lines.join('\n'));
-			setNotice(`Copied ${rows.length} row${rows.length === 1 ? '' : 's'}: paste them into Excel.`);
+			flash(`Copied ${rows.length} row${rows.length === 1 ? '' : 's'}: paste them into Excel.`, 4000);
 		} catch {
-			setNotice('Could not copy to the clipboard.');
+			flash('Could not copy to the clipboard.', 4000);
 		}
-		window.setTimeout(() => setNotice(null), 4000);
 	}
 
 	// ---- keyboard: move, edit, commit -------------------------------------------------
@@ -328,6 +374,21 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 				<span className="text-xs tabular-nums text-muted" title="Hours logged, Budapest time">
 					Today {formatHours(hours.today)} · This week {formatHours(hours.week)}
 				</span>
+				{jira.configured ? (
+					<span className="inline-flex items-center gap-2">
+						<button
+							type="button"
+							role="switch"
+							aria-checked={push}
+							onClick={togglePush}
+							title={`Also send comments, hours and status changes to Jira (${jira.host}) for rows that have a Jira key`}
+							className={cx(push ? chipActive : chip, 'cursor-pointer')}
+						>Post to Jira: {push ? 'on' : 'off'}</button>
+						<button type="button" onClick={testJira} className="cursor-pointer border-0 bg-transparent p-0 text-xs text-muted underline underline-offset-2 hover:text-ink hover:no-underline">Test</button>
+					</span>
+				) : (
+					<span className={chipMuted} title="Add JIRA_BASE_URL and a token to the server settings to connect Jira">Jira not connected</span>
+				)}
 				<div className="ml-auto flex flex-wrap items-center gap-2">
 					{notice && <span className="text-xs text-muted" aria-live="polite">{notice}</span>}
 					<button type="button" className={cx(btnGhost, 'min-h-8 px-3.5 text-xs')} onClick={copyTable}>Copy table</button>
@@ -392,7 +453,7 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 														aria-label={`${isStatus ? 'Status' : 'Priority'} of ${t.title}`}
 														value={isStatus ? t.status : t.priority}
 														onFocus={select}
-														onChange={(e) => patch(t.id, isStatus ? { status: e.target.value as TaskStatus } : { priority: e.target.value as TaskPriority })}
+														onChange={(e) => (isStatus ? patch(t.id, { status: e.target.value as TaskStatus }, pushing && Boolean(t.jira_key)) : patch(t.id, { priority: e.target.value as TaskPriority }))}
 														className={cx(
 															'h-6 max-w-full cursor-pointer rounded-md border-0 px-1.5 text-xs outline-none',
 															isStatus ? cx('font-medium', STATUS_CLS[t.status]) : cx('bg-transparent', PRIORITY_CLS[t.priority]),
@@ -465,7 +526,15 @@ export function TaskGrid({ initial, hoursToday, hoursWeek }: { initial: WorkTask
 										<td colSpan={COLS.length + 2} className="border-b border-line p-0">
 											{/* Sticky and capped to the screen, so a wide table scrolling sideways never carries the panel out of view. */}
 											<div className="sticky left-0 w-full max-w-[calc(100vw-3rem)]">
-												<TaskDetail task={t} onSummary={setSummary} onHours={changeHours} />
+												<TaskDetail
+													task={t}
+													onSummary={setSummary}
+													onHours={changeHours}
+													jiraReady={jira.configured}
+													push={pushing}
+													onNotice={flash}
+													onPulled={setTitle}
+												/>
 											</div>
 										</td>
 									</tr>

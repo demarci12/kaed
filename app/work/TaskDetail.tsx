@@ -28,12 +28,23 @@ const SOURCE_NOTE: Record<string, string> = { claude: 'Claude', import: 'import'
  * the new totals back so the grid's "Latest comment" and "Logged" columns stay
  * current without a refresh.
  */
-export function TaskDetail({ task, onSummary, onHours }: {
+export function TaskDetail({ task, onSummary, onHours, jiraReady, push, onNotice, onPulled }: {
 	task: WorkTaskRow;
 	onSummary: (id: string, summary: Summary) => void;
 	/** A log entry on `day` was added (+) or removed (-): the toolbar's day and week totals follow. */
 	onHours: (day: string, delta: number) => void;
+	/** The server has Jira settings. */
+	jiraReady: boolean;
+	/** The "Post to Jira" switch is on: comments and time are also sent to the ticket. */
+	push: boolean;
+	onNotice: (message: string, ms?: number) => void;
+	/** The title was read from Jira. */
+	onPulled: (id: string, title: string) => void;
 }) {
+	const willPost = push && Boolean(task.jira_key);
+	const reportJira = (jira?: { ok: boolean; note?: string; error?: string }) => {
+		if (jira) onNotice(jira.ok ? `Jira: ${jira.note}.` : `Saved here, not sent to Jira: ${jira.error}.`, jira.ok ? 5000 : 10000);
+	};
 	const [loaded, setLoaded] = useState(false);
 	const [description, setDescription] = useState('');
 	const [savedDescription, setSavedDescription] = useState('');
@@ -85,13 +96,31 @@ export function TaskDetail({ task, onSummary, onHours }: {
 		}
 	}
 
+	async function pullFromJira() {
+		if (busy) return;
+		setBusy(true);
+		setError(null);
+		try {
+			const r = await call<{ title: string | null; description: string }>(`/api/work/tasks/${task.id}/jira`, { method: 'POST' });
+			setDescription(r.description);
+			setSavedDescription(r.description);
+			if (r.title) onPulled(task.id, r.title);
+			onNotice(`Read ${task.jira_key} from Jira: title and description updated.`);
+		} catch (e) {
+			setError(e instanceof Error ? e.message : 'Could not read from Jira.');
+		} finally {
+			setBusy(false);
+		}
+	}
+
 	async function addComment() {
 		const body = commentText.trim();
 		if (!body || busy) return;
 		setBusy(true);
 		setError(null);
 		try {
-			const { comment } = await call<{ comment: WorkComment }>(`/api/work/tasks/${task.id}/comments`, { method: 'POST', body: JSON.stringify({ body }) });
+			const { comment, jira } = await call<{ comment: WorkComment; jira?: { ok: boolean; note?: string; error?: string } }>(`/api/work/tasks/${task.id}/comments`, { method: 'POST', body: JSON.stringify({ body, jira: willPost }) });
+			reportJira(jira);
 			const next = [comment, ...comments];
 			setComments(next);
 			setCommentText('');
@@ -122,10 +151,11 @@ export function TaskDetail({ task, onSummary, onHours }: {
 		setBusy(true);
 		setError(null);
 		try {
-			const { log } = await call<{ log: WorkLog }>(`/api/work/tasks/${task.id}/logs`, {
+			const { log, jira } = await call<{ log: WorkLog; jira?: { ok: boolean; note?: string; error?: string } }>(`/api/work/tasks/${task.id}/logs`, {
 				method: 'POST',
-				body: JSON.stringify({ hours: logHours, logged_on: logDay || undefined, note: logNote }),
+				body: JSON.stringify({ hours: logHours, logged_on: logDay || undefined, note: logNote, jira: willPost }),
 			});
+			reportJira(jira);
 			const next = [log, ...logs].sort((a, b) => b.logged_on.localeCompare(a.logged_on) || b.created_at.localeCompare(a.created_at));
 			setLogs(next);
 			setLogHours('');
@@ -159,9 +189,21 @@ export function TaskDetail({ task, onSummary, onHours }: {
 			{error && <div className="col-span-full"><FormError>{error}</FormError></div>}
 
 			<div className="min-w-0">
+				<div className="flex items-baseline justify-between gap-3">
+					<label htmlFor={`description-${task.id}`} className={cardLabel}>Description</label>
+					{jiraReady && task.jira_key && (
+						<button
+							type="button"
+							disabled={busy || !loaded}
+							onClick={pullFromJira}
+							title={`Read the title and description of ${task.jira_key} from Jira and replace the ones here`}
+							className="cursor-pointer border-0 bg-transparent p-0 text-xs text-muted underline underline-offset-2 hover:text-ink hover:no-underline disabled:opacity-50"
+						>Read from Jira</button>
+					)}
+				</div>
 				<label className="block">
-					<span className={cardLabel}>Description</span>
 					<textarea
+						id={`description-${task.id}`}
 						className={cx(textarea, 'mt-1.5 bg-paper')}
 						rows={7}
 						value={description}
@@ -201,6 +243,7 @@ export function TaskDetail({ task, onSummary, onHours }: {
 						/>
 						<button type="button" className={cx(btn, 'min-h-9')} disabled={busy || !logHours.trim()} onClick={addLog}>Log</button>
 					</div>
+					{push && <p className="m-0 mt-1.5 text-xs text-muted">{task.jira_key ? `Also logged on ${task.jira_key} in Jira.` : 'No Jira key on this row, so this stays here.'}</p>}
 					{logs.length > 0 && (
 						<ul className="m-0 mt-2.5 list-none p-0 text-sm">
 							{logs.map((l) => (
@@ -233,7 +276,8 @@ export function TaskDetail({ task, onSummary, onHours }: {
 						onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); addComment(); } }}
 					/>
 				</label>
-				<div className="mt-2 flex justify-end">
+				<div className="mt-2 flex items-center justify-end gap-3">
+					{push && <span className="text-xs text-muted">{task.jira_key ? `Also posted to ${task.jira_key} in Jira.` : 'No Jira key on this row, so this stays here.'}</span>}
 					<button type="button" className={cx(btn, 'min-h-9')} disabled={busy || !commentText.trim()} onClick={addComment}>Add comment</button>
 				</div>
 				{comments.length > 0 && (

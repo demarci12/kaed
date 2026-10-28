@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { jiraAddComment, jiraConfig, jiraGetIssue, jiraLogWork, jiraMyself, jiraPush, jiraTransition, type JiraPush } from './jira';
 import {
-	cleanTask, formatHours, LIMITS, parseHours, STATUS_LABELS, TASK_STATUSES, todayInBudapest, type WorkTask,
+	cleanTask, formatHours, LIMITS, parseHours, STATUS_LABELS, TASK_STATUSES, todayInBudapest, type TaskStatus, type WorkTask,
 } from './work';
 
 // Work (/work) tools for the remote MCP endpoint (app/api/mcp/route.ts): lets a
@@ -12,6 +13,10 @@ import {
 const ticketProp = {
 	type: 'string',
 	description: 'The ticket: its Jira key (e.g. "KB-123", case-insensitive) or its row number in the list ("12" or "#12").',
+};
+const jiraProp = {
+	type: 'boolean',
+	description: 'Also write this to the ticket in Jira (needs the Jira connection and a Jira key on the row). Default false: Jira is only touched when you ask.',
 };
 const fieldProps = {
 	title: { type: 'string', description: 'The topic / Jira summary.' },
@@ -48,20 +53,20 @@ export const WORK_TOOLS = [
 	},
 	{
 		name: 'work_update_task',
-		description: 'Edit a ticket: any of topic, Jira key, description, responsible, status, priority, due date. Only the fields you pass change.',
-		inputSchema: { type: 'object', properties: { ticket: ticketProp, ...fieldProps }, required: ['ticket'] },
+		description: 'Edit a ticket: any of topic, Jira key, description, responsible, status, priority, due date. Only the fields you pass change. With jira=true and a status, the Jira ticket is moved to the matching status too.',
+		inputSchema: { type: 'object', properties: { ticket: ticketProp, ...fieldProps, jira: jiraProp }, required: ['ticket'] },
 	},
 	{
 		name: 'work_add_comment',
 		description: 'Add a comment to a ticket (a status update, a decision, what you are waiting for). Comments are a dated history; they are never edited, only added.',
-		inputSchema: { type: 'object', properties: { ticket: ticketProp, body: { type: 'string' } }, required: ['ticket', 'body'] },
+		inputSchema: { type: 'object', properties: { ticket: ticketProp, body: { type: 'string' }, jira: jiraProp }, required: ['ticket', 'body'] },
 	},
 	{
 		name: 'work_log_time',
 		description: 'Log time against a ticket. `hours` may be a number or text like "1.5", "90m", "1h30". `date` is YYYY-MM-DD, default today (Budapest).',
 		inputSchema: {
 			type: 'object',
-			properties: { ticket: ticketProp, hours: { type: ['number', 'string'] }, date: { type: 'string' }, note: { type: 'string', description: 'What the time was spent on.' } },
+			properties: { ticket: ticketProp, hours: { type: ['number', 'string'] }, date: { type: 'string' }, note: { type: 'string', description: 'What the time was spent on.' }, jira: jiraProp },
 			required: ['ticket', 'hours'],
 		},
 	},
@@ -72,6 +77,7 @@ export const WORK_TOOLS = [
 			type: 'object',
 			properties: {
 				date: { type: 'string', description: 'The day the notes are about, YYYY-MM-DD. Default today (Budapest).' },
+				jira: jiraProp,
 				entries: {
 					type: 'array',
 					items: {
@@ -90,6 +96,16 @@ export const WORK_TOOLS = [
 			},
 			required: ['entries'],
 		},
+	},
+	{
+		name: 'work_pull_from_jira',
+		description: 'READ from Jira: fetch a ticket\'s title and description and store them on its Work row (the row is created if the Jira key is not on the list yet). Needs the Jira connection.',
+		inputSchema: { type: 'object', properties: { ticket: { ...ticketProp, description: 'The Jira key (e.g. "KB-123"), or the row number of a row that already has a key.' } }, required: ['ticket'] },
+	},
+	{
+		name: 'work_jira_test',
+		description: 'Check the Jira connection: whether it is set up, whether the server can reach it, and whose token it is.',
+		inputSchema: { type: 'object', properties: {} },
 	},
 ];
 
@@ -110,6 +126,7 @@ export interface WorkToolArgs {
 	hours?: number | string;
 	date?: string;
 	note?: string;
+	jira?: boolean;
 	entries?: { ticket?: string; hours?: number | string; note?: string; comment?: string; status?: string; description?: string }[];
 }
 
@@ -136,6 +153,15 @@ async function findTask(db: Db, ticket: string | undefined): Promise<WorkTask> {
 const view = (t: WorkTask, extra: Record<string, unknown> = {}) => ({
 	no: t.no, jira_key: t.jira_key, title: t.title, responsible: t.responsible, status: t.status, priority: t.priority, due_on: t.due_on, ...extra,
 });
+
+const jiraNote = (r: JiraPush) => (r.ok ? { jira: 'ok', detail: r.note } : { jira: r.skipped ? 'skipped' : 'failed', detail: r.error });
+
+async function moveInJira(task: WorkTask, status: TaskStatus): Promise<JiraPush> {
+	return jiraPush(task.jira_key, async (cfg, key) => {
+		const move = await jiraTransition(cfg, key, status);
+		return move.changed ? `${key} moved ${move.from} → ${move.to}` : `${key} is already ${STATUS_LABELS[status]} in Jira`;
+	});
+}
 
 function dayOf(date: string | undefined): string {
 	const d = (date ?? '').trim() || todayInBudapest();
@@ -229,19 +255,29 @@ export async function callWorkTool(db: Db, name: string, args: WorkToolArgs) {
 			const changed = await patchTask(db, task, fields as Record<string, unknown>);
 			if (!changed.length) throw new Error('Nothing to change: pass at least one field besides ticket.');
 			const fresh = await findTask(db, String(task.no));
-			return { changed, ticket: view(fresh) };
+			const move = args.jira && args.status ? jiraNote(await moveInJira(fresh, args.status as TaskStatus)) : undefined;
+			return { changed, ticket: view(fresh), ...(move ? { jira_result: move } : {}) };
 		}
 
 		case 'work_add_comment': {
 			const task = await findTask(db, args.ticket);
-			const result = await addComment(db, await ownerId(db), task, args.body ?? '', todayInBudapest());
-			return { ticket: view(task), comment: result };
+			const text = args.body ?? '';
+			const result = await addComment(db, await ownerId(db), task, text, todayInBudapest());
+			const posted = args.jira && result === 'added'
+				? jiraNote(await jiraPush(task.jira_key, async (cfg, key) => { await jiraAddComment(cfg, key, text.trim()); return `comment posted to ${key}`; }))
+				: undefined;
+			return { ticket: view(task), comment: result, ...(posted ? { jira_result: posted } : {}) };
 		}
 
 		case 'work_log_time': {
 			const task = await findTask(db, args.ticket);
-			const result = await logTime(db, await ownerId(db), task, args.hours ?? '', dayOf(args.date), args.note);
-			return { ticket: view(task), time: result };
+			const day = dayOf(args.date);
+			const result = await logTime(db, await ownerId(db), task, args.hours ?? '', day, args.note);
+			const hours = parseHours(args.hours ?? '') ?? 0;
+			const posted = args.jira && result === 'logged'
+				? jiraNote(await jiraPush(task.jira_key, async (cfg, key) => { await jiraLogWork(cfg, key, hours, day, args.note?.trim() || null); return `${formatHours(hours)} logged on ${key}`; }))
+				: undefined;
+			return { ticket: view(task), time: result, ...(posted ? { jira_result: posted } : {}) };
 		}
 
 		case 'work_daily_update': {
@@ -254,6 +290,8 @@ export async function callWorkTool(db: Db, name: string, args: WorkToolArgs) {
 				const label = entry.ticket ?? '(no ticket)';
 				const applied: string[] = [];
 				const skipped: string[] = [];
+				const jiraLines: string[] = [];
+				const toJira = (what: string, r: JiraPush) => jiraLines.push(r.ok ? `✓ ${r.note}` : `✗ ${what}: ${r.error}`);
 				try {
 					const task = await findTask(db, entry.ticket);
 					const fields: Record<string, unknown> = {};
@@ -266,21 +304,67 @@ export async function callWorkTool(db: Db, name: string, args: WorkToolArgs) {
 					if (Object.keys(fields).length) {
 						for (const k of await patchTask(db, task, fields)) applied.push(k === 'status' ? `status → ${STATUS_LABELS[entry.status as keyof typeof STATUS_LABELS] ?? entry.status}` : k);
 					}
+					if (args.jira && entry.status !== undefined) toJira('status', await moveInJira(task, entry.status as TaskStatus));
 					if (entry.hours !== undefined && entry.hours !== '') {
 						const r = await logTime(db, userId, task, entry.hours, day, entry.note);
 						const h = parseHours(entry.hours) ?? 0;
-						if (r === 'logged') { applied.push(`logged ${formatHours(h)}`); totalHours += h; } else skipped.push(`${formatHours(h)} already logged`);
+						if (r === 'logged') {
+							applied.push(`logged ${formatHours(h)}`);
+							totalHours += h;
+							if (args.jira) toJira('time', await jiraPush(task.jira_key, async (cfg, key) => { await jiraLogWork(cfg, key, h, day, entry.note?.trim() || null); return `${formatHours(h)} logged on ${key}`; }));
+						} else skipped.push(`${formatHours(h)} already logged`);
 					}
 					if (entry.comment?.trim()) {
 						const r = await addComment(db, userId, task, entry.comment, day);
-						if (r === 'added') applied.push('comment'); else skipped.push('same comment already there');
+						if (r === 'added') {
+							applied.push('comment');
+							if (args.jira) toJira('comment', await jiraPush(task.jira_key, async (cfg, key) => { await jiraAddComment(cfg, key, entry.comment!.trim()); return `comment posted to ${key}`; }));
+						} else skipped.push('same comment already there');
 					}
-					results.push({ ticket: task.jira_key ?? `#${task.no}`, ok: true, applied, skipped });
+					results.push({ ticket: task.jira_key ?? `#${task.no}`, ok: true, applied, skipped, ...(args.jira ? { jira: jiraLines } : {}) });
 				} catch (e) {
-					results.push({ ticket: label, ok: false, error: e instanceof Error ? e.message : String(e), applied, skipped });
+					results.push({ ticket: label, ok: false, error: e instanceof Error ? e.message : String(e), applied, skipped, ...(jiraLines.length ? { jira: jiraLines } : {}) });
 				}
 			}
 			return { date: day, hours_logged: Math.round(totalHours * 100) / 100, results };
+		}
+
+		case 'work_pull_from_jira': {
+			const cfg = jiraConfig();
+			if (!cfg) throw new Error('Jira is not connected yet (the JIRA_* settings are missing).');
+			const ref = (args.ticket ?? '').trim();
+			let existing: WorkTask | null = null;
+			let key: string;
+			if (/^#?\d+$/.test(ref)) {
+				existing = await findTask(db, ref);
+				if (!existing.jira_key) throw new Error(`Row ${ref} has no Jira key to read from.`);
+				key = existing.jira_key;
+			} else {
+				key = ref.toUpperCase();
+				const { data } = await db.from('work_tasks').select('*').eq('jira_key', key).maybeSingle();
+				existing = (data as WorkTask | null) ?? null;
+			}
+			const issue = await jiraGetIssue(cfg, key);
+			const title = issue.title.slice(0, LIMITS.title);
+			const description = issue.description.slice(0, LIMITS.description) || null;
+			if (existing) {
+				const { error } = await db.from('work_tasks').update({ ...(title ? { title } : {}), description, updated_at: new Date().toISOString() }).eq('id', existing.id);
+				if (error) throw new Error(error.message);
+				return { created: false, ticket: view({ ...existing, title: title || existing.title }), jira_status: issue.status, description };
+			}
+			const { data, error } = await db.from('work_tasks').insert({ user_id: await ownerId(db), jira_key: issue.key, title: title || issue.key, description }).select('*').single();
+			if (error) throw new Error(error.message);
+			return { created: true, ticket: view(data as WorkTask), jira_status: issue.status, description };
+		}
+
+		case 'work_jira_test': {
+			const cfg = jiraConfig();
+			if (!cfg) return { configured: false, hint: 'Set JIRA_BASE_URL plus JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (company-hosted) on the server.' };
+			try {
+				return { configured: true, reachable: true, host: cfg.host, user: (await jiraMyself(cfg)).name };
+			} catch (e) {
+				return { configured: true, reachable: false, host: cfg.host, error: e instanceof Error ? e.message : String(e) };
+			}
 		}
 
 		default:
