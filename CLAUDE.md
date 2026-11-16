@@ -133,6 +133,6 @@ Sales & Marketing → Blog CMS. One `cms_sites` row per site (kazanszerelok, tem
 ## Hyrox (`/hyrox`) — public 12-week training plan
 
 - **Public, no login, `noindex`** (it is a transcription of a paid plan; shared by link only). No auth check in the page.
-- The plan is static data in `lib/hyrox.ts` (`HYROX_WEEKS`); `tasksOf()` splits each day's blocks into tasks (name, Required/Optional from "(opt.", duration, detail) and `withPaces()` adds the real pace to `@5k±N"` tags from `FIVE_K_PACE_S`. Task ids are positional (`<day>-<n>`), so reordering a day's blocks moves its ticks.
+- The plan is static data in `lib/hyrox.ts` (`HYROX_WEEKS`), transcribed from the "Hyrox 12-Week Plan – final (v3, with rest times)" Claude doc (https://claude.ai/artifact/CzmgVJZ4akiQMn1GCLRFnb); `tasksOf()` splits each day's blocks into tasks (name, Required/Optional from "(opt.", duration, detail) and `withPaces()` adds the real pace to `@5k±N"` tags from `FIVE_K_PACE_S`. Task ids are positional (`<day>-<n>`), so reordering a day's blocks moves its ticks.
 - **Ticks live in the visitor's browser** (`localStorage` key `kaed-hyrox-progress-v1`), not the database, so they don't sync across devices. A day is done when all its required tasks are ticked.
 - Built from daisyUI components under the scoped `hyrox` theme (`HyroxPlan.tsx`): stats, menu (desktop) / tabs (mobile) week picker, collapse per day, list + checkbox per task.
