@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { dayKind, HYROX_KEY, HYROX_RACE_NOTES, HYROX_WEEKS, KIND_LABEL, tasksOf, withPaces } from '@/lib/hyrox';
+import { dayKind, HYROX_KEY, HYROX_WEEKS, KIND_LABEL, tasksOf, withPaces } from '@/lib/hyrox';
 import { PageHead } from '@/components/ui';
 import { HyroxPlan, type PlanWeek } from './HyroxPlan';
 
@@ -53,15 +53,6 @@ export default function HyroxPage() {
 						</ul>
 					</div>
 				</details>
-				<div id="race" className="card bg-base-100 border border-base-300 scroll-mt-16">
-					<div className="card-body">
-						<h2 className="card-title">Using it for your April race</h2>
-						<ul className="m-0 pl-5 list-disc flex flex-col gap-1.5 text-sm leading-relaxed opacity-80">
-							{HYROX_RACE_NOTES.map((n) => <li key={n}>{n}</li>)}
-						</ul>
-						<p className="m-0 text-xs opacity-50">Personal training reference, transcribed from the Hyrox Mastery Elite plan (Endurance app).</p>
-					</div>
-				</div>
 			</div>
 		</section>
 	);

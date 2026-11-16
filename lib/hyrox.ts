@@ -34,12 +34,6 @@ export const HYROX_KEY: string[] = [
 	'Weekly pattern (Weeks 1–6, 8–11): Day 1 Strength + Ski · Day 2 Intervals/Running · Day 3 Strength/Power + Run · Day 4 Strength/Power + Row · Day 5 Long Run/Endurance. Week 7 is a deload, Week 12 is race week.',
 ];
 
-export const HYROX_RACE_NOTES: string[] = [
-	'Start the plan 12 weeks before race day so Week 12 is race week; Day 60 is the day before the race.',
-	'Running paces are worked out from a 4:10/km 5k. SkiErg/Row tags need your own 2k pace.',
-	'The (not shown) items can be filled in by re-recording those days with every block expanded.',
-];
-
 const STRETCH_ROLL = [
 	'Warm-up stretch (5 min): Quad stretch, Leg Swings, Calf Stretch – 30 s each',
 	'Cool-down stretch (7 min): Hip-Flexor 45 s, Hamstring 45 s, Lying Twist 60 s, Seated Twist 60 s',
