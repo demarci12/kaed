@@ -14,7 +14,7 @@ const GROUPS: NavGroup[] = [
 	{ label: 'Work', links: [['/work', 'Tickets']] },
 	{ label: 'Jobro', links: [['/jobro', 'Customers & usage']] },
 	{ label: 'Delivery', links: [['/painhunter', 'Painhunter'], ['/business-ideas', 'Business ideas'], ['/projects', 'Projects'], ['/system-design', 'System design']] },
-	{ label: 'Personal', links: [['/think-pad', 'Think Pad'], ['/idea-lab', 'Idea Lab'], ['/studies', 'Studies'], ['/freedom', 'Freedom'], ['/goals', 'Goals'], ['/specific-knowledge', 'Specific knowledge']] },
+	{ label: 'Personal', links: [['/think-pad', 'Think Pad'], ['/idea-lab', 'Idea Lab'], ['/studies', 'Studies'], ['/freedom', 'Freedom'], ['/goals', 'Goals'], ['/hyrox', 'Hyrox plan'],['/specific-knowledge', 'Specific knowledge']] },
 	{ label: 'Sales & Marketing', links: [['/clients', 'CRM'], ['/cms', 'Blog CMS']] },
 	{ label: 'Finance', links: [['/finance', 'Personal finance'], ['/finance/investments', 'Investments']] },
 ];
