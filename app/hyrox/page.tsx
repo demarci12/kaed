@@ -1,14 +1,20 @@
-import { requireOwner } from '@/lib/auth';
+import type { Metadata } from 'next';
 import { HYROX_KEY, HYROX_RACE_NOTES, HYROX_WEEKS, withPaces } from '@/lib/hyrox';
 import { card, cardLabel, chip, chipMuted, guideList, guideText, guideTitle, PageHead } from '@/components/ui';
+
+// Public (no login) but kept out of search engines: the content is a
+// transcription of a paid plan, shared by link only.
+export const metadata: Metadata = {
+	title: 'Hyrox 12-week plan · KAED',
+	robots: { index: false, follow: false },
+};
 
 /**
  * The 12-week Hyrox plan, every week and every block on one page. Static data
  * from lib/hyrox.ts, no database. Running pace tags show the real pace next to
- * them (worked out from the 5k pace in lib/hyrox.ts).
+ * them (worked out from the 5k pace in lib/hyrox.ts). Public: no auth check.
  */
-export default async function HyroxPage() {
-	await requireOwner();
+export default function HyroxPage() {
 
 	return (
 		<section className="max-w-[1080px]">
