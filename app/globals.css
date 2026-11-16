@@ -1,6 +1,52 @@
 @import 'tailwindcss';
 
 /*
+ * daisyUI, scoped: no default theme and none of its root/base rules, so pages
+ * that don't opt in look exactly as before. Its colour names (info, accent)
+ * would otherwise overwrite the kaed tokens below on every page. A page opts in
+ * with `data-theme="hyrox"` on its wrapper (only /hyrox does today).
+ */
+@plugin 'daisyui' {
+	themes: false;
+	exclude: rootcolor, rootscrollgutter, rootscrolllock, scrollbar, reset;
+}
+
+@plugin 'daisyui/theme' {
+	name: 'hyrox';
+	default: false;
+	prefersdark: false;
+	color-scheme: light;
+	--color-base-100: #ffffff;
+	--color-base-200: #f7f6f3;
+	--color-base-300: #ebe8e1;
+	--color-base-content: #1c1917;
+	--color-primary: #1c1917;
+	--color-primary-content: #ffffff;
+	--color-secondary: #57534e;
+	--color-secondary-content: #ffffff;
+	--color-accent: #3f6f5a;
+	--color-accent-content: #ffffff;
+	--color-neutral: #292524;
+	--color-neutral-content: #f5f5f4;
+	--color-info: #3b6ea8;
+	--color-info-content: #ffffff;
+	--color-success: #2f7a4f;
+	--color-success-content: #ffffff;
+	--color-warning: #b7791f;
+	--color-warning-content: #ffffff;
+	--color-error: #b4231f;
+	--color-error-content: #ffffff;
+	--radius-selector: 0.5rem;
+	--radius-field: 0.625rem;
+	--radius-box: 1rem;
+	--size-selector: 0.25rem;
+	--size-field: 0.25rem;
+	--border: 1px;
+	--depth: 0;
+	--noise: 0;
+}
+
+/*
  * The entire design system. One file, tokens only -- no component classes.
  *
  * The Astro version carried 1384 lines of hand-written CSS alongside Tailwind,

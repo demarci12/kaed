@@ -1,23 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { HyroxKind, HyroxTask } from '@/lib/hyrox';
+import type { HyroxTask } from '@/lib/hyrox';
 import { cx } from '@/components/ui';
 
-export interface PlanDay { day: number; title: string; duration?: string; kind: HyroxKind; kindLabel: string; tasks: HyroxTask[] }
+export interface PlanDay { day: number; title: string; duration?: string; kindLabel: string; tasks: HyroxTask[] }
 export interface PlanWeek { week: number; label?: string; days: PlanDay[] }
 
 /**
+ * Built from daisyUI components (scoped `hyrox` theme, see globals.css): stats,
+ * menu / tabs for the week picker, collapse for days, list + checkbox for tasks.
+ *
  * Ticks are per browser (localStorage), not in the database: the page is
  * public, so every visitor keeps their own progress and nobody needs a login.
- * Clearing site data clears the ticks.
  */
 const STORAGE_KEY = 'kaed-hyrox-progress-v1';
 
 function load(): Set<string> {
 	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
-		const ids = raw ? JSON.parse(raw) : [];
+		const ids = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
 		return new Set(Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string') : []);
 	} catch {
 		return new Set();
@@ -32,24 +33,24 @@ function save(done: Set<string>) {
 const countable = (d: PlanDay) => (d.tasks.some((t) => !t.optional) ? d.tasks.filter((t) => !t.optional) : d.tasks);
 const isDayDone = (d: PlanDay, done: Set<string>) => countable(d).every((t) => done.has(t.id));
 
-const KIND_STYLE: Record<HyroxKind, { stripe: string; pill: string }> = {
-	strength: { stripe: 'border-l-info', pill: 'bg-info-bg text-info' },
-	run: { stripe: 'border-l-accent', pill: 'bg-accent-bg text-accent' },
-	conditioning: { stripe: 'border-l-warn', pill: 'bg-warn-bg text-warn' },
-	endurance: { stripe: 'border-l-ink', pill: 'bg-canvas text-ink border border-line' },
-	rest: { stripe: 'border-l-line', pill: 'bg-canvas text-muted border border-line' },
-	race: { stripe: 'border-l-negative', pill: 'bg-negative-bg text-negative' },
-};
-
-const bar = 'h-2 rounded-full bg-line overflow-hidden';
-const barFill = 'h-full rounded-full bg-positive transition-[width] duration-300';
-const tag = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium leading-4 whitespace-nowrap';
-
 export function HyroxPlan({ weeks }: { weeks: PlanWeek[] }) {
 	const [done, setDone] = useState<Set<string>>(new Set());
-	const [loaded, setLoaded] = useState(false);
+	const [week, setWeek] = useState(1);
+	const [openDay, setOpenDay] = useState<number | null>(null);
 
-	useEffect(() => { setDone(load()); setLoaded(true); }, []);
+	const allDays = useMemo(() => weeks.flatMap((w) => w.days), [weeks]);
+	const weekOf = useCallback((day: number) => weeks.find((w) => w.days.some((d) => d.day === day))?.week ?? 1, [weeks]);
+
+	// After mount: read the ticks, then open where you left off (or where the
+	// link points: #week-3 / #day-12).
+	useEffect(() => {
+		const saved = load();
+		setDone(saved);
+		const hash = window.location.hash.match(/^#(week|day)-(\d+)$/);
+		if (hash?.[1] === 'week') { setWeek(Number(hash[2])); return; }
+		const target = hash?.[1] === 'day' ? Number(hash[2]) : allDays.find((d) => !isDayDone(d, saved))?.day;
+		if (target) { setWeek(weekOf(target)); setOpenDay(target); }
+	}, [allDays, weekOf]);
 
 	const update = useCallback((fn: (next: Set<string>) => void) => {
 		setDone((prev) => {
@@ -65,154 +66,185 @@ export function HyroxPlan({ weeks }: { weeks: PlanWeek[] }) {
 		for (const t of on ? countable(d) : d.tasks) (on ? s.add(t.id) : s.delete(t.id));
 	});
 
-	const allDays = useMemo(() => weeks.flatMap((w) => w.days), [weeks]);
+	const pickWeek = (n: number) => {
+		setWeek(n);
+		const w = weeks.find((x) => x.week === n);
+		setOpenDay(w?.days.find((d) => !isDayDone(d, done))?.day ?? null);
+		history.replaceState(null, '', `#week-${n}`);
+	};
+
 	const daysDone = allDays.filter((d) => isDayDone(d, done)).length;
 	const totalTasks = allDays.reduce((n, d) => n + d.tasks.length, 0);
 	const tasksDone = allDays.reduce((n, d) => n + d.tasks.filter((t) => done.has(t.id)).length, 0);
 	const nextDay = allDays.find((d) => !isDayDone(d, done));
+	const current = weeks.find((w) => w.week === week) ?? weeks[0];
+	const weekDone = (w: PlanWeek) => w.days.filter((d) => isDayDone(d, done)).length;
 
 	return (
-		<>
-			{/* Overall progress */}
-			<div className="mt-8 p-5 md:p-6 rounded-2xl border border-line bg-paper flex flex-col gap-4">
-				<div className="flex items-end justify-between gap-4 flex-wrap">
-					<div>
-						<p className="m-0 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted">Your progress</p>
-						<p className="m-0 mt-1 font-serif text-[clamp(28px,5vw,40px)] font-semibold tracking-[-0.02em] leading-none tabular-nums">
-							{daysDone}<span className="text-muted text-[0.55em] font-medium"> / {allDays.length} days</span>
-						</p>
-						<p className="m-0 mt-1.5 text-[13px] text-muted tabular-nums">{tasksDone} of {totalTasks} tasks ticked</p>
-					</div>
-					<div className="flex items-center gap-2.5 flex-wrap">
-						{nextDay && loaded && (
-							<a href={`#day-${nextDay.day}`} className="inline-flex items-center gap-2 min-h-10 px-[18px] rounded-full border border-ink bg-ink text-white text-sm font-medium no-underline hover:bg-transparent hover:text-ink transition-colors">
-								Next up: Day {nextDay.day} →
-							</a>
+		<div data-theme="hyrox" className="mt-8 text-base-content">
+			{/* Progress */}
+			<div className="stats stats-horizontal w-full bg-base-100 border border-base-300 rounded-box [&_.stat]:max-sm:px-4 [&_.stat-value]:max-sm:text-2xl">
+				<div className="stat">
+					<div className="stat-title">Days done</div>
+					<div className="stat-value tabular-nums">{daysDone}<span className="text-base font-normal opacity-50"> / {allDays.length}</span></div>
+					<progress className="progress progress-success w-full mt-2" value={daysDone} max={allDays.length} />
+				</div>
+				<div className="stat max-sm:hidden">
+					<div className="stat-title">Tasks ticked</div>
+					<div className="stat-value tabular-nums">{tasksDone}<span className="text-base font-normal opacity-50"> / {totalTasks}</span></div>
+					<div className="stat-desc mt-1">Saved in this browser</div>
+				</div>
+				<div className="stat">
+					<div className="stat-title">Up next</div>
+					<div className="stat-value text-2xl max-sm:text-xl">{nextDay ? `Day ${nextDay.day}` : 'All done'}</div>
+					<div className="stat-actions mt-2 flex gap-2">
+						{nextDay && (
+							<button type="button" className="btn btn-primary btn-sm" onClick={() => { setWeek(weekOf(nextDay.day)); setOpenDay(nextDay.day); }}>
+								Continue
+							</button>
 						)}
 						{tasksDone > 0 && (
-							<button type="button"
-								onClick={() => { if (confirm('Clear every tick on this device?')) update((s) => s.clear()); }}
-								className="inline-flex items-center min-h-10 px-[18px] rounded-full border border-line bg-transparent text-sm text-muted cursor-pointer hover:border-ink hover:text-ink transition-colors">
+							<button type="button" className="btn btn-ghost btn-sm"
+								onClick={() => { if (confirm('Clear every tick on this device?')) update((s) => s.clear()); }}>
 								Reset
 							</button>
 						)}
 					</div>
 				</div>
-				<div className={bar}><div className={barFill} style={{ width: `${(daysDone / allDays.length) * 100}%` }} /></div>
-				<p className="m-0 text-xs text-muted">Tick a task when you finish it. A day gets its green flag once every <b className="font-semibold text-ink">required</b> task is ticked. Saved in this browser only.</p>
 			</div>
 
-			{/* Week jump bar */}
-			<nav aria-label="Weeks" className="sticky top-0 z-10 mt-6 -mx-1 px-1 py-2.5 flex gap-1.5 flex-wrap max-md:flex-nowrap max-md:overflow-x-auto bg-canvas/95 backdrop-blur">
-				{weeks.map((w) => {
-					const complete = w.days.every((d) => isDayDone(d, done));
-					return (
-						<a key={w.week} href={`#week-${w.week}`}
-							className={cx('shrink-0 whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs no-underline transition-colors',
-								complete ? 'border-positive bg-positive text-white' : w.label ? 'border-line bg-canvas text-muted hover:border-ink' : 'border-line bg-paper text-ink hover:border-ink')}>
-							{complete && '✓ '}W{w.week}{w.label ? ` · ${w.label.split(' / ')[0]}` : ''}
-						</a>
-					);
-				})}
-				<a href="#race" className="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full border border-line bg-canvas text-xs text-muted no-underline hover:border-ink">Race notes</a>
-			</nav>
+			<div className="mt-8 grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-8">
+				{/* Week picker: side menu on desktop… */}
+				<aside className="hidden lg:block">
+					<ul className="menu w-full bg-base-100 border border-base-300 rounded-box sticky top-4 p-2">
+						<li className="menu-title">Weeks</li>
+						{weeks.map((w) => {
+							const n = weekDone(w);
+							const complete = n === w.days.length;
+							return (
+								<li key={w.week}>
+									<button type="button" onClick={() => pickWeek(w.week)} className={cx('flex items-center', w.week === week && 'menu-active')}>
+										<span className="flex-1 text-left">
+											Week {w.week}
+											{w.label && <span className="ml-1.5 text-xs opacity-60">{w.label.split(' / ')[0]}</span>}
+										</span>
+										{complete
+											? <span className="badge badge-success badge-sm">✓</span>
+											: <span className="badge badge-ghost badge-sm tabular-nums">{n}/{w.days.length}</span>}
+									</button>
+								</li>
+							);
+						})}
+					</ul>
+				</aside>
 
-			{weeks.map((w) => {
-				const wDone = w.days.filter((d) => isDayDone(d, done)).length;
-				return (
-					<section key={w.week} id={`week-${w.week}`} className="mt-12 scroll-mt-16">
-						<div className="flex items-center gap-4 flex-wrap pb-3 border-b border-line">
-							<h2 className="m-0 font-serif text-[28px] font-semibold tracking-[-0.01em]">Week {w.week}</h2>
-							{w.label && <span className={cx(tag, 'bg-warn-bg text-warn')}>{w.label}</span>}
-							<div className="ml-auto flex items-center gap-2.5 min-w-[160px]">
-								<div className={cx(bar, 'flex-1 h-1.5')}><div className={barFill} style={{ width: `${(wDone / w.days.length) * 100}%` }} /></div>
-								<span className="text-xs text-muted tabular-nums whitespace-nowrap">{wDone}/{w.days.length} days</span>
+				<div className="min-w-0">
+					{/* …scrollable tabs on phones and tablets */}
+					<div role="tablist" className="tabs tabs-box flex-nowrap overflow-x-auto bg-base-200 border border-base-300 lg:hidden [scrollbar-width:none]">
+						{weeks.map((w) => (
+							<button key={w.week} type="button" role="tab" onClick={() => pickWeek(w.week)}
+								className={cx('tab shrink-0 whitespace-nowrap', w.week === week && 'tab-active', weekDone(w) === w.days.length && 'text-success')}>
+								W{w.week}
+							</button>
+						))}
+					</div>
+
+					{/* The selected week */}
+					<section id={`week-${current.week}`} className="mt-5 lg:mt-0">
+						<div className="flex items-center justify-between gap-3 flex-wrap">
+							<div className="flex items-center gap-2.5">
+								<h2 className="m-0 text-2xl font-semibold tracking-tight">Week {current.week}</h2>
+								{current.label && <span className="badge badge-warning badge-soft">{current.label}</span>}
+							</div>
+							<div className="join">
+								<button type="button" className="btn btn-sm join-item" disabled={current.week === 1} onClick={() => pickWeek(current.week - 1)} aria-label="Previous week">‹</button>
+								<button type="button" className="btn btn-sm join-item" disabled={current.week === weeks.length} onClick={() => pickWeek(current.week + 1)} aria-label="Next week">›</button>
 							</div>
 						</div>
+						<div className="mt-3 flex items-center gap-3">
+							<progress className="progress progress-success flex-1" value={weekDone(current)} max={current.days.length} />
+							<span className="text-sm opacity-60 tabular-nums whitespace-nowrap">{weekDone(current)} of {current.days.length} days</span>
+						</div>
 
-						<div className="mt-5 grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] max-md:grid-cols-1">
-							{w.days.map((d) => (
-								<DayCard key={d.day} day={d} done={done} dayDone={isDayDone(d, done)}
+						<div className="mt-5 flex flex-col gap-3">
+							{current.days.map((d) => (
+								<DayPanel key={d.day} day={d} done={done} dayDone={isDayDone(d, done)}
+									open={openDay === d.day}
+									onOpen={() => setOpenDay(openDay === d.day ? null : d.day)}
 									onToggle={toggle} onDay={(on) => setDay(d, on)} />
 							))}
 						</div>
 					</section>
-				);
-			})}
-		</>
-	);
-}
-
-function DayCard({ day, done, dayDone, onToggle, onDay }: {
-	day: PlanDay; done: Set<string>; dayDone: boolean; onToggle: (id: string) => void; onDay: (on: boolean) => void;
-}) {
-	const style = KIND_STYLE[day.kind];
-	const req = day.tasks.filter((t) => !t.optional);
-	const reqDone = req.filter((t) => done.has(t.id)).length;
-
-	return (
-		<article id={`day-${day.day}`}
-			className={cx('scroll-mt-20 flex flex-col min-w-0 rounded-2xl border border-l-4 bg-paper transition-colors',
-				dayDone ? 'border-positive border-l-positive bg-positive-bg/40' : cx('border-line', style.stripe))}>
-			<header className="flex flex-col gap-2 px-5 pt-4 pb-3">
-				<div className="flex items-center gap-2 flex-wrap">
-					<span className="text-[11px] font-semibold tracking-[0.06em] uppercase text-muted">Day {day.day}</span>
-					<span className={cx(tag, style.pill)}>{day.kindLabel}</span>
-					{day.duration && <span className="text-xs text-muted tabular-nums">· {day.duration}</span>}
-					{dayDone && (
-						<span className={cx(tag, 'ml-auto bg-positive text-white gap-1')} aria-label="Day done">
-							<FlagIcon /> Done
-						</span>
-					)}
 				</div>
-				<h3 className="m-0 font-serif text-[20px] font-semibold leading-tight">{day.title}</h3>
-			</header>
-
-			<ol className="m-0 p-0 list-none border-t border-line divide-y divide-line">
-				{day.tasks.map((t) => {
-					const ticked = done.has(t.id);
-					return (
-						<li key={t.id}>
-							<label className={cx('flex items-start gap-3 px-5 py-3 cursor-pointer transition-colors hover:bg-canvas/70', t.optional && 'bg-canvas/40')}>
-								<input type="checkbox" checked={ticked} onChange={() => onToggle(t.id)} className="sr-only peer" />
-								<span aria-hidden
-									className={cx('mt-0.5 inline-flex items-center justify-center w-[22px] h-[22px] shrink-0 rounded-full border-2 text-[12px] font-bold transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ink/30',
-										ticked ? 'border-positive bg-positive text-white' : 'border-line bg-paper text-transparent')}>
-									✓
-								</span>
-								<span className="min-w-0 flex-1 flex flex-col gap-1">
-									<span className="flex items-center gap-1.5 flex-wrap">
-										<span className={cx('text-sm font-semibold', ticked ? 'text-muted line-through decoration-positive/60' : 'text-ink')}>{t.name}</span>
-										<span className={cx(tag, t.optional ? 'border border-dashed border-line text-muted' : 'bg-ink/[0.06] text-ink')}>
-											{t.optional ? 'Optional' : 'Required'}
-										</span>
-										{t.duration && <span className={cx(tag, 'bg-canvas text-muted tabular-nums')}>{t.duration}</span>}
-									</span>
-									{t.detail && <span className={cx('text-[13px] leading-relaxed', ticked ? 'text-muted' : 'text-ink/80')}>{t.detail}</span>}
-									{t.note && <span className="text-xs italic text-muted">{t.note}</span>}
-								</span>
-							</label>
-						</li>
-					);
-				})}
-			</ol>
-
-			<footer className="mt-auto flex items-center justify-between gap-3 px-5 py-3 border-t border-line">
-				<span className="text-xs text-muted tabular-nums">{reqDone}/{req.length} required done</span>
-				<button type="button" onClick={() => onDay(!dayDone)}
-					className={cx('inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-xs font-medium cursor-pointer transition-colors',
-						dayDone ? 'border-line bg-transparent text-muted hover:border-ink hover:text-ink' : 'border-positive bg-positive text-white hover:bg-transparent hover:text-positive')}>
-					{dayDone ? 'Undo day' : <><FlagIcon /> Mark day done</>}
-				</button>
-			</footer>
-		</article>
+			</div>
+		</div>
 	);
 }
 
-function FlagIcon() {
+function DayPanel({ day, done, dayDone, open, onOpen, onToggle, onDay }: {
+	day: PlanDay; done: Set<string>; dayDone: boolean; open: boolean;
+	onOpen: () => void; onToggle: (id: string) => void; onDay: (on: boolean) => void;
+}) {
+	const req = countable(day);
+	const reqDone = req.filter((t) => done.has(t.id)).length;
+	const pct = Math.round((reqDone / req.length) * 100);
+
 	return (
-		<svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-			<path d="M3 1.5a.75.75 0 0 1 .75.75V3h8.69a.6.6 0 0 1 .5.93L11.5 6.5l1.44 2.57a.6.6 0 0 1-.5.93H3.75v4.75a.75.75 0 0 1-1.5 0V2.25A.75.75 0 0 1 3 1.5Z" />
-		</svg>
+		<div id={`day-${day.day}`}
+			className={cx('collapse collapse-arrow bg-base-100 border scroll-mt-4', open ? 'collapse-open' : 'collapse-close',
+				dayDone ? 'border-success/40' : 'border-base-300')}>
+			<button type="button" onClick={onOpen} aria-expanded={open}
+				className="collapse-title flex items-center gap-4 pe-12 text-left cursor-pointer">
+				{dayDone ? (
+					<span className="inline-flex items-center justify-center size-10 shrink-0 rounded-full bg-success text-success-content text-lg">✓</span>
+				) : pct === 0 ? (
+					<span className="inline-flex items-center justify-center size-10 shrink-0 rounded-full border-[3px] border-base-300 text-[11px] font-medium tabular-nums text-base-content/70">
+						{reqDone}/{req.length}
+					</span>
+				) : (
+					<span className="radial-progress shrink-0 text-success text-[11px] font-medium tabular-nums"
+						style={{ '--value': pct, '--size': '2.5rem', '--thickness': '3px' } as React.CSSProperties}
+						role="progressbar" aria-valuenow={pct}>
+						<span className="text-base-content/70">{reqDone}/{req.length}</span>
+					</span>
+				)}
+				<span className="min-w-0 flex-1">
+					<span className="block text-xs uppercase tracking-wide opacity-50">Day {day.day} · {day.kindLabel}</span>
+					<span className="block font-semibold leading-snug">{day.title}</span>
+				</span>
+				{day.duration && <span className="hidden sm:inline text-sm opacity-50 tabular-nums whitespace-nowrap">{day.duration}</span>}
+			</button>
+
+			<div className="collapse-content px-0">
+				<ul className="list border-t border-base-300">
+					{day.tasks.map((t) => {
+						const ticked = done.has(t.id);
+						return (
+							<li key={t.id} className={cx('list-row items-start rounded-none px-4 sm:px-5', t.optional && 'bg-base-200/50')}>
+								<input type="checkbox" className="checkbox checkbox-success checkbox-sm mt-0.5"
+									checked={ticked} onChange={() => onToggle(t.id)} aria-label={`Done: ${t.name}`} />
+								<label className="list-col-grow min-w-0 cursor-pointer" onClick={() => onToggle(t.id)}>
+									<span className="flex items-center gap-2 flex-wrap">
+										<span className={cx('font-medium', ticked && 'line-through opacity-50')}>{t.name}</span>
+										{t.optional
+											? <span className="badge badge-outline badge-sm opacity-70">Optional</span>
+											: <span className="badge badge-neutral badge-soft badge-sm">Required</span>}
+										{t.duration && <span className="text-xs opacity-50 tabular-nums">{t.duration}</span>}
+									</span>
+									{t.detail && <span className={cx('block mt-1 text-sm leading-relaxed', ticked ? 'opacity-40' : 'opacity-70')}>{t.detail}</span>}
+									{t.note && <span className="block mt-0.5 text-xs italic opacity-50">{t.note}</span>}
+								</label>
+							</li>
+						);
+					})}
+				</ul>
+				<div className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-3 border-t border-base-300">
+					<span className="text-sm opacity-60 tabular-nums">{reqDone} of {req.length} required done</span>
+					{dayDone
+						? <button type="button" className="btn btn-ghost btn-sm" onClick={() => onDay(false)}>Undo</button>
+						: <button type="button" className="btn btn-success btn-sm" onClick={() => onDay(true)}>Mark day done</button>}
+				</div>
+			</div>
+		</div>
 	);
 }
