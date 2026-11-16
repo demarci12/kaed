@@ -485,3 +485,81 @@ export const HYROX_WEEKS: HyroxWeek[] = [
 		],
 	},
 ];
+
+/* ------------------------------------------------------------------ tasks */
+
+/** One tickable line of a day: a block split into name, duration and detail. */
+export interface HyroxTask {
+	/** Stable per position: `<day>-<n>`. Ticks are stored under it. */
+	id: string;
+	name: string;
+	optional: boolean;
+	/** "14 min", "9–16 min", … when the block gave one. */
+	duration?: string;
+	/** Extra bracket notes from the name ("not shown", "lift not shown"). */
+	note?: string;
+	detail?: string;
+}
+
+/**
+ * A block with no `:` that joins several items with ` · ` ("Warm-up stretch
+ * 5 min · Long Run 75 min easy · …") is several tasks; split it. A block with
+ * a `:` keeps its ` · ` -- there it separates intervals of one set.
+ */
+function splitBlocks(blocks: string[]): string[] {
+	return blocks.flatMap((b) => (b.includes(': ') ? [b] : b.split(/ · |; /)));
+}
+
+/** "Warm-up (opt., 14 min): 3 rounds – …" → name Warm-up, optional, 14 min, detail. */
+export function parseTask(text: string, id: string): HyroxTask {
+	const colon = text.indexOf(': ');
+	const head = colon >= 0 ? text.slice(0, colon) : text;
+	const detail = colon >= 0 ? text.slice(colon + 2).trim() : undefined;
+	const optional = /\(opt\.?[,)]/.test(head);
+
+	const durations: string[] = [];
+	const notes: string[] = [];
+	for (const [, inner] of head.matchAll(/\(([^)]*)\)/g)) {
+		for (const part of inner.split(',').map((p) => p.trim()).filter(Boolean)) {
+			if (/^opt\.?$/.test(part)) continue;
+			(/\bmin\b/.test(part) && /\d/.test(part) ? durations : notes).push(part);
+		}
+	}
+	let name = head.replace(/\([^)]*\)/g, '').replace(/\s+,/g, ',').replace(/\s{2,}/g, ' ').trim();
+	// "Warm-up run 5–8 min" -- a duration written into the name. Only when it is
+	// the one duration there, so "Bike 60 min, then Run 30 min" stays whole.
+	const inline = name.match(/\s(\d+(?:–\d+)?\s*min)\b/g);
+	if (!durations.length && inline?.length === 1) {
+		durations.push(inline[0].trim());
+		name = name.replace(inline[0], '').replace(/\s{2,}/g, ' ').trim();
+	}
+
+	return {
+		id, name, optional,
+		duration: durations.join(', ') || undefined,
+		note: notes.join(', ') || undefined,
+		detail: detail || undefined,
+	};
+}
+
+export function tasksOf(day: HyroxDay): HyroxTask[] {
+	return splitBlocks(day.blocks).map((b, i) => parseTask(b, `${day.day}-${i + 1}`));
+}
+
+/** The kind of session, for the card's colour: what the day's title leads with. */
+export type HyroxKind = 'strength' | 'run' | 'conditioning' | 'endurance' | 'rest' | 'race';
+
+export function dayKind(title: string): HyroxKind {
+	const t = title.toLowerCase();
+	if (/race/.test(t)) return 'race';
+	if (/rest|recovery stretch/.test(t) && !/run|bike/.test(t)) return 'rest';
+	if (/endurance|long run|run & recovery|bike endurance/.test(t)) return 'endurance';
+	if (/strength/.test(t)) return 'strength';
+	if (/interval|running|^run|easy run/.test(t)) return 'run';
+	return 'conditioning';
+}
+
+export const KIND_LABEL: Record<HyroxKind, string> = {
+	strength: 'Strength', run: 'Running', conditioning: 'Conditioning',
+	endurance: 'Endurance', rest: 'Rest', race: 'Race prep',
+};
